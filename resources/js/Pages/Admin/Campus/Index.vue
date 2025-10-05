@@ -29,6 +29,7 @@ const props = defineProps({
               <th class="px-4 py-2 text-left text-sm font-semibold text-gray-600">#</th>
               <th class="px-4 py-2 text-left text-sm font-semibold text-gray-600">Nama Campus</th>
               <th class="px-4 py-2 text-left text-sm font-semibold text-gray-600">Alamat</th>
+              <th class="px-4 py-2 text-left text-sm font-semibold text-gray-600">Telepon</th>
               <th class="px-4 py-2 text-left text-sm font-semibold text-gray-600">Aksi</th>
             </tr>
           </thead>
@@ -37,6 +38,7 @@ const props = defineProps({
               <td class="px-4 py-2 text-sm text-gray-700">{{ index + 1 }}</td>
               <td class="px-4 py-2 text-sm text-gray-700">{{ campus.name }}</td>
               <td class="px-4 py-2 text-sm text-gray-700">{{ campus.address }}</td>
+              <td class="px-4 py-2 text-sm text-gray-700">{{ campus.phone }}</td>
               <td class="px-4 py-2 text-sm">
                 <Link
                   :href="route('admin.campus.edit', campus.id)"
@@ -55,7 +57,7 @@ const props = defineProps({
               </td>
             </tr>
             <tr v-if="campuses.length === 0">
-              <td colspan="4" class="px-4 py-4 text-center text-gray-500">
+              <td colspan="5" class="px-4 py-4 text-center text-gray-500">
                 Tidak ada data campus.
               </td>
             </tr>

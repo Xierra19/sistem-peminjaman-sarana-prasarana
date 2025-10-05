@@ -14,4 +14,12 @@ class Campus extends Model
         'address',
         'phone',
     ];
+
+    /**
+     * Get all of the buildings that belong to the campus.
+     */
+    public function buildings()
+    {
+        return $this->hasMany(Building::class);
+    }
 }

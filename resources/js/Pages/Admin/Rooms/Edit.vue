@@ -3,30 +3,31 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import { Head, useForm, Link } from '@inertiajs/vue3'
 
 const props = defineProps({
-  campus: Object
+  room: Object,
+  buildings: Array
 })
 
 const form = useForm({
-  name: props.campus.name,
-  address: props.campus.address,
-  phone: props.campus.phone
+  name: props.room.name,
+  building_id: props.room.building_id,
+  capacity: props.room.capacity
 })
 
 const submit = () => {
-  form.put(route('admin.campus.update', props.campus.id))
+  form.put(route('admin.rooms.update', props.room.id))
 }
 </script>
 
 <template>
-  <Head title="Edit Campus" />
+  <Head title="Edit Ruangan" />
 
   <AuthenticatedLayout>
     <div class="bg-white p-6 rounded-lg shadow-md max-w-lg">
-      <h1 class="text-xl font-semibold text-gray-800 mb-4">✏️ Edit Campus</h1>
+      <h1 class="text-xl font-semibold text-gray-800 mb-4">✏️ Edit Ruangan</h1>
 
       <form @submit.prevent="submit" class="space-y-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700">Nama Campus</label>
+          <label class="block text-sm font-medium text-gray-700">Nama Ruangan</label>
           <input
             v-model="form.name"
             type="text"
@@ -36,22 +37,27 @@ const submit = () => {
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700">Alamat</label>
-          <textarea
-            v-model="form.address"
+          <label class="block text-sm font-medium text-gray-700">Gedung</label>
+          <select
+            v-model="form.building_id"
             class="w-full border rounded px-3 py-2 mt-1"
-          ></textarea>
-          <div v-if="form.errors.address" class="text-red-500 text-sm">{{ form.errors.address }}</div>
+          >
+            <option v-for="building in buildings" :key="building.id" :value="building.id">
+              {{ building.name }} - {{ building.campus?.name ?? '-' }}
+            </option>
+          </select>
+          <div v-if="form.errors.building_id" class="text-red-500 text-sm">{{ form.errors.building_id }}</div>
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700">Telepon</label>
+          <label class="block text-sm font-medium text-gray-700">Kapasitas</label>
           <input
-            v-model="form.phone"
-            type="text"
+            v-model.number="form.capacity"
+            type="number"
+            min="1"
             class="w-full border rounded px-3 py-2 mt-1"
           />
-          <div v-if="form.errors.phone" class="text-red-500 text-sm">{{ form.errors.phone }}</div>
+          <div v-if="form.errors.capacity" class="text-red-500 text-sm">{{ form.errors.capacity }}</div>
         </div>
 
         <div class="flex space-x-2">
@@ -63,7 +69,7 @@ const submit = () => {
             Update
           </button>
           <Link
-            :href="route('admin.campus.index')"
+            :href="route('admin.rooms.index')"
             class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
           >
             Batal

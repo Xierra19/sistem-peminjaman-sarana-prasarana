@@ -14,7 +14,7 @@ class CampusController extends Controller
      */
     public function index()
     {
-        $campuses = Campus::all();
+        $campuses = Campus::orderBy('name')->get();
 
         return Inertia::render('Admin/Campus/Index', [
             'campuses' => $campuses
@@ -35,8 +35,9 @@ class CampusController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'address' => 'required|string'
+            'name' => ['required', 'string', 'max:255'],
+            'address' => ['required', 'string', 'max:255'],
+            'phone' => ['required', 'string', 'max:20'],
         ]);
 
         Campus::create($validated);
@@ -59,11 +60,11 @@ class CampusController extends Controller
      */
     public function update(Request $request, Campus $campus)
     {
-    $validated = $request->validate([
-        'name' => 'required|string|max:255',
-        'address' => 'required|string|max:255',
-        'phone' => 'required|string|max:20',
-    ]);
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'address' => ['required', 'string', 'max:255'],
+            'phone' => ['required', 'string', 'max:20'],
+        ]);
 
 
         $campus->update($validated);

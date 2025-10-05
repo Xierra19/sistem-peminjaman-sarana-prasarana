@@ -5,12 +5,13 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\BookingController;
-use App\Http\Controllers\BuildingController;
+use App\Http\Controllers\Admin\BuildingController;
+use App\Http\Controllers\Admin\CampusController;
+use App\Http\Controllers\Admin\RoomController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExportController;
-use App\Http\Controllers\CampusController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -43,16 +44,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 // Route khusus untuk admin, diproteksi oleh middleware 'role:admin'
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/home', [AdminController::class, 'index'])->name('home');
-
-    // Buildings
-    Route::resource('buildings', BuildingController::class)->names([
-        'index' => 'buildings.index',
-        'store' => 'buildings.store',
-        'update' => 'buildings.update',
-        'destroy' => 'buildings.destroy',
-    ]);
-
-
+    Route::resource('campus', CampusController::class)->except(['show']);
+    Route::resource('buildings', BuildingController::class)->except(['show']);
+    Route::resource('rooms', RoomController::class)->except(['show']);
 });
 
 require __DIR__.'/auth.php';
