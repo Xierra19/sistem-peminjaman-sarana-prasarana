@@ -16,19 +16,21 @@ class BuildingController extends Controller
     public function index()
     {
         $buildings = Building::with('campus')->orderBy('name')->get();
-        $campuses = Campus::orderBy('name')->get();
 
         return Inertia::render('Admin/Buildings/Index', [
             'buildings' => $buildings,
-            'campuses' => $campuses,
+            'campuses'  => Inertia::lazy(fn () =>
+                Campus::select('id', 'name')->orderBy('name')->get()
+            ),
         ]);
     }
+
     /**
      * Show the form for creating a new building.
      */
     public function create()
     {
-        $campuses = Campus::orderBy('name')->get();
+        $campuses = Campus::select('id', 'name')->orderBy('name')->get();
 
         return Inertia::render('Admin/Buildings/Create', [
             'campuses' => $campuses,
@@ -41,13 +43,29 @@ class BuildingController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
+            'name'      => ['required', 'string', 'max:255'],
             'campus_id' => ['required', 'exists:campuses,id'],
         ]);
 
+        $validated['name'] = trim($validated['name']);
+        $normalizedName = $this->normalizeName($validated['name']); // gunakan method dari parent
+
+        $duplicateBuilding = Building::query()
+            ->where('campus_id', $validated['campus_id'])
+            ->whereRaw("LOWER(REPLACE(name, ' ', '')) = ?", [$normalizedName])
+            ->exists();
+
+        if ($duplicateBuilding) {
+            return back()
+                ->withErrors(['name' => 'Nama gedung sudah digunakan di kampus ini.'])
+                ->with('error', 'Nama gedung sudah digunakan di kampus ini.');
+        }
+
         Building::create($validated);
 
-        return redirect()->route('admin.buildings.index')->with('success', 'Building berhasil ditambahkan!');
+        return redirect()
+            ->route('admin.buildings.index')
+            ->with('success', 'Building berhasil ditambahkan!');
     }
 
     /**
@@ -55,7 +73,7 @@ class BuildingController extends Controller
      */
     public function edit(Building $building)
     {
-        $campuses = Campus::orderBy('name')->get();
+        $campuses = Campus::select('id', 'name')->orderBy('name')->get();
 
         return Inertia::render('Admin/Buildings/Edit', [
             'building' => $building->load('campus'),
@@ -69,13 +87,30 @@ class BuildingController extends Controller
     public function update(Request $request, Building $building)
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
+            'name'      => ['required', 'string', 'max:255'],
             'campus_id' => ['required', 'exists:campuses,id'],
         ]);
 
+        $validated['name'] = trim($validated['name']);
+        $normalizedName = $this->normalizeName($validated['name']); // gunakan method dari parent
+
+        $duplicateBuilding = Building::query()
+            ->where('campus_id', $validated['campus_id'])
+            ->where('id', '!=', $building->id)
+            ->whereRaw("LOWER(REPLACE(name, ' ', '')) = ?", [$normalizedName])
+            ->exists();
+
+        if ($duplicateBuilding) {
+            return back()
+                ->withErrors(['name' => 'Nama gedung sudah digunakan di kampus ini.'])
+                ->with('error', 'Nama gedung sudah digunakan di kampus ini.');
+        }
+
         $building->update($validated);
 
-        return redirect()->route('admin.buildings.index')->with('success', 'Building berhasil diupdate!');
+        return redirect()
+            ->route('admin.buildings.index')
+            ->with('success', 'Building berhasil diupdate!');
     }
 
     /**
@@ -85,6 +120,8 @@ class BuildingController extends Controller
     {
         $building->delete();
 
-        return redirect()->route('admin.buildings.index')->with('success', 'Building berhasil dihapus!');
+        return redirect()
+            ->route('admin.buildings.index')
+            ->with('success', 'Building berhasil dihapus!');
     }
 }

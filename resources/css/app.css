@@ -1,3 +1,4 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+.swal2-container { z-index: 2147483647 !important; }

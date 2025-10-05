@@ -1,12 +1,12 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import Modal from '@/Components/Modal.vue'
-import { Head, Link, useForm } from '@inertiajs/vue3'
+import { Head, Link, useForm, router } from '@inertiajs/vue3'
 import { ref } from 'vue'
 
 const props = defineProps({
   buildings: Array,
-  campuses: Array
+  campuses: Array // akan diisi via reload lazy prop
 })
 
 const showCreateModal = ref(false)
@@ -23,10 +23,18 @@ const editForm = useForm({
   campus_id: ''
 })
 
+// minta ulang hanya prop 'campuses' jika belum ada / kosong
+const ensureCampusesLoaded = () => {
+  if (!props.campuses || props.campuses.length === 0) {
+    router.reload({ only: ['campuses'] })
+  }
+}
+
 const openCreateModal = () => {
   createForm.reset()
   createForm.clearErrors()
   showCreateModal.value = true
+  ensureCampusesLoaded()
 }
 
 const closeCreateModal = () => {
@@ -37,9 +45,19 @@ const closeCreateModal = () => {
 
 const submitCreate = () => {
   createForm.post(route('admin.buildings.store'), {
+   preserveState: true,
+   preserveScroll: true,
     onSuccess: () => {
       closeCreateModal()
-    }
+    },
+   onError: () => {
+     // setelah validasi gagal, lazy prop campuses biasanya kosong lagi
+     ensureCampusesLoaded()
+   },
+   onFinish: () => {
+     // jaga-jaga: kalau masih kosong, muat ulang
+     ensureCampusesLoaded()
+   }
   })
 }
 
@@ -49,6 +67,7 @@ const openEditModal = (building) => {
   editForm.campus_id = building.campus_id ?? ''
   editForm.clearErrors()
   showEditModal.value = true
+  ensureCampusesLoaded()
 }
 
 const closeEditModal = () => {
@@ -60,11 +79,18 @@ const closeEditModal = () => {
 
 const submitEdit = () => {
   if (!selectedBuilding.value) return
-
   editForm.put(route('admin.buildings.update', selectedBuilding.value.id), {
+   preserveState: true,
+   preserveScroll: true,
     onSuccess: () => {
       closeEditModal()
-    }
+    },
+   onError: () => {
+     ensureCampusesLoaded()
+   },
+   onFinish: () => {
+     ensureCampusesLoaded()
+   }
   })
 }
 </script>
@@ -100,7 +126,7 @@ const submitEdit = () => {
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-100">
-            <tr v-for="(building, index) in buildings" :key="building.id">
+            <tr v-for="(building, index) in props.buildings" :key="building.id">
               <td class="px-4 py-2 text-sm text-gray-700">{{ index + 1 }}</td>
               <td class="px-4 py-2 text-sm text-gray-700">{{ building.name }}</td>
               <td class="px-4 py-2 text-sm text-gray-700">{{ building.campus?.name ?? '-' }}</td>
@@ -127,7 +153,7 @@ const submitEdit = () => {
                 </div>
               </td>
             </tr>
-            <tr v-if="buildings.length === 0">
+            <tr v-if="props.buildings.length === 0">
               <td colspan="5" class="px-4 py-4 text-center text-gray-500">
                 Belum ada data gedung.
               </td>
@@ -136,6 +162,8 @@ const submitEdit = () => {
         </table>
       </div>
     </div>
+
+    <!-- CREATE MODAL -->
     <Modal :show="showCreateModal" max-width="lg" @close="closeCreateModal">
       <div class="p-6">
         <h2 class="text-lg font-semibold text-gray-800 mb-4">➕ Tambah Gedung</h2>
@@ -143,22 +171,18 @@ const submitEdit = () => {
         <form @submit.prevent="submitCreate" class="space-y-4">
           <div>
             <label class="block text-sm font-medium text-gray-700">Nama Gedung</label>
-            <input
-              v-model="createForm.name"
-              type="text"
-              class="w-full border rounded px-3 py-2 mt-1"
-            />
+            <input v-model="createForm.name" type="text" class="w-full border rounded px-3 py-2 mt-1" />
             <div v-if="createForm.errors.name" class="text-red-500 text-sm">{{ createForm.errors.name }}</div>
           </div>
 
           <div>
             <label class="block text-sm font-medium text-gray-700">Campus</label>
-            <select
-              v-model="createForm.campus_id"
-              class="w-full border rounded px-3 py-2 mt-1"
-            >
-              <option value="" disabled>Pilih campus</option>
-              <option v-for="campus in campuses" :key="campus.id" :value="campus.id">
+            <select v-model="createForm.campus_id" class="w-full border rounded px-3 py-2 mt-1"
+                    :disabled="!props.campuses || props.campuses.length === 0">
+              <option value="" disabled>
+                {{ (!props.campuses || props.campuses.length === 0) ? 'Memuat daftar campus…' : 'Pilih campus' }}
+              </option>
+              <option v-for="campus in (props.campuses || [])" :key="campus.id" :value="campus.id">
                 {{ campus.name }}
               </option>
             </select>
@@ -166,18 +190,10 @@ const submitEdit = () => {
           </div>
 
           <div class="flex justify-end gap-2">
-            <button
-              type="button"
-              class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
-              @click="closeCreateModal"
-            >
+            <button type="button" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600" @click="closeCreateModal">
               Batal
             </button>
-            <button
-              type="submit"
-              class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-              :disabled="createForm.processing"
-            >
+            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700" :disabled="createForm.processing">
               Simpan
             </button>
           </div>
@@ -185,6 +201,7 @@ const submitEdit = () => {
       </div>
     </Modal>
 
+    <!-- EDIT MODAL -->
     <Modal :show="showEditModal" max-width="lg" @close="closeEditModal">
       <div class="p-6">
         <h2 class="text-lg font-semibold text-gray-800 mb-4">✏️ Edit Gedung</h2>
@@ -192,21 +209,18 @@ const submitEdit = () => {
         <form @submit.prevent="submitEdit" class="space-y-4">
           <div>
             <label class="block text-sm font-medium text-gray-700">Nama Gedung</label>
-            <input
-              v-model="editForm.name"
-              type="text"
-              class="w-full border rounded px-3 py-2 mt-1"
-            />
+            <input v-model="editForm.name" type="text" class="w-full border rounded px-3 py-2 mt-1" />
             <div v-if="editForm.errors.name" class="text-red-500 text-sm">{{ editForm.errors.name }}</div>
           </div>
 
           <div>
             <label class="block text-sm font-medium text-gray-700">Campus</label>
-            <select
-              v-model="editForm.campus_id"
-              class="w-full border rounded px-3 py-2 mt-1"
-            >
-              <option v-for="campus in campuses" :key="campus.id" :value="campus.id">
+            <select v-model="editForm.campus_id" class="w-full border rounded px-3 py-2 mt-1"
+                    :disabled="!props.campuses || props.campuses.length === 0">
+              <option value="" disabled>
+                {{ (!props.campuses || props.campuses.length === 0) ? 'Memuat daftar campus…' : 'Pilih campus' }}
+              </option>
+              <option v-for="campus in (props.campuses || [])" :key="campus.id" :value="campus.id">
                 {{ campus.name }}
               </option>
             </select>
@@ -214,18 +228,10 @@ const submitEdit = () => {
           </div>
 
           <div class="flex justify-end gap-2">
-            <button
-              type="button"
-              class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
-              @click="closeEditModal"
-            >
+            <button type="button" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600" @click="closeEditModal">
               Batal
             </button>
-            <button
-              type="submit"
-              class="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600"
-              :disabled="editForm.processing"
-            >
+            <button type="submit" class="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600" :disabled="editForm.processing">
               Update
             </button>
           </div>

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Building;
 use App\Models\Room;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 class RoomController extends Controller
@@ -13,16 +14,20 @@ class RoomController extends Controller
     /**
      * Display a listing of the rooms.
      */
-    public function index()
-    {
-        $rooms = Room::with('building.campus')->orderBy('name')->get();
-        $buildings = Building::with('campus')->orderBy('name')->get();
+public function index()
+{
+    $rooms = Room::with('building.campus')->orderBy('name')->get();
 
-        return Inertia::render('Admin/Rooms/Index', [
-            'rooms' => $rooms,
-            'buildings' => $buildings,
-        ]);
-    }
+    return Inertia::render('Admin/Rooms/Index', [
+        'rooms' => $rooms,
+        'buildings' => Inertia::lazy(fn () =>
+            Building::with('campus:id,name')
+                ->select('id','name','campus_id')
+                ->orderBy('name')
+                ->get()
+        ),
+    ]);
+}
 
     /**
      * Show the form for creating a new room.
@@ -46,6 +51,20 @@ class RoomController extends Controller
             'building_id' => ['required', 'exists:buildings,id'],
             'capacity' => ['required', 'integer', 'min:1'],
         ]);
+
+        $validated['name'] = trim($validated['name']);
+        $normalizedName = $this->normalizeName($validated['name']);
+
+        $duplicateRoom = Room::query()
+            ->where('building_id', $validated['building_id'])
+            ->whereRaw("LOWER(REPLACE(name, ' ', '')) = ?", [$normalizedName])
+            ->exists();
+
+        if ($duplicateRoom) {
+            throw ValidationException::withMessages([
+                'name' => 'Nama ruangan sudah digunakan di gedung dan kampus ini.',
+            ]);
+        }
 
         Room::create($validated);
 
@@ -75,6 +94,21 @@ class RoomController extends Controller
             'building_id' => ['required', 'exists:buildings,id'],
             'capacity' => ['required', 'integer', 'min:1'],
         ]);
+
+        $validated['name'] = trim($validated['name']);
+        $normalizedName = $this->normalizeName($validated['name']);
+
+        $duplicateRoom = Room::query()
+            ->where('building_id', $validated['building_id'])
+            ->where('id', '!=', $room->id)
+            ->whereRaw("LOWER(REPLACE(name, ' ', '')) = ?", [$normalizedName])
+            ->exists();
+
+        if ($duplicateRoom) {
+            throw ValidationException::withMessages([
+                'name' => 'Nama ruangan sudah digunakan di gedung dan kampus ini.',
+            ]);
+        }
 
         $room->update($validated);
 

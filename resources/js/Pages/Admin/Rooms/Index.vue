@@ -1,8 +1,9 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import Modal from '@/Components/Modal.vue'
-import { Head, Link, useForm } from '@inertiajs/vue3'
+import { Head, Link, useForm, router } from '@inertiajs/vue3'
 import { computed, ref } from 'vue'
+import Swal from 'sweetalert2'                           // ⬅️ panggil Swal di halaman
 
 const props = defineProps({
   rooms: Array,
@@ -13,34 +14,45 @@ const showCreateModal = ref(false)
 const showEditModal = ref(false)
 const selectedRoom = ref(null)
 
-const createForm = useForm({
-  name: '',
-  building_id: '',
-  capacity: ''
-})
+const createForm = useForm({ name: '', building_id: '', capacity: '' })
+const editForm   = useForm({ name: '', building_id: '', capacity: '' })
 
-const editForm = useForm({
-  name: '',
-  building_id: '',
-  capacity: ''
-})
+const getSwalTarget = () => document.querySelector('dialog[open]') || document.body
+
+const ensureBuildingsLoaded = () => {
+  if (!props.buildings || props.buildings.length === 0) {
+    router.reload({ only: ['buildings'] })
+  }
+}
 
 const openCreateModal = () => {
-  createForm.reset()
-  createForm.clearErrors()
+  createForm.reset(); createForm.clearErrors()
   showCreateModal.value = true
+  ensureBuildingsLoaded()
 }
 
 const closeCreateModal = () => {
   showCreateModal.value = false
-  createForm.reset()
-  createForm.clearErrors()
+  createForm.reset(); createForm.clearErrors()
 }
 
 const submitCreate = () => {
   createForm.post(route('admin.rooms.store'), {
+    preserveState: true,
+    preserveScroll: true,
     onSuccess: () => {
       closeCreateModal()
+      // popup sukses bisa via flash global dari layout; kalau backend belum set flash, bisa aktifkan baris di bawah:
+      // Swal.fire({ icon:'success', title:'Berhasil', timer:1800, showConfirmButton:false, target:getSwalTarget(), heightAuto:false })
+    },
+    onError: (errors) => {
+      // tampilkan pesan validasi pertama
+      const msg = errors.name || errors.building_id || errors.capacity || 'Periksa kembali input Anda.'
+      Swal.fire({ icon: 'error', title: 'Problem', text: msg, target: getSwalTarget(), heightAuto: false, zIndex: 2147483647 })
+      ensureBuildingsLoaded()
+    },
+    onFinish: () => {
+      ensureBuildingsLoaded()
     }
   })
 }
@@ -52,31 +64,43 @@ const openEditModal = (room) => {
   editForm.capacity = room.capacity ?? ''
   editForm.clearErrors()
   showEditModal.value = true
+  ensureBuildingsLoaded()
 }
 
 const closeEditModal = () => {
   showEditModal.value = false
   selectedRoom.value = null
-  editForm.reset()
-  editForm.clearErrors()
+  editForm.reset(); editForm.clearErrors()
 }
 
 const submitEdit = () => {
   if (!selectedRoom.value) return
-
   editForm.put(route('admin.rooms.update', selectedRoom.value.id), {
+    preserveState: true,
+    preserveScroll: true,
     onSuccess: () => {
       closeEditModal()
+      // Optional success swal seperti di atas
+    },
+    onError: (errors) => {
+      const msg = errors.name || errors.building_id || errors.capacity || 'Periksa kembali input Anda.'
+      Swal.fire({ icon: 'error', title: 'Problem', text: msg, target: getSwalTarget(), heightAuto: false, zIndex: 2147483647 })
+      ensureBuildingsLoaded()
+    },
+    onFinish: () => {
+      ensureBuildingsLoaded()
     }
   })
 }
 
-const buildingOptions = computed(() =>
-  props.buildings.map((building) => ({
-    id: building.id,
-    label: `${building.name} - ${building.campus?.name ?? '-'}`
+// aman kalau buildings belum ada
+const buildingOptions = computed(() => {
+  const list = props.buildings ?? []
+  return list.map(b => ({
+    id: b.id,
+    label: `${b.name} - ${b.campus?.name ?? '-'}`
   }))
-)
+})
 </script>
 
 <template>
@@ -120,7 +144,6 @@ const buildingOptions = computed(() =>
               <td class="px-4 py-2 text-sm text-gray-700">{{ room.capacity }}</td>
               <td class="px-4 py-2 text-sm">
                 <div class="flex gap-2">
-
                   <button
                     type="button"
                     class="px-3 py-1 bg-yellow-400 text-white rounded hover:bg-yellow-500"
@@ -148,6 +171,8 @@ const buildingOptions = computed(() =>
         </table>
       </div>
     </div>
+
+    <!-- CREATE MODAL -->
     <Modal :show="showCreateModal" max-width="lg" @close="closeCreateModal">
       <div class="p-6">
         <h2 class="text-lg font-semibold text-gray-800 mb-4">➕ Tambah Ruangan</h2>
@@ -168,8 +193,11 @@ const buildingOptions = computed(() =>
             <select
               v-model="createForm.building_id"
               class="w-full border rounded px-3 py-2 mt-1"
+              :disabled="buildingOptions.length === 0"
             >
-              <option value="" disabled>Pilih gedung</option>
+              <option value="" disabled>
+                {{ buildingOptions.length === 0 ? 'Memuat daftar gedung…' : 'Pilih gedung' }}
+              </option>
               <option v-for="option in buildingOptions" :key="option.id" :value="option.id">
                 {{ option.label }}
               </option>
@@ -208,6 +236,7 @@ const buildingOptions = computed(() =>
       </div>
     </Modal>
 
+    <!-- EDIT MODAL -->
     <Modal :show="showEditModal" max-width="lg" @close="closeEditModal">
       <div class="p-6">
         <h2 class="text-lg font-semibold text-gray-800 mb-4">✏️ Edit Ruangan</h2>
@@ -228,7 +257,11 @@ const buildingOptions = computed(() =>
             <select
               v-model="editForm.building_id"
               class="w-full border rounded px-3 py-2 mt-1"
+              :disabled="buildingOptions.length === 0"
             >
+              <option value="" disabled>
+                {{ buildingOptions.length === 0 ? 'Memuat daftar gedung…' : 'Pilih gedung' }}
+              </option>
               <option v-for="option in buildingOptions" :key="option.id" :value="option.id">
                 {{ option.label }}
               </option>
