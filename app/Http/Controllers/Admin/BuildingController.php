@@ -16,12 +16,13 @@ class BuildingController extends Controller
     public function index()
     {
         $buildings = Building::with('campus')->orderBy('name')->get();
+        $campuses = Campus::orderBy('name')->get();
 
         return Inertia::render('Admin/Buildings/Index', [
             'buildings' => $buildings,
+            'campuses' => $campuses,
         ]);
     }
-
     /**
      * Show the form for creating a new building.
      */

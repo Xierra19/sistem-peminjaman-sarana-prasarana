@@ -16,9 +16,11 @@ class RoomController extends Controller
     public function index()
     {
         $rooms = Room::with('building.campus')->orderBy('name')->get();
+        $buildings = Building::with('campus')->orderBy('name')->get();
 
         return Inertia::render('Admin/Rooms/Index', [
             'rooms' => $rooms,
+            'buildings' => $buildings,
         ]);
     }
 

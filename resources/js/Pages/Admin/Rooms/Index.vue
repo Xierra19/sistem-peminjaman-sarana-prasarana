@@ -1,10 +1,82 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
-import { Head, Link } from '@inertiajs/vue3'
+import Modal from '@/Components/Modal.vue'
+import { Head, Link, useForm } from '@inertiajs/vue3'
+import { computed, ref } from 'vue'
 
 const props = defineProps({
-  rooms: Array
+  rooms: Array,
+  buildings: Array
 })
+
+const showCreateModal = ref(false)
+const showEditModal = ref(false)
+const selectedRoom = ref(null)
+
+const createForm = useForm({
+  name: '',
+  building_id: '',
+  capacity: ''
+})
+
+const editForm = useForm({
+  name: '',
+  building_id: '',
+  capacity: ''
+})
+
+const openCreateModal = () => {
+  createForm.reset()
+  createForm.clearErrors()
+  showCreateModal.value = true
+}
+
+const closeCreateModal = () => {
+  showCreateModal.value = false
+  createForm.reset()
+  createForm.clearErrors()
+}
+
+const submitCreate = () => {
+  createForm.post(route('admin.rooms.store'), {
+    onSuccess: () => {
+      closeCreateModal()
+    }
+  })
+}
+
+const openEditModal = (room) => {
+  selectedRoom.value = room
+  editForm.name = room.name ?? ''
+  editForm.building_id = room.building_id ?? room.building?.id ?? ''
+  editForm.capacity = room.capacity ?? ''
+  editForm.clearErrors()
+  showEditModal.value = true
+}
+
+const closeEditModal = () => {
+  showEditModal.value = false
+  selectedRoom.value = null
+  editForm.reset()
+  editForm.clearErrors()
+}
+
+const submitEdit = () => {
+  if (!selectedRoom.value) return
+
+  editForm.put(route('admin.rooms.update', selectedRoom.value.id), {
+    onSuccess: () => {
+      closeEditModal()
+    }
+  })
+}
+
+const buildingOptions = computed(() =>
+  props.buildings.map((building) => ({
+    id: building.id,
+    label: `${building.name} - ${building.campus?.name ?? '-'}`
+  }))
+)
 </script>
 
 <template>
@@ -17,12 +89,14 @@ const props = defineProps({
           <h1 class="text-xl font-semibold text-gray-800">🚪 Master Room</h1>
           <p class="text-sm text-gray-500">Kelola ruangan berdasarkan gedung dan campus.</p>
         </div>
-        <Link
-          :href="route('admin.rooms.create')"
+
+        <button
+          type="button"
           class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+          @click="openCreateModal"
         >
           ➕ Tambah Ruangan
-        </Link>
+        </button>
       </div>
 
       <div class="overflow-x-auto">
@@ -46,12 +120,14 @@ const props = defineProps({
               <td class="px-4 py-2 text-sm text-gray-700">{{ room.capacity }}</td>
               <td class="px-4 py-2 text-sm">
                 <div class="flex gap-2">
-                  <Link
-                    :href="route('admin.rooms.edit', room.id)"
+
+                  <button
+                    type="button"
                     class="px-3 py-1 bg-yellow-400 text-white rounded hover:bg-yellow-500"
+                    @click="openEditModal(room)"
                   >
                     ✏️ Edit
-                  </Link>
+                  </button>
                   <Link
                     :href="route('admin.rooms.destroy', room.id)"
                     method="delete"
@@ -72,5 +148,123 @@ const props = defineProps({
         </table>
       </div>
     </div>
+    <Modal :show="showCreateModal" max-width="lg" @close="closeCreateModal">
+      <div class="p-6">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4">➕ Tambah Ruangan</h2>
+
+        <form @submit.prevent="submitCreate" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Nama Ruangan</label>
+            <input
+              v-model="createForm.name"
+              type="text"
+              class="w-full border rounded px-3 py-2 mt-1"
+            />
+            <div v-if="createForm.errors.name" class="text-red-500 text-sm">{{ createForm.errors.name }}</div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Gedung</label>
+            <select
+              v-model="createForm.building_id"
+              class="w-full border rounded px-3 py-2 mt-1"
+            >
+              <option value="" disabled>Pilih gedung</option>
+              <option v-for="option in buildingOptions" :key="option.id" :value="option.id">
+                {{ option.label }}
+              </option>
+            </select>
+            <div v-if="createForm.errors.building_id" class="text-red-500 text-sm">{{ createForm.errors.building_id }}</div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Kapasitas</label>
+            <input
+              v-model="createForm.capacity"
+              type="number"
+              min="1"
+              class="w-full border rounded px-3 py-2 mt-1"
+            />
+            <div v-if="createForm.errors.capacity" class="text-red-500 text-sm">{{ createForm.errors.capacity }}</div>
+          </div>
+
+          <div class="flex justify-end gap-2">
+            <button
+              type="button"
+              class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+              @click="closeCreateModal"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              :disabled="createForm.processing"
+            >
+              Simpan
+            </button>
+          </div>
+        </form>
+      </div>
+    </Modal>
+
+    <Modal :show="showEditModal" max-width="lg" @close="closeEditModal">
+      <div class="p-6">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4">✏️ Edit Ruangan</h2>
+
+        <form @submit.prevent="submitEdit" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Nama Ruangan</label>
+            <input
+              v-model="editForm.name"
+              type="text"
+              class="w-full border rounded px-3 py-2 mt-1"
+            />
+            <div v-if="editForm.errors.name" class="text-red-500 text-sm">{{ editForm.errors.name }}</div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Gedung</label>
+            <select
+              v-model="editForm.building_id"
+              class="w-full border rounded px-3 py-2 mt-1"
+            >
+              <option v-for="option in buildingOptions" :key="option.id" :value="option.id">
+                {{ option.label }}
+              </option>
+            </select>
+            <div v-if="editForm.errors.building_id" class="text-red-500 text-sm">{{ editForm.errors.building_id }}</div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Kapasitas</label>
+            <input
+              v-model="editForm.capacity"
+              type="number"
+              min="1"
+              class="w-full border rounded px-3 py-2 mt-1"
+            />
+            <div v-if="editForm.errors.capacity" class="text-red-500 text-sm">{{ editForm.errors.capacity }}</div>
+          </div>
+
+          <div class="flex justify-end gap-2">
+            <button
+              type="button"
+              class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+              @click="closeEditModal"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              class="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+              :disabled="editForm.processing"
+            >
+              Update
+            </button>
+          </div>
+        </form>
+      </div>
+    </Modal>
   </AuthenticatedLayout>
 </template>
