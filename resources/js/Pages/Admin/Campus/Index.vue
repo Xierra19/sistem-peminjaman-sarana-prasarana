@@ -1,8 +1,9 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import Modal from '@/Components/Modal.vue'
+import { usePagination } from '@/Composables/usePagination'
 import { Head, Link, useForm } from '@inertiajs/vue3'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 const props = defineProps({
   campuses: Array
@@ -69,6 +70,19 @@ const submitEdit = () => {
     }
   })
 }
+
+const campusesList = computed(() => props.campuses ?? [])
+
+const {
+  paginatedItems: paginatedCampuses,
+  rowsPerPage,
+  currentPage,
+  pageMeta,
+  pages,
+  changePage,
+} = usePagination(campusesList)
+
+const perPageOptions = [5, 10, 25, 50]
 </script>
 
 <template>
@@ -89,6 +103,18 @@ const submitEdit = () => {
       </div>
 
       <div class="overflow-x-auto">
+        <div class="flex flex-col gap-3 pb-3 sm:flex-row sm:items-center sm:justify-between">
+          <div class="text-sm font-semibold text-gray-700">Daftar Campus</div>
+          <div class="flex items-center justify-end gap-2 text-sm text-gray-600">
+            <span>Rows per page</span>
+            <select
+              v-model.number="rowsPerPage"
+              class="rounded-md border border-gray-300 bg-white px-2 py-1 text-sm text-gray-700 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400"
+            >
+              <option v-for="option in perPageOptions" :key="option" :value="option">{{ option }}</option>
+            </select>
+          </div>
+        </div>        
         <table class="min-w-full border border-gray-200 divide-y divide-gray-200">
           <thead class="bg-gray-100">
             <tr>
@@ -100,8 +126,8 @@ const submitEdit = () => {
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-100">
-            <tr v-for="(campus, index) in campuses" :key="campus.id">
-              <td class="px-4 py-2 text-sm text-gray-700">{{ index + 1 }}</td>
+            <tr v-for="(campus, index) in paginatedCampuses" :key="campus.id">
+              <td class="px-4 py-2 text-sm text-gray-700">{{ pageMeta.from ? pageMeta.from + index : index + 1 }}</td>
               <td class="px-4 py-2 text-sm text-gray-700">{{ campus.name }}</td>
               <td class="px-4 py-2 text-sm text-gray-700">{{ campus.address }}</td>
               <td class="px-4 py-2 text-sm text-gray-700">{{ campus.phone }}</td>
@@ -124,13 +150,69 @@ const submitEdit = () => {
                 </Link>
               </td>
             </tr>
-            <tr v-if="campuses.length === 0">
+            <tr v-if="!campusesList.length">
               <td colspan="5" class="px-4 py-4 text-center text-gray-500">
                 Tidak ada data campus.
               </td>
             </tr>
           </tbody>
         </table>
+        <div class="flex flex-col gap-3 pt-4 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <span v-if="pageMeta.of">Menampilkan {{ pageMeta.from }}-{{ pageMeta.to }} dari {{ pageMeta.of }} data</span>
+            <span v-else>Menampilkan 0 data</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <button
+              type="button"
+              class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
+              @click="changePage(1)"
+              :disabled="currentPage === 1 || !campusesList.length"
+            >
+              «
+            </button>
+            <button
+              type="button"
+              class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
+              @click="changePage(currentPage - 1)"
+              :disabled="currentPage === 1 || !campusesList.length"
+            >
+              ‹
+            </button>
+            <template v-if="campusesList.length">
+              <button
+                v-for="page in pages"
+                :key="`campus-page-${page}`"
+                type="button"
+                class="rounded border px-3 py-1 text-sm"
+                :class="
+                  currentPage === page
+                    ? 'border-blue-500 bg-blue-500 text-white'
+                    : 'border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600'
+                "
+                @click="changePage(page)"
+              >
+                {{ page }}
+              </button>
+            </template>
+            <button
+              type="button"
+              class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
+              @click="changePage(currentPage + 1)"
+              :disabled="currentPage === pages.length || !campusesList.length"
+            >
+              ›
+            </button>
+            <button
+              type="button"
+              class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
+              @click="changePage(pages.length)"
+              :disabled="currentPage === pages.length || !campusesList.length"
+            >
+              »
+            </button>
+          </div>
+        </div>
       </div>
     </div>
     <Modal :show="showCreateModal" max-width="lg" @close="closeCreateModal">

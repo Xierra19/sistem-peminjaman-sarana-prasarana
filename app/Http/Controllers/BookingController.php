@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Booking;
 use App\Models\Campus;
 use App\Models\LogHistory;
+use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\Room;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -183,4 +185,47 @@ class BookingController extends Controller
             'bookings' => $bookings,
         ]);
     }
+
+    public function downloadAttachment(Booking $booking)
+    {
+        $user = Auth::user();
+
+        if (! $booking->attachment) {
+            abort(404, 'Lampiran tidak ditemukan.');
+        }
+
+        if ($user->role !== 'admin' && $booking->user_id !== $user->id) {
+            abort(403);
+        }
+
+        if (! Storage::disk('public')->exists($booking->attachment)) {
+            abort(404, 'File lampiran tidak tersedia.');
+        }
+
+        return response()->download(Storage::disk('public')->path($booking->attachment), basename($booking->attachment));
+    }
+
+    public function downloadLetter(Booking $booking)
+    {
+        $user = Auth::user();
+
+        if ($user->role !== 'admin' && $booking->user_id !== $user->id) {
+            abort(403);
+        }
+
+        if ($booking->status !== 'approved') {
+            abort(403, 'Booking belum disetujui.');
+        }
+
+        $booking->load(['user', 'room.building.campus']);
+
+        $pdf = Pdf::loadView('pdf.booking-letter', [
+            'booking' => $booking,
+            'generatedAt' => now(),
+        ])->setPaper('a4');
+
+        $filename = 'Surat-Peminjaman-Ruangan-' . $booking->id . '.pdf';
+
+        return $pdf->download($filename);
+    }    
 }

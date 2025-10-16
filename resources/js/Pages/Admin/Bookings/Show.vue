@@ -118,7 +118,7 @@ const submitApproval = (status) => {
             </div>
           </section>
 
-        <section class="rounded-xl border border-gray-200 bg-white shadow-sm">
+          <section class="rounded-xl border border-gray-200 bg-white shadow-sm">
             <header class="border-b border-gray-100 px-6 py-4">
               <h2 class="text-lg font-semibold text-gray-800">Lampiran</h2>
               <p class="text-sm text-gray-500">Dokumen pendukung dari pemohon.</p>
@@ -126,7 +126,7 @@ const submitApproval = (status) => {
             <div class="px-6 py-5 text-sm text-gray-600">
               <template v-if="booking.attachment">
                 <a
-                  :href="`/storage/${booking.attachment}`"
+                  :href="route('bookings.attachment', booking.id)"
                   target="_blank"
                   rel="noopener"
                   class="inline-flex items-center rounded-md border border-blue-200 px-3 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50"
@@ -137,6 +137,26 @@ const submitApproval = (status) => {
               <p v-else class="text-gray-400">Tidak ada lampiran yang diunggah.</p>
             </div>
           </section>
+
+          <section class="rounded-xl border border-gray-200 bg-white shadow-sm">
+            <header class="border-b border-gray-100 px-6 py-4">
+              <h2 class="text-lg font-semibold text-gray-800">Surat Peminjaman</h2>
+              <p class="text-sm text-gray-500">Unduh surat persetujuan peminjaman ruangan.</p>
+            </header>
+            <div class="px-6 py-5 text-sm text-gray-600">
+              <template v-if="booking.status === 'approved'">
+                <a
+                  :href="route('bookings.letter', booking.id)"
+                  target="_blank"
+                  rel="noopener"
+                  class="inline-flex items-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700"
+                >
+                  📥 Download Surat Peminjaman Ruangan
+                </a>
+              </template>
+              <p v-else class="text-gray-400">Surat peminjaman tersedia setelah booking disetujui.</p>
+            </div>
+          </section>          
         </div>
 
         <aside class="space-y-6">

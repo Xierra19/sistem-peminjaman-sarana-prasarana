@@ -1,6 +1,8 @@
 <script setup>
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
-import { Head, router } from "@inertiajs/vue3";
+import Dropdown from "@/Components/Dropdown.vue";
+import { usePagination } from "@/Composables/usePagination";
+import { Head } from "@inertiajs/vue3";
 import { ref, computed } from "vue";
 
 // Props dari controller
@@ -9,16 +11,9 @@ const props = defineProps({
 });
 
 // State
-const currentPage = ref(1);
-const rowsPerPage = ref(10);
 const searchQuery = ref("");
 const startDate = ref("");
 const endDate = ref("");
-
-// Pagination
-const totalPages = computed(() =>
-  Math.ceil(filteredHistories.value.length / rowsPerPage.value)
-);
 
 const filteredHistories = computed(() => {
   return props.histories.filter((h) => {
@@ -39,25 +34,20 @@ const filteredHistories = computed(() => {
   });
 });
 
-const paginatedHistories = computed(() => {
-  const start = (currentPage.value - 1) * rowsPerPage.value;
-  const end = start + rowsPerPage.value;
-  return filteredHistories.value.slice(start, end);
-});
-
-function changePage(page) {
-  if (page >= 1 && page <= totalPages.value) {
-    currentPage.value = page;
-  }
-}
+const {
+  paginatedItems: paginatedHistories,
+  rowsPerPage,
+  currentPage,
+  pageMeta,
+  pages,
+  changePage,
+} = usePagination(filteredHistories);
 
 // Export actions (langsung ke route Laravel)
-function exportExcel() {
-  window.location.href = "/history/export/excel";
-}
+const perPageOptions = [5, 10, 25, 50];
 
-function exportPdf() {
-  window.location.href = "/history/export/pdf";
+function exportExcel() {
+  window.open(route("history.export.excel"), "_blank");
 }
 </script>
 
@@ -70,7 +60,7 @@ function exportPdf() {
         <h1 class="text-2xl font-semibold mb-4">Log History</h1>
 
         <!-- Filter tools -->
-        <div class="flex flex-wrap items-center gap-4 mb-4">
+        <div class="mb-4 flex flex-wrap items-center gap-4">
           <!-- Search -->
           <input
             v-model="searchQuery"
@@ -88,32 +78,45 @@ function exportPdf() {
           </div>
 
           <!-- Export -->
-          <div class="ml-auto flex gap-2">
-            <button
-              @click="exportExcel"
-              class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded text-sm"
-            >
-              Export Excel
-            </button>
-            <button
-              @click="exportPdf"
-              class="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded text-sm"
-            >
-              Export PDF
-            </button>
+          <div class="ml-auto">
+            <Dropdown align="right" width="48">
+              <template #trigger>
+                <button
+                  type="button"
+                  class="inline-flex items-center justify-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100"
+                >
+                  📄 Export
+                  <svg class="h-4 w-4" fill="none" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M5.25 7.5 10 12.5l4.75-5"
+                      stroke="currentColor"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="1.5"
+                    />
+                  </svg>
+                </button>
+              </template>
+              <template #content>
+                <button
+                  type="button"
+                  class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-gray-700 hover:bg-blue-50"
+                  @click="exportExcel"
+                >
+                  📊 Export Excel
+                </button>
+              </template>
+            </Dropdown>
           </div>
         </div>
 
         <!-- Rows per page -->
         <div class="flex justify-end mb-2">
           <label class="text-sm font-medium mr-2">Rows per page</label>
-          <select
-            v-model="rowsPerPage"
-            class="border rounded px-2 py-1 text-sm"
-          >
-            <option :value="5">5</option>
-            <option :value="10">10</option>
-            <option :value="25">25</option>
+          <select v-model.number="rowsPerPage" class="border rounded px-2 py-1 text-sm">
+            <option v-for="option in perPageOptions" :key="`rows-${option}`" :value="option">
+              {{ option }}
+            </option>
           </select>
         </div>
 
@@ -161,40 +164,52 @@ function exportPdf() {
         </div>
 
         <!-- Pagination -->
-        <div class="flex justify-end items-center mt-4 space-x-1">
-          <button
-            class="px-2 py-1 border rounded disabled:opacity-50"
-            @click="changePage(1)"
-            :disabled="currentPage === 1"
+        <div class="mt-4 flex flex-col gap-3 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <span v-if="pageMeta.of">Menampilkan {{ pageMeta.from }}-{{ pageMeta.to }} dari {{ pageMeta.of }} data</span>
+            <span v-else>Menampilkan 0 data</span>
+          </div>
+          <div class="flex items-center space-x-1">
+            <button
+              class="px-2 py-1 border rounded disabled:opacity-50"
+              @click="changePage(1)"
+            :disabled="currentPage === 1 || !pageMeta.of"
           >
             «
           </button>
           <button
             class="px-2 py-1 border rounded disabled:opacity-50"
-            @click="changePage(currentPage - 1)"
-            :disabled="currentPage === 1"
+              @click="changePage(currentPage - 1)"
+            :disabled="currentPage === 1 || !pageMeta.of"
           >
             ‹
           </button>
-
-          <span class="px-3 py-1 border rounded bg-blue-500 text-white">
-            {{ currentPage }}
-          </span>
-
+          <template v-if="pageMeta.of">
+            <button
+              v-for="page in pages"
+              :key="`history-page-${page}`"
+              class="px-3 py-1 border rounded"
+              :class="currentPage === page ? 'border-blue-500 bg-blue-500 text-white' : 'border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600'"
+              @click="changePage(page)"
+            >
+              {{ page }}
+            </button>
+          </template>
           <button
             class="px-2 py-1 border rounded disabled:opacity-50"
-            @click="changePage(currentPage + 1)"
-            :disabled="currentPage === totalPages"
+              @click="changePage(currentPage + 1)"
+            :disabled="currentPage === pages.length || !pageMeta.of"
           >
             ›
           </button>
-          <button
-            class="px-2 py-1 border rounded disabled:opacity-50"
-            @click="changePage(totalPages)"
-            :disabled="currentPage === totalPages"
-          >
-            »
-          </button>
+            <button
+              class="px-2 py-1 border rounded disabled:opacity-50"
+                @click="changePage(pages.length)"
+            :disabled="currentPage === pages.length || !pageMeta.of"
+            >
+              »
+            </button>
+          </div>
         </div>
       </div>
     </template>

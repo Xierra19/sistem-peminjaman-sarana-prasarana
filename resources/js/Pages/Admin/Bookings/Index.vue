@@ -1,6 +1,9 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
+import Dropdown from '@/Components/Dropdown.vue'
+import { usePagination } from '@/Composables/usePagination'
 import { Head, Link } from '@inertiajs/vue3'
+import { computed } from 'vue'
 
 const props = defineProps({
   bookings: {
@@ -31,6 +34,28 @@ const formatDateTime = (value) => {
     minute: '2-digit',
   })
 }
+
+const bookingsList = computed(() => props.bookings ?? [])
+
+const {
+  paginatedItems: paginatedBookings,
+  currentPage,
+  rowsPerPage,
+  totalPages,
+  pageMeta,
+  pages,
+  changePage,
+} = usePagination(bookingsList)
+
+const perPageOptions = [5, 10, 25, 50]
+
+const exportExcel = () => {
+  window.open(route('admin.bookings.export.excel'), '_blank')
+}
+
+const exportPdf = () => {
+  window.open(route('admin.bookings.export.pdf'), '_blank')
+}
 </script>
 
 <template>
@@ -44,6 +69,61 @@ const formatDateTime = (value) => {
       </div>
 
       <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+        <div
+          class="flex flex-col gap-3 border-b border-gray-100 px-5 py-4 md:flex-row md:items-center md:justify-between"
+        >
+          <div class="text-sm font-semibold text-gray-700">Daftar Booking Masuk</div>
+          <div class="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
+            <div class="flex items-center justify-end gap-2 text-sm text-gray-600">
+              <span>Rows per page</span>
+              <select
+                v-model.number="rowsPerPage"
+                class="rounded-md border border-gray-300 bg-white px-2 py-1 text-sm text-gray-700 shadow-sm focus:border-blue-4
+00 focus:outline-none focus:ring-1 focus:ring-blue-400"
+              >
+                <option v-for="option in perPageOptions" :key="option" :value="option">{{ option }}</option>
+              </select>
+            </div>
+            <Dropdown align="right" width="48">
+              <template #trigger>
+                <button
+                  type="button"
+                  class="inline-flex items-center justify-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 tex
+t-sm font-medium text-blue-700 transition hover:bg-blue-100"
+                >
+                  📄 Export
+                  <svg class="h-4 w-4" fill="none" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M5.25 7.5 10 12.5l4.75-5"
+                      stroke="currentColor"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="1.5"
+                    />
+                  </svg>
+                </button>
+              </template>
+              <template #content>
+                <div class="flex flex-col gap-1 p-2 text-sm text-gray-700">
+                  <button
+                    type="button"
+                    class="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-blue-50"
+                    @click="exportExcel"
+                  >
+                    📊 Export Excel
+                  </button>
+                  <button
+                    type="button"
+                    class="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-blue-50"
+                    @click="exportPdf"
+                  >
+                    📑 Export PDF
+                  </button>
+                </div>
+              </template>
+            </Dropdown>
+          </div>
+        </div>
         <table class="min-w-full divide-y divide-gray-200 text-sm">
           <thead class="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
             <tr>
@@ -56,7 +136,7 @@ const formatDateTime = (value) => {
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-100 text-gray-700">
-            <tr v-for="booking in bookings" :key="booking.id" class="hover:bg-gray-50">
+            <tr v-for="booking in paginatedBookings" :key="booking.id" class="hover:bg-gray-50">
               <td class="px-5 py-4">
                 <div class="font-medium text-gray-900">{{ booking.title }}</div>
                 <div class="text-xs text-gray-500">{{ booking.description || 'Tidak ada deskripsi.' }}</div>
@@ -92,13 +172,76 @@ const formatDateTime = (value) => {
                 </Link>
               </td>
             </tr>
-            <tr v-if="!bookings.length">
+            <tr v-if="!bookingsList.length">
               <td colspan="6" class="px-5 py-10 text-center text-sm text-gray-400">
                 Belum ada data booking.
               </td>
             </tr>
           </tbody>
         </table>
+        <div
+          class="flex flex-col gap-3 border-t border-gray-100 px-5 py-4 text-sm text-gray-600 sm:flex-row sm:items-center sm:justi
+fy-between"
+        >
+          <div>
+            <span v-if="pageMeta.of">Menampilkan {{ pageMeta.from }}-{{ pageMeta.to }} dari {{ pageMeta.of }} data</span>
+            <span v-else>Menampilkan 0 data</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <button
+              type="button"
+              class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 disabled:cursor-not-allowed disabled:opacity-5
+0"
+              @click="changePage(1)"
+              :disabled="currentPage === 1 || !bookingsList.length"
+            >
+              «
+            </button>
+            <button
+              type="button"
+              class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 disabled:cursor-not-allowed disabled:opacity-5
+0"
+              @click="changePage(currentPage - 1)"
+              :disabled="currentPage === 1 || !bookingsList.length"
+            >
+              ‹
+            </button>
+            <template v-if="bookingsList.length">
+              <button
+                v-for="page in pages"
+                :key="`page-${page}`"
+                type="button"
+                class="rounded border px-3 py-1 text-sm"
+                :class="
+                  currentPage === page
+                    ? 'border-blue-500 bg-blue-500 text-white'
+                    : 'border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600'
+                "
+                @click="changePage(page)"
+              >
+                {{ page }}
+              </button>
+            </template>
+            <button
+              type="button"
+              class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 disabled:cursor-not-allowed disabled:opacity-5
+0"
+              @click="changePage(currentPage + 1)"
+              :disabled="currentPage === pages.length || !bookingsList.length"
+            >
+              ›
+            </button>
+            <button
+              type="button"
+              class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 disabled:cursor-not-allowed disabled:opacity-5
+0"
+              @click="changePage(pages.length)"
+              :disabled="currentPage === pages.length || !bookingsList.length"
+            >
+              »
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </AuthenticatedLayout>

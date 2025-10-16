@@ -31,15 +31,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // Booking
-    Route::get('/bookings', [BookingController::class, 'index'])->name('bookings.index');    
+    Route::get('/bookings', [BookingController::class, 'index'])->name('bookings.index');
     Route::get('/bookings/create', [BookingController::class, 'create'])->name('bookings.create');
     Route::post('/bookings', [BookingController::class, 'store'])->name('bookings.store');
     Route::get('/rooms/{room}/availability', [BookingController::class, 'availability'])->name('rooms.availability');
+    Route::get('/bookings/{booking}/attachment', [BookingController::class, 'downloadAttachment'])->name('bookings.attachment');
+    Route::get('/bookings/{booking}/letter', [BookingController::class, 'downloadLetter'])->name('bookings.letter');
 
     // ✅ History
     Route::get('/history', [HistoryController::class, 'index'])->name('history.index');
     Route::get('/history/export/excel', [HistoryController::class, 'exportExcel'])->name('history.export.excel');
-    Route::get('/history/export/pdf', [HistoryController::class, 'exportPdf'])->name('history.export.pdf');
 
     Route::get('/export-users', [ExportController::class, 'exportUsers']);
 });
@@ -53,7 +54,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     Route::get('bookings', [BookingApprovalController::class, 'index'])->name('bookings.index');
     Route::get('bookings/{booking}', [BookingApprovalController::class, 'show'])->name('bookings.show');
-    Route::post('bookings/{booking}/status', [BookingApprovalController::class, 'updateStatus'])->name('bookings.update-status');  
+    Route::post('bookings/{booking}/status', [BookingApprovalController::class, 'updateStatus'])->name('bookings.update-status');
+    Route::get('bookings/export/excel', [BookingApprovalController::class, 'exportExcel'])->name('bookings.export.excel');
+    Route::get('bookings/export/pdf', [BookingApprovalController::class, 'exportPdf'])->name('bookings.export.pdf');
 });
 
 require __DIR__.'/auth.php';

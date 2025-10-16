@@ -4,8 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
+use App\Exports\BookingExport;
 use App\Models\LogHistory;
 use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
@@ -76,8 +79,26 @@ class BookingApprovalController extends Controller
             'action'      => $data['status'],
             'description' => $description,
         ]);
-        return redirect()
-            ->route('admin.bookings.index')
-            ->with('success', 'Status booking berhasil diperbarui.');
+
+        return redirect()->back()->with('success', 'Status booking berhasil diperbarui.');
     }
+
+    public function exportExcel()
+    {
+        return Excel::download(new BookingExport(), 'data-booking-ruangan.xlsx');
+    }
+
+    public function exportPdf()
+    {
+        $bookings = Booking::with(['user', 'room.building.campus'])
+            ->orderBy('start_time')
+            ->get();
+
+        $pdf = Pdf::loadView('pdf.booking-report', [
+            'bookings' => $bookings,
+            'generatedAt' => now(),
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download('data-booking-ruangan.pdf');
+    }    
 }

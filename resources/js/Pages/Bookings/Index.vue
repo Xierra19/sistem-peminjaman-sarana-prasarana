@@ -137,6 +137,22 @@ const formatDateTime = (value) => {
               </ul>
             </div>
           </div>
+
+          <div class="border-t border-gray-100 bg-gray-50 px-6 py-4">
+            <template v-if="booking.status === 'approved'">
+              <a
+                :href="route('bookings.letter', booking.id)"
+                target="_blank"
+                rel="noopener"
+                class="inline-flex items-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700"
+              >
+                📥 Download Surat Peminjaman Ruangan
+              </a>
+            </template>
+            <p v-else class="text-sm text-gray-500">
+              Surat peminjaman akan tersedia setelah permintaan disetujui oleh admin.
+            </p>
+          </div>          
         </div>
       </div>
     </div>
