@@ -9,7 +9,8 @@ const props = defineProps({
 const form = useForm({
   name: '',
   building_id: '',
-  capacity: 1
+  capacity: 1,
+  is_available: true,
 })
 
 const submit = () => {
@@ -58,6 +59,20 @@ const submit = () => {
             class="w-full border rounded px-3 py-2 mt-1"
           />
           <div v-if="form.errors.capacity" class="text-red-500 text-sm">{{ form.errors.capacity }}</div>
+        </div>
+
+        <div>
+          <span class="block text-sm font-medium text-gray-700">Ketersediaan</span>
+          <label class="mt-1 inline-flex items-center gap-2 text-sm text-gray-600">
+            <input
+              type="checkbox"
+              v-model="form.is_available"
+              class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            Ruangan dapat dipilih oleh pengguna
+          </label>
+          <p class="mt-1 text-xs text-gray-400">Nonaktifkan jika ruangan sedang tidak dapat digunakan sementara.</p>
+          <div v-if="form.errors.is_available" class="text-red-500 text-sm">{{ form.errors.is_available }}</div>
         </div>
 
         <div class="flex space-x-2">

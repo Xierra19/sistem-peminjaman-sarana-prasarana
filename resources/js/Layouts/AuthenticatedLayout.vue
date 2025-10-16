@@ -104,8 +104,21 @@ watch(() => page.props.flash?.success, (msg, prev) => { if (msg && msg !== prev)
         </div>
 
         <div class="mb-2">
+          <Link :href="route('bookings.index')" class="block px-3 py-2 rounded hover:bg-gray-100 text-gray-700">
+            📝 Request Booking
+          </Link>
+        </div>
+
+
+        <div class="mb-2">
           <Link :href="route('history.index')" class="block px-3 py-2 rounded hover:bg-gray-100 text-gray-700">
             🕑 History
+          </Link>
+        </div>
+
+        <div v-if="$page.props.auth.user.role === 'admin'" class="mb-2">
+          <Link :href="route('admin.bookings.index')" class="block px-3 py-2 rounded hover:bg-gray-100 text-gray-700">
+            🛡️ Approval Booking
           </Link>
         </div>
 

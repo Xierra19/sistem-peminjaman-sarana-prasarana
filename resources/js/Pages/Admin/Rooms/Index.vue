@@ -14,8 +14,8 @@ const showCreateModal = ref(false)
 const showEditModal = ref(false)
 const selectedRoom = ref(null)
 
-const createForm = useForm({ name: '', building_id: '', capacity: '' })
-const editForm   = useForm({ name: '', building_id: '', capacity: '' })
+const createForm = useForm({ name: '', building_id: '', capacity: 1, is_available: true })
+const editForm   = useForm({ name: '', building_id: '', capacity: 1, is_available: true })
 
 const getSwalTarget = () => document.querySelector('dialog[open]') || document.body
 
@@ -26,7 +26,9 @@ const ensureBuildingsLoaded = () => {
 }
 
 const openCreateModal = () => {
-  createForm.reset(); createForm.clearErrors()
+  createForm.reset()
+  createForm.is_available = true
+  createForm.clearErrors()
   showCreateModal.value = true
   ensureBuildingsLoaded()
 }
@@ -62,6 +64,7 @@ const openEditModal = (room) => {
   editForm.name = room.name ?? ''
   editForm.building_id = room.building_id ?? room.building?.id ?? ''
   editForm.capacity = room.capacity ?? ''
+  editForm.is_available = Boolean(room.is_available)
   editForm.clearErrors()
   showEditModal.value = true
   ensureBuildingsLoaded()
@@ -132,6 +135,7 @@ const buildingOptions = computed(() => {
               <th class="px-4 py-2 text-left text-sm font-semibold text-gray-600">Gedung</th>
               <th class="px-4 py-2 text-left text-sm font-semibold text-gray-600">Campus</th>
               <th class="px-4 py-2 text-left text-sm font-semibold text-gray-600">Kapasitas</th>
+              <th class="px-4 py-2 text-left text-sm font-semibold text-gray-600">Ketersediaan</th>              
               <th class="px-4 py-2 text-left text-sm font-semibold text-gray-600">Aksi</th>
             </tr>
           </thead>
@@ -142,6 +146,14 @@ const buildingOptions = computed(() => {
               <td class="px-4 py-2 text-sm text-gray-700">{{ room.building?.name ?? '-' }}</td>
               <td class="px-4 py-2 text-sm text-gray-700">{{ room.building?.campus?.name ?? '-' }}</td>
               <td class="px-4 py-2 text-sm text-gray-700">{{ room.capacity }}</td>
+              <td class="px-4 py-2 text-sm">
+                <span
+                  class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium"
+                  :class="room.is_available ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-rose-100 text-rose-700 border border-rose-200'"
+                >
+                  {{ room.is_available ? 'Tersedia' : 'Tidak Tersedia' }}
+                </span>
+              </td>
               <td class="px-4 py-2 text-sm">
                 <div class="flex gap-2">
                   <button
@@ -208,14 +220,26 @@ const buildingOptions = computed(() => {
           <div>
             <label class="block text-sm font-medium text-gray-700">Kapasitas</label>
             <input
-              v-model="createForm.capacity"
+              v-model.number="createForm.capacity"
               type="number"
               min="1"
               class="w-full border rounded px-3 py-2 mt-1"
             />
             <div v-if="createForm.errors.capacity" class="text-red-500 text-sm">{{ createForm.errors.capacity }}</div>
           </div>
-
+          <div>
+            <span class="block text-sm font-medium text-gray-700">Ketersediaan</span>
+            <label class="mt-1 inline-flex items-center gap-2 text-sm text-gray-600">
+              <input
+                type="checkbox"
+                v-model="createForm.is_available"
+                class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              Ruangan dapat dipilih oleh pengguna
+            </label>
+            <p class="mt-1 text-xs text-gray-400">Nonaktifkan bila ruangan tidak dapat digunakan sementara.</p>
+            <div v-if="createForm.errors.is_available" class="text-red-500 text-sm">{{ createForm.errors.is_available }}</div>
+          </div>
           <div class="flex justify-end gap-2">
             <button
               type="button"
@@ -272,12 +296,25 @@ const buildingOptions = computed(() => {
           <div>
             <label class="block text-sm font-medium text-gray-700">Kapasitas</label>
             <input
-              v-model="editForm.capacity"
+              v-model.number="editForm.capacity"
               type="number"
               min="1"
               class="w-full border rounded px-3 py-2 mt-1"
             />
             <div v-if="editForm.errors.capacity" class="text-red-500 text-sm">{{ editForm.errors.capacity }}</div>
+          </div>
+          <div>
+            <span class="block text-sm font-medium text-gray-700">Ketersediaan</span>
+            <label class="mt-1 inline-flex items-center gap-2 text-sm text-gray-600">
+              <input
+                type="checkbox"
+                v-model="editForm.is_available"
+                class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              Ruangan dapat dipilih oleh pengguna
+            </label>
+            <p class="mt-1 text-xs text-gray-400">Matikan ketika ruangan dinonaktifkan atau sedang perawatan.</p>
+            <div v-if="editForm.errors.is_available" class="text-red-500 text-sm">{{ editForm.errors.is_available }}</div>
           </div>
 
           <div class="flex justify-end gap-2">

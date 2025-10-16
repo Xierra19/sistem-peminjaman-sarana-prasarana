@@ -13,6 +13,11 @@ class Room extends Model
         'name',
         'building_id',
         'capacity',
+        'is_available',
+    ];
+
+    protected $casts = [
+        'is_available' => 'boolean',
     ];
 
     /**

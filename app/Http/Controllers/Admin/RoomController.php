@@ -14,20 +14,20 @@ class RoomController extends Controller
     /**
      * Display a listing of the rooms.
      */
-public function index()
-{
-    $rooms = Room::with('building.campus')->orderBy('name')->get();
+    public function index()
+    {
+        $rooms = Room::with('building.campus')->orderBy('name')->get();
 
-    return Inertia::render('Admin/Rooms/Index', [
-        'rooms' => $rooms,
-        'buildings' => Inertia::lazy(fn () =>
-            Building::with('campus:id,name')
-                ->select('id','name','campus_id')
-                ->orderBy('name')
-                ->get()
-        ),
-    ]);
-}
+        return Inertia::render('Admin/Rooms/Index', [
+            'rooms' => $rooms,
+            'buildings' => Inertia::lazy(fn () =>
+                Building::with('campus:id,name')
+                    ->select('id', 'name', 'campus_id')
+                    ->orderBy('name')
+                    ->get()
+            ),
+        ]);
+    }
 
     /**
      * Show the form for creating a new room.
@@ -50,9 +50,11 @@ public function index()
             'name' => ['required', 'string', 'max:255'],
             'building_id' => ['required', 'exists:buildings,id'],
             'capacity' => ['required', 'integer', 'min:1'],
+            'is_available' => ['required', 'boolean'],
         ]);
 
         $validated['name'] = trim($validated['name']);
+        $validated['is_available'] = (bool) $validated['is_available'];
         $normalizedName = $this->normalizeName($validated['name']);
 
         $duplicateRoom = Room::query()
@@ -93,9 +95,11 @@ public function index()
             'name' => ['required', 'string', 'max:255'],
             'building_id' => ['required', 'exists:buildings,id'],
             'capacity' => ['required', 'integer', 'min:1'],
+            'is_available' => ['required', 'boolean'],
         ]);
 
         $validated['name'] = trim($validated['name']);
+        $validated['is_available'] = (bool) $validated['is_available'];
         $normalizedName = $this->normalizeName($validated['name']);
 
         $duplicateRoom = Room::query()
@@ -123,5 +127,14 @@ public function index()
         $room->delete();
 
         return redirect()->route('admin.rooms.index')->with('success', 'Room berhasil dihapus!');
+    }
+
+
+    /**
+     * Normalise room name for duplicate checking.
+     */
+    private function normalizeName(string $name): string
+    {
+        return strtolower(str_replace(' ', '', $name));
     }
 }

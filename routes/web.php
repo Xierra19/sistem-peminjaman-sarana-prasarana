@@ -8,6 +8,7 @@ use App\Http\Controllers\BookingController;
 use App\Http\Controllers\Admin\BuildingController;
 use App\Http\Controllers\Admin\CampusController;
 use App\Http\Controllers\Admin\RoomController;
+use App\Http\Controllers\Admin\BookingApprovalController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\DashboardController;
@@ -30,8 +31,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // Booking
+    Route::get('/bookings', [BookingController::class, 'index'])->name('bookings.index');    
     Route::get('/bookings/create', [BookingController::class, 'create'])->name('bookings.create');
     Route::post('/bookings', [BookingController::class, 'store'])->name('bookings.store');
+    Route::get('/rooms/{room}/availability', [BookingController::class, 'availability'])->name('rooms.availability');
 
     // ✅ History
     Route::get('/history', [HistoryController::class, 'index'])->name('history.index');
@@ -47,6 +50,10 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::resource('campus', CampusController::class)->except(['show']);
     Route::resource('buildings', BuildingController::class)->except(['show']);
     Route::resource('rooms', RoomController::class)->except(['show']);
+
+    Route::get('bookings', [BookingApprovalController::class, 'index'])->name('bookings.index');
+    Route::get('bookings/{booking}', [BookingApprovalController::class, 'show'])->name('bookings.show');
+    Route::post('bookings/{booking}/status', [BookingApprovalController::class, 'updateStatus'])->name('bookings.update-status');  
 });
 
 require __DIR__.'/auth.php';
