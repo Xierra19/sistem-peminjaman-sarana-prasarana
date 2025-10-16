@@ -76,7 +76,8 @@ class BookingApprovalController extends Controller
             'action'      => $data['status'],
             'description' => $description,
         ]);
-
-        return redirect()->back()->with('success', 'Status booking berhasil diperbarui.');
+        return redirect()
+            ->route('admin.bookings.index')
+            ->with('success', 'Status booking berhasil diperbarui.');
     }
 }

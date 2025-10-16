@@ -85,9 +85,12 @@ class BookingController extends Controller
         $room = Room::with('bookings')->findOrFail($validated['room_id']);
 
         if (! $room->is_available) {
-            return back()->withErrors([
-                'room_id' => 'Ruangan sedang tidak tersedia untuk dibooking.',
-            ])->withInput();
+            return back()
+                ->withErrors([
+                    'start_time' => 'Ruangan sudah dibooking pada rentang waktu yang dipilih.',
+                ])
+                ->with('error', 'Ruangan sudah dibooking pada rentang waktu yang dipilih.')
+                ->withInput();
         }
 
         $start = Carbon::parse($validated['start_time']);
@@ -100,9 +103,12 @@ class BookingController extends Controller
             ->exists();
 
         if ($hasConflict) {
-            return back()->withErrors([
-                'start_time' => 'Ruangan sudah dibooking pada rentang waktu yang dipilih.',
-            ])->withInput();
+            return back()
+                ->withErrors([
+                    'room_id' => 'Ruangan sedang tidak tersedia untuk dibooking.',
+                ])
+                ->with('error', 'Ruangan sedang tidak tersedia untuk dibooking.')
+                ->withInput();
         }
 
         $booking = Booking::create($validated);

@@ -1,13 +1,43 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import ApplicationLogo from '@/Components/ApplicationLogo.vue'
 import Dropdown from '@/Components/Dropdown.vue'
 import DropdownLink from '@/Components/DropdownLink.vue'
 import { Link, usePage } from '@inertiajs/vue3'
 import Swal from 'sweetalert2'
 
-const showMasterData = ref(false)
 const page = usePage()
+
+const currentUrl = computed(() => page.url)
+
+const isRouteActive = (...names) => {
+  currentUrl.value
+  return names.some((name) => route().current(name))
+}
+
+const masterDataActive = computed(() =>
+  isRouteActive('admin.campus.*', 'admin.buildings.*', 'admin.rooms.*')
+)
+
+const showMasterData = ref(masterDataActive.value)
+
+watch(masterDataActive, (value) => {
+  showMasterData.value = value
+})
+
+const navLinkClasses = (isActive) =>
+  [
+    'flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150',
+    isActive
+      ? 'bg-blue-50 text-blue-700 border border-blue-100 shadow-sm'
+      : 'text-gray-700 hover:bg-gray-100',
+  ].join(' ')
+
+const subLinkClasses = (isActive) =>
+  [
+    'flex items-center gap-2 rounded-md px-3 py-1.5 text-sm transition-colors duration-150',
+    isActive ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-600 hover:bg-gray-100',
+  ].join(' ')
 
 // selalu render di lapisan teratas
 const swal = Swal.mixin({
@@ -48,8 +78,25 @@ function showSuccess(message) {
 }
 
 // tampilkan flash sekali ketika nilai berubah (dan saat load pertama)
-watch(() => page.props.flash?.error,   (msg, prev) => { if (msg && msg !== prev) showError(msg) },   { immediate: true })
-watch(() => page.props.flash?.success, (msg, prev) => { if (msg && msg !== prev) showSuccess(msg) }, { immediate: true })
+watch(
+  () => page.props.flash?.error,
+  (msg, prev) => {
+    if (msg && msg !== prev) {
+      showError(msg)
+    }
+  },
+  { immediate: true },
+)
+
+watch(
+  () => page.props.flash?.success,
+  (msg, prev) => {
+    if (msg && msg !== prev) {
+      showSuccess(msg)
+    }
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
@@ -97,54 +144,73 @@ watch(() => page.props.flash?.success, (msg, prev) => { if (msg && msg !== prev)
       <aside class="w-64 bg-white border-r border-gray-200 p-4">
         <h2 class="text-sm font-semibold text-gray-600 mb-4">Menu</h2>
 
-        <div class="mb-2">
-          <Link :href="route('dashboard')" class="block px-3 py-2 rounded hover:bg-gray-100 text-gray-700">
-            📊 Dashboard
-          </Link>
-        </div>
-
-        <div class="mb-2">
-          <Link :href="route('bookings.index')" class="block px-3 py-2 rounded hover:bg-gray-100 text-gray-700">
-            📝 Request Booking
-          </Link>
-        </div>
-
-
-        <div class="mb-2">
-          <Link :href="route('history.index')" class="block px-3 py-2 rounded hover:bg-gray-100 text-gray-700">
-            🕑 History
-          </Link>
-        </div>
-
-        <div v-if="$page.props.auth.user.role === 'admin'" class="mb-2">
-          <Link :href="route('admin.bookings.index')" class="block px-3 py-2 rounded hover:bg-gray-100 text-gray-700">
-            🛡️ Approval Booking
-          </Link>
-        </div>
-
-        <div v-if="$page.props.auth.user.role === 'admin'" class="mb-2">
-          <button
-            @click="showMasterData = !showMasterData"
-            class="flex items-center justify-between w-full px-3 py-2 rounded hover:bg-gray-100 text-gray-700"
-          >
-            <span>📂 Master Data</span>
-            <svg class="w-4 h-4 transform transition-transform" :class="{ 'rotate-180': showMasterData }" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-
-          <div v-if="showMasterData" class="ml-4 mt-2 space-y-1">
-            <Link :href="route('admin.campus.index')" class="block px-3 py-1 text-gray-600 hover:bg-gray-100 rounded">
-              🏫 Master Campus
-            </Link>
-            <Link :href="route('admin.buildings.index')" class="block px-3 py-1 text-gray-600 hover:bg-gray-100 rounded">
-              🏢 Master Building
-            </Link>
-            <Link :href="route('admin.rooms.index')" class="block px-3 py-1 text-gray-600 hover:bg-gray-100 rounded">
-              🚪 Master Rooms
+        <nav class="space-y-2">
+          <div>
+            <Link :href="route('dashboard')" :class="[navLinkClasses(isRouteActive('dashboard'))]">
+              <span class="text-lg">📊</span>
+              <span>Dashboard</span>
             </Link>
           </div>
-        </div>
+
+          <div v-if="$page.props.auth.user.role === 'admin'">
+            <button
+              type="button"
+              @click="showMasterData = !showMasterData"
+              :class="[navLinkClasses(masterDataActive), 'w-full justify-between']"
+            >
+              <span class="flex items-center gap-2">
+                <span class="text-lg">📂</span>
+                <span>Master Data</span>
+              </span>
+              <svg
+                class="w-4 h-4 transform transition-transform"
+                :class="{ 'rotate-180': showMasterData }"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            <div v-if="showMasterData" class="ml-4 mt-2 space-y-1">
+              <Link :href="route('admin.campus.index')" :class="subLinkClasses(isRouteActive('admin.campus.*'))">
+                🏫 Master Campus
+              </Link>
+              <Link :href="route('admin.buildings.index')" :class="subLinkClasses(isRouteActive('admin.buildings.*'))">
+                🏢 Master Building
+              </Link>
+              <Link :href="route('admin.rooms.index')" :class="subLinkClasses(isRouteActive('admin.rooms.*'))">
+                🚪 Master Rooms
+              </Link>
+            </div>
+          </div>
+
+          <div>
+            <Link
+              :href="route('bookings.index')"
+              :class="[navLinkClasses(isRouteActive('bookings.index', 'bookings.create'))]"
+            >
+              <span class="text-lg">📝</span>
+              <span>Request Booking</span>
+            </Link>
+          </div>
+
+          <div v-if="$page.props.auth.user.role === 'admin'">
+            <Link :href="route('admin.bookings.index')" :class="[navLinkClasses(isRouteActive('admin.bookings.*'))]">
+              <span class="text-lg">🛡️</span>
+              <span>Approval Booking</span>
+            </Link>
+          </div>
+
+          <div>
+            <Link :href="route('history.index')" :class="[navLinkClasses(isRouteActive('history.*'))]">
+              <span class="text-lg">🕑</span>
+              <span>History</span>
+            </Link>
+          </div>
+        </nav>
       </aside>
 
       <!-- Konten Utama -->
