@@ -128,13 +128,4 @@ class RoomController extends Controller
 
         return redirect()->route('admin.rooms.index')->with('success', 'Room berhasil dihapus!');
     }
-
-
-    /**
-     * Normalise room name for duplicate checking.
-     */
-    private function normalizeName(string $name): string
-    {
-        return strtolower(str_replace(' ', '', $name));
-    }
 }
