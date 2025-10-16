@@ -372,6 +372,30 @@ const submit = () => {
             </div>
           </div>
 
+          <div class="space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm">
+            <div class="flex items-center justify-between">
+              <p class="font-semibold text-gray-700">Waktu yang Tidak Tersedia untuk Ruangan Ini</p>
+              <span v-if="isAvailabilityLoading" class="text-xs text-blue-500">Memuat jadwal...</span>
+            </div>
+            <p v-if="availabilityMessage" class="text-sm text-gray-600">{{ availabilityMessage }}</p>
+            <ul v-else-if="bookedIntervals.length" class="space-y-1 text-sm text-gray-600">
+              <li
+                v-for="interval in bookedIntervals"
+                :key="interval.id"
+                class="flex items-center justify-between rounded-md bg-white px-3 py-2 shadow-sm"
+              >
+                <span>{{ formatInterval(interval) }}</span>
+                <span class="text-xs font-semibold uppercase text-gray-400">{{ interval.status }}</span>
+              </li>
+            </ul>
+            <p v-else-if="form.room_id && form.date" class="text-sm text-gray-500">
+              Belum ada jadwal lain di tanggal ini.
+            </p>
+            <p v-else class="text-sm text-gray-500">
+              Pilih ruangan dan tanggal untuk melihat ketersediaan waktunya.
+            </p>
+          </div>
+
           <div class="space-y-2">
             <label class="block text-sm font-medium text-gray-700">Judul Kegiatan</label>
             <input
@@ -405,30 +429,6 @@ const submit = () => {
               class="w-full rounded-lg border border-dashed border-gray-300 px-3 py-2 text-sm file:mr-4 file:rounded-md file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-blue-600 hover:file:bg-blue-100"
             />
             <div v-if="form.errors.attachment" class="text-sm text-red-500">{{ form.errors.attachment }}</div>
-          </div>
-
-          <div class="space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm">
-            <div class="flex items-center justify-between">
-              <p class="font-semibold text-gray-700">Ketersediaan Slot Waktu</p>
-              <span v-if="isAvailabilityLoading" class="text-xs text-blue-500">Memuat jadwal...</span>
-            </div>
-            <p v-if="availabilityMessage" class="text-sm text-gray-600">{{ availabilityMessage }}</p>
-            <ul v-else-if="bookedIntervals.length" class="space-y-1 text-sm text-gray-600">
-              <li
-                v-for="interval in bookedIntervals"
-                :key="interval.id"
-                class="flex items-center justify-between rounded-md bg-white px-3 py-2 shadow-sm"
-              >
-                <span>{{ formatInterval(interval) }}</span>
-                <span class="text-xs font-semibold uppercase text-gray-400">{{ interval.status }}</span>
-              </li>
-            </ul>
-            <p v-else-if="form.room_id && form.date" class="text-sm text-gray-500">
-              Belum ada jadwal lain di tanggal ini.
-            </p>
-            <p v-else class="text-sm text-gray-500">
-              Pilih ruangan dan tanggal untuk melihat ketersediaan waktunya.
-            </p>
           </div>
 
           <div class="flex items-center justify-end gap-3">
