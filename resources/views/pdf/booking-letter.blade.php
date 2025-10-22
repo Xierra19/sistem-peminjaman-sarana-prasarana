@@ -119,7 +119,8 @@
         <p>Dicetak pada {{ Carbon::parse($generatedAt)->locale('id')->translatedFormat('d F Y H:i') }} WIB</p>
         <p>Administrator Peminjaman Ruangan</p>
         <br><br>
-        <p><strong>{{ config('app.name') }}</strong></p>
+        <br><br>        
+        <p><strong>{{ optional($booking->user)->name }}</p>
     </div>
 </body>
 </html>
