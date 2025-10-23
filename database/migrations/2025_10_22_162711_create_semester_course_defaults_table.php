@@ -21,7 +21,7 @@ return new class extends Migration
             $table->string('course_code', 64);       // "KH001" (atau kode matkul lain)
 
             // Hari pelaksanaan (pola mingguan)
-            $table->enum('day_of_week', ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']);
+            $table->enum('day_of_week', ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu']);
 
             // TEORI (wajib punya jam teori)
             $table->time('theory_start_time');
@@ -45,9 +45,6 @@ return new class extends Migration
                   ->nullOnDelete();
 
             $table->timestamps();
-
-            // Satu kode per semester (kalau memang unik). Kalau tidak unik, hapus constraint ini.
-            $table->unique(['semester_id','course_code'], 'uq_sem_course_code');
 
             // Index untuk bantu validasi overlap cepat (per hari + ruang teori)
             $table->index(['semester_id','day_of_week','theory_room_id','theory_start_time','theory_end_time'], 'idx_sem_theory_overlap');

@@ -13,6 +13,9 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExportController;
+use App\Http\Controllers\SemesterController;
+use App\Http\Controllers\SemesterDefaultController;
+use App\Http\Controllers\SemesterDefaultImportController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -51,6 +54,20 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::resource('campus', CampusController::class)->except(['show']);
     Route::resource('buildings', BuildingController::class)->except(['show']);
     Route::resource('rooms', RoomController::class)->except(['show']);
+
+    Route::post('semesters/{semester}/toggle-active', [SemesterController::class, 'toggleActive'])->name('semesters.toggle-active');
+    Route::resource('semesters', SemesterController::class)->except(['show']);
+
+    Route::prefix('semesters/{semester}')->scopeBindings()->group(function () {
+        Route::resource('defaults', SemesterDefaultController::class)
+            ->except(['show'])
+            ->parameters(['defaults' => 'default'])
+            ->names('semesters.defaults');
+
+        Route::get('defaults/import', [SemesterDefaultImportController::class, 'form'])->name('semesters.defaults.import.form');
+        Route::post('defaults/import/preview', [SemesterDefaultImportController::class, 'preview'])->name('semesters.defaults.import.preview');
+        Route::post('defaults/import/commit', [SemesterDefaultImportController::class, 'commit'])->name('semesters.defaults.import.commit');
+    });
 
     Route::get('bookings', [BookingApprovalController::class, 'index'])->name('bookings.index');
     Route::get('bookings/{booking}', [BookingApprovalController::class, 'show'])->name('bookings.show');
