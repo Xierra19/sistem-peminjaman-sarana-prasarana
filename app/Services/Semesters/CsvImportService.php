@@ -79,14 +79,15 @@ class CsvImportService
             return [Str::upper($name) => $id];
         });
 
+        // Normalisasi hari ke bahasa Indonesia (sesuai kolom DB)
         $dayMap = [
-            'MON' => 'Mon',
-            'TUE' => 'Tue',
-            'WED' => 'Wed',
-            'THU' => 'Thu',
-            'FRI' => 'Fri',
-            'SAT' => 'Sat',
-            'SUN' => 'Sun',
+            'MON' => 'Senin',
+            'TUE' => 'Selasa',
+            'WED' => 'Rabu',
+            'THU' => 'Kamis',
+            'FRI' => 'Jumat',
+            'SAT' => 'Sabtu',
+            'SUN' => 'Minggu',
         ];
 
         $previewRows = [];

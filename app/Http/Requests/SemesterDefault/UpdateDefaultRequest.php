@@ -16,7 +16,8 @@ class UpdateDefaultRequest extends FormRequest
         return [
             'course_name' => ['required','string','max:255'],
             'course_code' => ['required','string','max:64'],
-            'day_of_week' => ['required','in:Mon,Tue,Wed,Thu,Fri,Sat,Sun'],
+            // Sesuaikan dengan enum di DB (nama hari Indonesia)
+            'day_of_week' => ['required','in:Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu'],
             'theory_start_time' => ['required','date_format:H:i'],
             'theory_end_time' => ['required','date_format:H:i','after:theory_start_time'],
             'theory_room_id' => ['nullable','exists:rooms,id'],

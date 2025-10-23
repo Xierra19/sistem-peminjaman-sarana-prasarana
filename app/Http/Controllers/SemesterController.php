@@ -8,22 +8,26 @@ use App\Models\MasterSemester;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class SemesterController extends Controller
 {
-    public function index(): View
+    public function index(): Response
     {
         $semesters = MasterSemester::query()
             ->orderByDesc('year')
             ->orderBy('term')
             ->get();
 
-        return view('semesters.index', compact('semesters'));
+        return Inertia::render('Admin/Semesters/Index', [
+            'semesters' => $semesters,
+        ]);
     }
 
-    public function create(): View
+    public function create(): Response
     {
-        return view('semesters.form', [
+        return Inertia::render('Admin/Semesters/Form', [
             'semester' => new MasterSemester(),
             'mode' => 'create',
         ]);
@@ -36,10 +40,22 @@ class SemesterController extends Controller
         return redirect()->route('admin.semesters.index')->with('status', 'Semester berhasil dibuat.');
     }
 
-    public function edit(MasterSemester $semester): View
+    public function edit(MasterSemester $semester): Response
     {
-        return view('semesters.form', [
-            'semester' => $semester,
+        $semesterPayload = [
+            'id' => $semester->id,
+            'year' => $semester->year,
+            'term' => $semester->term,
+            'is_active' => (bool) $semester->is_active,
+            'anchor_date' => optional($semester->anchor_date)->format('Y-m-d'),
+            'start_date' => optional($semester->start_date)->format('Y-m-d'),
+            'end_date' => optional($semester->end_date)->format('Y-m-d'),
+            'uts_week' => $semester->uts_week,
+            'uas_week' => $semester->uas_week,
+        ];
+
+        return Inertia::render('Admin/Semesters/Form', [
+            'semester' => $semesterPayload,
             'mode' => 'edit',
         ]);
     }

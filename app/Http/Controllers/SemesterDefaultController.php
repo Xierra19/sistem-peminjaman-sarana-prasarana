@@ -11,6 +11,8 @@ use App\Services\Semesters\ExactDuplicateChecker;
 use App\Services\Semesters\OverlapChecker;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class SemesterDefaultController extends Controller
 {
@@ -20,26 +22,75 @@ class SemesterDefaultController extends Controller
     ) {
     }
 
-    public function index(MasterSemester $semester): View
+    public function index(MasterSemester $semester): Response
     {
-        $defaults = $semester->courseDefaults()
+        $raw = $semester->courseDefaults()
             ->with(['theoryRoom', 'practicum1Room', 'practicum2Room'])
             ->orderBy('day_of_week')
             ->orderBy('theory_start_time')
             ->get();
 
-        return view('semesters.defaults.index', [
-            'semester' => $semester,
+        $defaults = $raw->map(function (SemesterCourseDefault $d) {
+            $theoryStart = $d->theory_start_time instanceof \DateTimeInterface ? $d->theory_start_time->format('H:i') : ($d->theory_start_time ?: null);
+            $theoryEnd = $d->theory_end_time instanceof \DateTimeInterface ? $d->theory_end_time->format('H:i') : ($d->theory_end_time ?: null);
+            $prac1Start = $d->practicum1_start_time instanceof \DateTimeInterface ? $d->practicum1_start_time->format('H:i') : ($d->practicum1_start_time ?: null);
+            $prac1End = $d->practicum1_end_time instanceof \DateTimeInterface ? $d->practicum1_end_time->format('H:i') : ($d->practicum1_end_time ?: null);
+            $prac2Start = $d->practicum2_start_time instanceof \DateTimeInterface ? $d->practicum2_start_time->format('H:i') : ($d->practicum2_start_time ?: null);
+            $prac2End = $d->practicum2_end_time instanceof \DateTimeInterface ? $d->practicum2_end_time->format('H:i') : ($d->practicum2_end_time ?: null);
+            return [
+                'id' => $d->id,
+                'course_name' => $d->course_name,
+                'course_code' => $d->course_code,
+                'day_of_week' => $d->day_of_week,
+                'theory_start_time' => $theoryStart,
+                'theory_end_time' => $theoryEnd,
+                'practicum1_start_time' => $prac1Start,
+                'practicum1_end_time' => $prac1End,
+                'practicum2_start_time' => $prac2Start,
+                'practicum2_end_time' => $prac2End,
+                'theory_room' => $d->theoryRoom ? ['id' => $d->theoryRoom->id, 'name' => $d->theoryRoom->name] : null,
+                'practicum1_room' => $d->practicum1Room ? ['id' => $d->practicum1Room->id, 'name' => $d->practicum1Room->name] : null,
+                'practicum2_room' => $d->practicum2Room ? ['id' => $d->practicum2Room->id, 'name' => $d->practicum2Room->name] : null,
+            ];
+        });
+
+        $semesterPayload = [
+            'id' => $semester->id,
+            'year' => $semester->year,
+            'term' => $semester->term,
+        ];
+
+        return Inertia::render('Admin/Semesters/Defaults/Index', [
+            'semester' => $semesterPayload,
             'defaults' => $defaults,
         ]);
     }
 
-    public function create(MasterSemester $semester): View
+    public function create(MasterSemester $semester): Response
     {
-        return view('semesters.defaults.form', [
-            'semester' => $semester,
-            'default' => new SemesterCourseDefault(),
-            'rooms' => Room::orderBy('name')->get(),
+        $semesterPayload = [
+            'id' => $semester->id,
+            'year' => $semester->year,
+            'term' => $semester->term,
+        ];
+
+        return Inertia::render('Admin/Semesters/Defaults/Form', [
+            'semester' => $semesterPayload,
+            'defaultItem' => [
+                'course_name' => '',
+                'course_code' => '',
+                'day_of_week' => '',
+                'theory_start_time' => '',
+                'theory_end_time' => '',
+                'theory_room_id' => '',
+                'practicum1_start_time' => '',
+                'practicum1_end_time' => '',
+                'practicum1_room_id' => '',
+                'practicum2_start_time' => '',
+                'practicum2_end_time' => '',
+                'practicum2_room_id' => '',
+            ],
+            'rooms' => Room::orderBy('name')->get(['id','name']),
             'mode' => 'create',
         ]);
     }
@@ -62,12 +113,34 @@ class SemesterDefaultController extends Controller
         return redirect()->route('admin.semesters.defaults.index', $semester)->with('status', 'Default jadwal berhasil dibuat.');
     }
 
-    public function edit(MasterSemester $semester, SemesterCourseDefault $default): View
+    public function edit(MasterSemester $semester, SemesterCourseDefault $default): Response
     {
-        return view('semesters.defaults.form', [
-            'semester' => $semester,
-            'default' => $default,
-            'rooms' => Room::orderBy('name')->get(),
+        $semesterPayload = [
+            'id' => $semester->id,
+            'year' => $semester->year,
+            'term' => $semester->term,
+        ];
+
+        $defaultPayload = [
+            'id' => $default->id,
+            'course_name' => $default->course_name,
+            'course_code' => $default->course_code,
+            'day_of_week' => $default->day_of_week,
+            'theory_start_time' => $default->theory_start_time instanceof \DateTimeInterface ? $default->theory_start_time->format('H:i') : ($default->theory_start_time ?: ''),
+            'theory_end_time' => $default->theory_end_time instanceof \DateTimeInterface ? $default->theory_end_time->format('H:i') : ($default->theory_end_time ?: ''),
+            'theory_room_id' => $default->theory_room_id,
+            'practicum1_start_time' => $default->practicum1_start_time instanceof \DateTimeInterface ? $default->practicum1_start_time->format('H:i') : ($default->practicum1_start_time ?: ''),
+            'practicum1_end_time' => $default->practicum1_end_time instanceof \DateTimeInterface ? $default->practicum1_end_time->format('H:i') : ($default->practicum1_end_time ?: ''),
+            'practicum1_room_id' => $default->practicum1_room_id ?? '',
+            'practicum2_start_time' => $default->practicum2_start_time instanceof \DateTimeInterface ? $default->practicum2_start_time->format('H:i') : ($default->practicum2_start_time ?: ''),
+            'practicum2_end_time' => $default->practicum2_end_time instanceof \DateTimeInterface ? $default->practicum2_end_time->format('H:i') : ($default->practicum2_end_time ?: ''),
+            'practicum2_room_id' => $default->practicum2_room_id ?? '',
+        ];
+
+        return Inertia::render('Admin/Semesters/Defaults/Form', [
+            'semester' => $semesterPayload,
+            'defaultItem' => $defaultPayload,
+            'rooms' => Room::orderBy('name')->get(['id','name']),
             'mode' => 'edit',
         ]);
     }

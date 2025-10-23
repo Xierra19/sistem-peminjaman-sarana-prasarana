@@ -13,6 +13,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 use Inertia\Inertia;
+use App\Models\MasterSemester;
+use App\Models\SemesterCourseDefault;
 
 class BookingController extends Controller
 {
@@ -113,6 +115,86 @@ class BookingController extends Controller
                 ->withInput();
         }
 
+        // Validasi tambahan: bentrok dengan jadwal default semester aktif
+        $activeSemester = MasterSemester::query()
+            ->where('is_active', true)
+            ->orderByDesc('year')
+            ->orderBy('term')
+            ->first();
+
+        if ($activeSemester) {
+            // Jika tanggal periode di-set, pastikan tanggal booking berada di dalamnya
+            $withinPeriod = true;
+            if ($activeSemester->start_date && $activeSemester->end_date) {
+                $withinPeriod = $start->toDateString() >= $activeSemester->start_date->toDateString()
+                    && $start->toDateString() <= $activeSemester->end_date->toDateString();
+            }
+
+            if ($withinPeriod) {
+                // Peta hari ke bahasa Indonesia agar sesuai dengan enum DB
+                $dayMap = [
+                    0 => 'Minggu',
+                    1 => 'Senin',
+                    2 => 'Selasa',
+                    3 => 'Rabu',
+                    4 => 'Kamis',
+                    5 => 'Jumat',
+                    6 => 'Sabtu',
+                ];
+                $dayName = $dayMap[$start->dayOfWeek] ?? null;
+                $roomId = (int) $validated['room_id'];
+                $startStr = $start->format('H:i');
+                $endStr = $end->format('H:i');
+
+                $defaults = SemesterCourseDefault::query()
+                    ->where('semester_id', $activeSemester->id)
+                    ->where('day_of_week', $dayName)
+                    ->where(function ($q) use ($roomId) {
+                        $q->where('theory_room_id', $roomId)
+                          ->orWhere('practicum1_room_id', $roomId)
+                          ->orWhere('practicum2_room_id', $roomId);
+                    })
+                    ->get();
+
+                $overlap = function (string $sa, string $ea, string $sb, string $eb): bool {
+                    return $sa < $eb && $sb < $ea;
+                };
+
+                foreach ($defaults as $def) {
+                    if ($def->theory_room_id === $roomId) {
+                        $s = optional($def->theory_start_time)->format('H:i');
+                        $e = optional($def->theory_end_time)->format('H:i');
+                        if ($s && $e && $overlap($startStr, $endStr, $s, $e)) {
+                            return back()
+                                ->withErrors(['start_time' => 'Bentrok dengan jadwal default (Teori) pada '.$def->day_of_week.' '.$s.'-'.$e.'.'])
+                                ->with('error', 'Bentrok dengan jadwal default (Teori).')
+                                ->withInput();
+                        }
+                    }
+                    if ($def->practicum1_room_id === $roomId && $def->practicum1_start_time && $def->practicum1_end_time) {
+                        $s = optional($def->practicum1_start_time)->format('H:i');
+                        $e = optional($def->practicum1_end_time)->format('H:i');
+                        if ($s && $e && $overlap($startStr, $endStr, $s, $e)) {
+                            return back()
+                                ->withErrors(['start_time' => 'Bentrok dengan jadwal default (Praktikum 1) pada '.$def->day_of_week.' '.$s.'-'.$e.'.'])
+                                ->with('error', 'Bentrok dengan jadwal default (Praktikum 1).')
+                                ->withInput();
+                        }
+                    }
+                    if ($def->practicum2_room_id === $roomId && $def->practicum2_start_time && $def->practicum2_end_time) {
+                        $s = optional($def->practicum2_start_time)->format('H:i');
+                        $e = optional($def->practicum2_end_time)->format('H:i');
+                        if ($s && $e && $overlap($startStr, $endStr, $s, $e)) {
+                            return back()
+                                ->withErrors(['start_time' => 'Bentrok dengan jadwal default (Praktikum 2) pada '.$def->day_of_week.' '.$s.'-'.$e.'.'])
+                                ->with('error', 'Bentrok dengan jadwal default (Praktikum 2).')
+                                ->withInput();
+                        }
+                    }
+                }
+            }
+        }
+
         $booking = Booking::create($validated);
 
 
@@ -180,9 +262,95 @@ class BookingController extends Controller
                 ];
             });
 
+        // Tambahkan blok waktu dari Jadwal Default Semester Aktif
+        $defaultsIntervals = collect();
+        $activeSemester = MasterSemester::query()
+            ->where('is_active', true)
+            ->orderByDesc('year')
+            ->orderBy('term')
+            ->first();
+
+        if ($activeSemester) {
+            $withinPeriod = true;
+            if ($activeSemester->start_date && $activeSemester->end_date) {
+                $withinPeriod = $day->toDateString() >= $activeSemester->start_date->toDateString()
+                    && $day->toDateString() <= $activeSemester->end_date->toDateString();
+            }
+
+            if ($withinPeriod) {
+                $dayMap = [
+                    0 => 'Minggu',
+                    1 => 'Senin',
+                    2 => 'Selasa',
+                    3 => 'Rabu',
+                    4 => 'Kamis',
+                    5 => 'Jumat',
+                    6 => 'Sabtu',
+                ];
+                $dayName = $dayMap[$day->dayOfWeek] ?? null;
+
+                if ($dayName) {
+                    $defaults = SemesterCourseDefault::query()
+                        ->where('semester_id', $activeSemester->id)
+                        ->where('day_of_week', $dayName)
+                        ->where(function ($q) use ($room) {
+                            $q->where('theory_room_id', $room->id)
+                              ->orWhere('practicum1_room_id', $room->id)
+                              ->orWhere('practicum2_room_id', $room->id);
+                        })
+                        ->get();
+
+                    foreach ($defaults as $def) {
+                        if ($def->theory_room_id === $room->id) {
+                            $s = optional($def->theory_start_time)->format('H:i');
+                            $e = optional($def->theory_end_time)->format('H:i');
+                            if ($s && $e) {
+                                $defaultsIntervals->push([
+                                    'id' => 'default-'.$def->id.'-theory',
+                                    'title' => $def->course_code.' / '.$def->course_name,
+                                    'status' => 'DEFAULT',
+                                    'start' => $s,
+                                    'end' => $e,
+                                ]);
+                            }
+                        }
+                        if ($def->practicum1_room_id === $room->id && $def->practicum1_start_time && $def->practicum1_end_time) {
+                            $s = optional($def->practicum1_start_time)->format('H:i');
+                            $e = optional($def->practicum1_end_time)->format('H:i');
+                            if ($s && $e) {
+                                $defaultsIntervals->push([
+                                    'id' => 'default-'.$def->id.'-prac1',
+                                    'title' => $def->course_code.' / '.$def->course_name,
+                                    'status' => 'DEFAULT',
+                                    'start' => $s,
+                                    'end' => $e,
+                                ]);
+                            }
+                        }
+                        if ($def->practicum2_room_id === $room->id && $def->practicum2_start_time && $def->practicum2_end_time) {
+                            $s = optional($def->practicum2_start_time)->format('H:i');
+                            $e = optional($def->practicum2_end_time)->format('H:i');
+                            if ($s && $e) {
+                                $defaultsIntervals->push([
+                                    'id' => 'default-'.$def->id.'-prac2',
+                                    'title' => $def->course_code.' / '.$def->course_name,
+                                    'status' => 'DEFAULT',
+                                    'start' => $s,
+                                    'end' => $e,
+                                ]);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Gabungkan dan urutkan berdasarkan jam mulai
+        $allIntervals = $defaultsIntervals->concat($bookings)->sortBy('start')->values();
+
         return response()->json([
             'available' => true,
-            'bookings' => $bookings,
+            'bookings' => $allIntervals,
         ]);
     }
 

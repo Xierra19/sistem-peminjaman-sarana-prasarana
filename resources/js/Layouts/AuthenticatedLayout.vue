@@ -16,7 +16,13 @@ const isRouteActive = (...names) => {
 }
 
 const masterDataActive = computed(() =>
-  isRouteActive('admin.campus.*', 'admin.buildings.*', 'admin.rooms.*')
+  isRouteActive(
+    'admin.campus.*',
+    'admin.buildings.*',
+    'admin.rooms.*',
+    'admin.semesters.*',
+    'admin.semesters.defaults.*',
+  )
 )
 
 const showMasterData = ref(masterDataActive.value)

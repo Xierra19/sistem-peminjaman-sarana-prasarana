@@ -1,7 +1,16 @@
 @php
     /** @var \App\Models\SemesterCourseDefault $default */
     $isEdit = $mode === 'edit';
-    $days = ['Mon' => 'Senin', 'Tue' => 'Selasa', 'Wed' => 'Rabu', 'Thu' => 'Kamis', 'Fri' => 'Jumat', 'Sat' => 'Sabtu', 'Sun' => 'Minggu'];
+    // Gunakan nama hari Indonesia agar sesuai dengan enum di database
+    $days = [
+        'Senin' => 'Senin',
+        'Selasa' => 'Selasa',
+        'Rabu' => 'Rabu',
+        'Kamis' => 'Kamis',
+        'Jumat' => 'Jumat',
+        'Sabtu' => 'Sabtu',
+        'Minggu' => 'Minggu',
+    ];
 @endphp
 
 @extends('layouts.admin')

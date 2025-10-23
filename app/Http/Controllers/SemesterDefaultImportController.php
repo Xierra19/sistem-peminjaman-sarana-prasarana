@@ -8,6 +8,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Inertia\Inertia;
+use Inertia\Response;
 use JsonException;
 
 class SemesterDefaultImportController extends Controller
@@ -16,14 +18,14 @@ class SemesterDefaultImportController extends Controller
     {
     }
 
-    public function form(MasterSemester $semester): View
+    public function form(MasterSemester $semester): Response
     {
-        return view('semesters.defaults.import', [
+        return Inertia::render('Admin/Semesters/Defaults/Import', [
             'semester' => $semester,
         ]);
     }
 
-    public function preview(Request $request, MasterSemester $semester): View
+    public function preview(Request $request, MasterSemester $semester): Response
     {
         $data = $request->validate([
             'csv_file' => ['required', 'file', 'mimes:csv,txt'],
@@ -49,7 +51,7 @@ class SemesterDefaultImportController extends Controller
             ]);
         }
 
-        return view('semesters.defaults.import_preview', [
+        return Inertia::render('Admin/Semesters/Defaults/ImportPreview', [
             'semester' => $semester,
             'preview' => $preview,
             'payload' => $payload,
