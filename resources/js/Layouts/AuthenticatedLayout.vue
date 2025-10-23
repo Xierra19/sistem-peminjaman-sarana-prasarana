@@ -184,6 +184,13 @@ watch(
               <Link :href="route('admin.rooms.index')" :class="subLinkClasses(isRouteActive('admin.rooms.*'))">
                 🚪 Master Rooms
               </Link>
+              <!-- ✅ baru: master semester -->
+              <Link
+                :href="route('admin.semesters.index')"
+                :class="subLinkClasses(isRouteActive('admin.semesters.*', 'admin.semesters.defaults.*'))"
+              >
+                🗓️ Master Semester
+              </Link>
             </div>
           </div>
 
@@ -214,8 +221,14 @@ watch(
       </aside>
 
       <!-- Konten Utama -->
-      <main class="flex-1 p-6">
-        <slot />
+      <main class="flex-1 p-6 space-y-6">
+        <header v-if="$slots.header">
+          <slot name="header" />
+        </header>
+
+        <section>
+          <slot />
+        </section>
       </main>
     </div>
   </div>
