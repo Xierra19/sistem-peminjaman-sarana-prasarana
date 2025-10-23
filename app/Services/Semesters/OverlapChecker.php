@@ -7,6 +7,15 @@ use App\Models\SemesterCourseDefault;
 
 class OverlapChecker
 {
+    private function fmt($v): ?string
+    {
+        if ($v === null) return null;
+        if ($v instanceof \DateTimeInterface) {
+            return $v->format('H:i');
+        }
+        $s = (string) $v;
+        return substr($s, 0, 5);
+    }
     /**
      * Menentukan apakah dua rentang waktu overlap secara ketat.
      */
@@ -33,16 +42,22 @@ class OverlapChecker
 
         /** @var SemesterCourseDefault $record */
         foreach ($records as $record) {
-            if ($record->theory_room_id === $roomId && $this->overlaps($start, $end, $record->theory_start_time->format('H:i'), $record->theory_end_time->format('H:i'))) {
-                return new ConflictDto('Teori', $day, $record->theory_start_time->format('H:i'), $record->theory_end_time->format('H:i'), $record);
+            $rTheStart = $this->fmt($record->theory_start_time);
+            $rTheEnd = $this->fmt($record->theory_end_time);
+            if ($record->theory_room_id === $roomId && $rTheStart && $rTheEnd && $this->overlaps($start, $end, $rTheStart, $rTheEnd)) {
+                return new ConflictDto('Teori', $day, $rTheStart, $rTheEnd, $record);
             }
 
-            if ($record->practicum1_room_id === $roomId && $record->practicum1_start_time && $record->practicum1_end_time && $this->overlaps($start, $end, $record->practicum1_start_time->format('H:i'), $record->practicum1_end_time->format('H:i'))) {
-                return new ConflictDto('Praktikum 1', $day, $record->practicum1_start_time->format('H:i'), $record->practicum1_end_time->format('H:i'), $record);
+            $rP1Start = $this->fmt($record->practicum1_start_time);
+            $rP1End = $this->fmt($record->practicum1_end_time);
+            if ($record->practicum1_room_id === $roomId && $rP1Start && $rP1End && $this->overlaps($start, $end, $rP1Start, $rP1End)) {
+                return new ConflictDto('Praktikum 1', $day, $rP1Start, $rP1End, $record);
             }
 
-            if ($record->practicum2_room_id === $roomId && $record->practicum2_start_time && $record->practicum2_end_time && $this->overlaps($start, $end, $record->practicum2_start_time->format('H:i'), $record->practicum2_end_time->format('H:i'))) {
-                return new ConflictDto('Praktikum 2', $day, $record->practicum2_start_time->format('H:i'), $record->practicum2_end_time->format('H:i'), $record);
+            $rP2Start = $this->fmt($record->practicum2_start_time);
+            $rP2End = $this->fmt($record->practicum2_end_time);
+            if ($record->practicum2_room_id === $roomId && $rP2Start && $rP2End && $this->overlaps($start, $end, $rP2Start, $rP2End)) {
+                return new ConflictDto('Praktikum 2', $day, $rP2Start, $rP2End, $record);
             }
         }
 

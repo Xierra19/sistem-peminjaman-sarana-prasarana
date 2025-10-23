@@ -70,7 +70,12 @@ const destroySemester = (semester) => {
                 </td>
                 <td class="px-4 py-3 text-sm text-gray-700">
                   <div class="flex flex-wrap gap-2">
-                    <Link :href="route('admin.semesters.defaults.index', { semester: sem.id })" class="text-blue-600 hover:text-blue-800">Defaults</Link>
+                    <Link
+                      :href="route('admin.semesters.defaults.index', [sem.id])"
+                      class="text-blue-600 hover:text-blue-800"
+                    >
+                      Defaults
+                    </Link>
                     <Link :href="route('admin.semesters.edit', { semester: sem.id })" class="text-amber-600 hover:text-amber-800">Edit</Link>
                     <button type="button" @click="toggleActive(sem)" class="text-indigo-600 hover:text-indigo-800">
                       {{ sem.is_active ? 'Nonaktifkan' : 'Aktifkan' }}

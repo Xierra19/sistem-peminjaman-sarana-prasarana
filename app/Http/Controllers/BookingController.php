@@ -160,10 +160,16 @@ class BookingController extends Controller
                     return $sa < $eb && $sb < $ea;
                 };
 
+                $fmt = function ($v): ?string {
+                    if ($v === null) return null;
+                    if ($v instanceof \DateTimeInterface) return $v->format('H:i');
+                    $s = (string) $v; return substr($s, 0, 5);
+                };
+
                 foreach ($defaults as $def) {
                     if ($def->theory_room_id === $roomId) {
-                        $s = optional($def->theory_start_time)->format('H:i');
-                        $e = optional($def->theory_end_time)->format('H:i');
+                        $s = $fmt($def->theory_start_time);
+                        $e = $fmt($def->theory_end_time);
                         if ($s && $e && $overlap($startStr, $endStr, $s, $e)) {
                             return back()
                                 ->withErrors(['start_time' => 'Bentrok dengan jadwal default (Teori) pada '.$def->day_of_week.' '.$s.'-'.$e.'.'])
@@ -172,8 +178,8 @@ class BookingController extends Controller
                         }
                     }
                     if ($def->practicum1_room_id === $roomId && $def->practicum1_start_time && $def->practicum1_end_time) {
-                        $s = optional($def->practicum1_start_time)->format('H:i');
-                        $e = optional($def->practicum1_end_time)->format('H:i');
+                        $s = $fmt($def->practicum1_start_time);
+                        $e = $fmt($def->practicum1_end_time);
                         if ($s && $e && $overlap($startStr, $endStr, $s, $e)) {
                             return back()
                                 ->withErrors(['start_time' => 'Bentrok dengan jadwal default (Praktikum 1) pada '.$def->day_of_week.' '.$s.'-'.$e.'.'])
@@ -182,8 +188,8 @@ class BookingController extends Controller
                         }
                     }
                     if ($def->practicum2_room_id === $roomId && $def->practicum2_start_time && $def->practicum2_end_time) {
-                        $s = optional($def->practicum2_start_time)->format('H:i');
-                        $e = optional($def->practicum2_end_time)->format('H:i');
+                        $s = $fmt($def->practicum2_start_time);
+                        $e = $fmt($def->practicum2_end_time);
                         if ($s && $e && $overlap($startStr, $endStr, $s, $e)) {
                             return back()
                                 ->withErrors(['start_time' => 'Bentrok dengan jadwal default (Praktikum 2) pada '.$def->day_of_week.' '.$s.'-'.$e.'.'])
@@ -302,8 +308,8 @@ class BookingController extends Controller
 
                     foreach ($defaults as $def) {
                         if ($def->theory_room_id === $room->id) {
-                            $s = optional($def->theory_start_time)->format('H:i');
-                            $e = optional($def->theory_end_time)->format('H:i');
+                            $s = $fmt($def->theory_start_time);
+                            $e = $fmt($def->theory_end_time);
                             if ($s && $e) {
                                 $defaultsIntervals->push([
                                     'id' => 'default-'.$def->id.'-theory',
@@ -315,8 +321,8 @@ class BookingController extends Controller
                             }
                         }
                         if ($def->practicum1_room_id === $room->id && $def->practicum1_start_time && $def->practicum1_end_time) {
-                            $s = optional($def->practicum1_start_time)->format('H:i');
-                            $e = optional($def->practicum1_end_time)->format('H:i');
+                            $s = $fmt($def->practicum1_start_time);
+                            $e = $fmt($def->practicum1_end_time);
                             if ($s && $e) {
                                 $defaultsIntervals->push([
                                     'id' => 'default-'.$def->id.'-prac1',
@@ -328,8 +334,8 @@ class BookingController extends Controller
                             }
                         }
                         if ($def->practicum2_room_id === $room->id && $def->practicum2_start_time && $def->practicum2_end_time) {
-                            $s = optional($def->practicum2_start_time)->format('H:i');
-                            $e = optional($def->practicum2_end_time)->format('H:i');
+                            $s = $fmt($def->practicum2_start_time);
+                            $e = $fmt($def->practicum2_end_time);
                             if ($s && $e) {
                                 $defaultsIntervals->push([
                                     'id' => 'default-'.$def->id.'-prac2',

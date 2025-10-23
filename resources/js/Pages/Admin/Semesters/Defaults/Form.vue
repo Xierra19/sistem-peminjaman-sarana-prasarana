@@ -30,9 +30,9 @@ const form = useForm({
 
 const submit = () => {
   if (isEdit) {
-    form.put(route('admin.semesters.defaults.update', { semester: props.semester.id, default: props.defaultItem.id, defaults: props.defaultItem.id }))
+    form.put(route('admin.semesters.defaults.update', [props.semester.id, props.defaultItem.id]))
   } else {
-    form.post(route('admin.semesters.defaults.store', { semester: props.semester.id }))
+    form.post(route('admin.semesters.defaults.store', [props.semester.id]))
   }
 }
 </script>
@@ -144,8 +144,17 @@ const submit = () => {
           </div>
 
           <div class="flex justify-end gap-3">
-            <Link :href="route('admin.semesters.defaults.index', { semester: props.semester.id })" class="rounded border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Batal</Link>
-            <button type="submit" class="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700" :disabled="form.processing">
+            <Link
+              :href="route('admin.semesters.defaults.index', [props.semester.id])"
+              class="rounded border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+            >
+              Batal
+            </Link>
+            <button
+              type="submit"
+              class="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+              :disabled="form.processing"
+            >
               {{ isEdit ? 'Simpan Perubahan' : 'Simpan Jadwal' }}
             </button>
           </div>

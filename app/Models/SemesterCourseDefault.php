@@ -27,12 +27,13 @@ class SemesterCourseDefault extends Model
     ];
 
     protected $casts = [
-        'theory_start_time' => 'datetime:H:i',
-        'theory_end_time' => 'datetime:H:i',
-        'practicum1_start_time' => 'datetime:H:i',
-        'practicum1_end_time' => 'datetime:H:i',
-        'practicum2_start_time' => 'datetime:H:i',
-        'practicum2_end_time' => 'datetime:H:i',
+        // Simpan sebagai string agar aman untuk kolom TIME
+        'theory_start_time' => 'string',
+        'theory_end_time' => 'string',
+        'practicum1_start_time' => 'string',
+        'practicum1_end_time' => 'string',
+        'practicum2_start_time' => 'string',
+        'practicum2_end_time' => 'string',
     ];
 
     /**

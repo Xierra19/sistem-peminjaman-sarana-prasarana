@@ -17,7 +17,7 @@ const form = useForm({
 })
 
 const commit = () => {
-  form.post(route('admin.semesters.defaults.import.commit', { semester: props.semester.id }))
+  form.post(route('admin.semesters.defaults.import.commit', [props.semester.id]))
 }
 </script>
 
@@ -32,8 +32,12 @@ const commit = () => {
             <h1 class="text-2xl font-semibold text-gray-800">Preview Data Import</h1>
             <p class="text-sm text-gray-600">Periksa kembali hasil parsing CSV sebelum disimpan.</p>
           </div>
-          <Link :href="route('admin.semesters.defaults.import.form', { semester: props.semester.id })" class="text-sm text-blue-600 hover:text-blue-800">&larr; Ganti File</Link>
-        </div>
+          <Link
+            :href="route('admin.semesters.defaults.import.form', [props.semester.id])"
+            class="text-sm text-blue-600 hover:text-blue-800"
+          >
+            &larr; Ganti File
+          </Link>        </div>
 
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200">
@@ -96,7 +100,12 @@ const commit = () => {
         </div>
 
         <div class="mt-6 flex items-center justify-between">
-          <Link :href="route('admin.semesters.defaults.index', { semester: props.semester.id })" class="text-sm text-gray-600 hover:text-gray-800">&larr; Kembali ke daftar</Link>
+          <Link
+            :href="route('admin.semesters.defaults.index', [props.semester.id])"
+            class="text-sm text-gray-600 hover:text-gray-800"
+          >
+            &larr; Kembali ke daftar
+          </Link>       
           <button
             v-if="!hasErrors && rows.length"
             type="button"

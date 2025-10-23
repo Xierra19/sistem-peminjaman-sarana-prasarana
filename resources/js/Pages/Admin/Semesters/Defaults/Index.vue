@@ -15,7 +15,9 @@ const roomName = (row, key) => {
 
 const destroyDefault = (row) => {
   if (confirm('Hapus jadwal ini?')) {
-    router.delete(route('admin.semesters.defaults.destroy', { semester: props.semester.id, default: row.id, defaults: row.id }), { preserveScroll: true })
+    router.delete(route('admin.semesters.defaults.destroy', [props.semester.id, row.id]), {
+      preserveScroll: true,
+    })
   }
 }
 </script>
@@ -32,8 +34,18 @@ const destroyDefault = (row) => {
             <p class="text-sm text-gray-600">Semester {{ props.semester.term }} {{ props.semester.year }}</p>
           </div>
           <div class="flex flex-wrap gap-3">
-            <Link :href="route('admin.semesters.defaults.import.form', { semester: props.semester.id })" class="inline-flex items-center rounded border border-indigo-500 px-4 py-2 text-sm font-semibold text-indigo-600 hover:bg-indigo-50">Import CSV</Link>
-            <Link :href="route('admin.semesters.defaults.create', { semester: props.semester.id })" class="inline-flex items-center rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">+ Tambah Jadwal</Link>
+            <Link
+              :href="route('admin.semesters.defaults.import.form', [props.semester.id])"
+              class="inline-flex items-center rounded border border-indigo-500 px-4 py-2 text-sm font-semibold text-indigo-600 hover:bg-indigo-50"
+            >
+              Import CSV
+            </Link>
+            <Link
+              :href="route('admin.semesters.defaults.create', [props.semester.id])"
+              class="inline-flex items-center rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+            >
+              + Tambah Jadwal
+            </Link>
           </div>
         </div>
 
@@ -75,7 +87,12 @@ const destroyDefault = (row) => {
                 </td>
                 <td class="px-3 py-3 text-sm text-gray-700">
                   <div class="flex flex-wrap gap-2">
-                    <Link :href="route('admin.semesters.defaults.edit', { semester: props.semester.id, default: row.id, defaults: row.id })" class="text-amber-600 hover:text-amber-800">Edit</Link>
+                    <Link
+                      :href="route('admin.semesters.defaults.edit', [props.semester.id, row.id])"
+                      class="text-amber-600 hover:text-amber-800"
+                    >
+                      Edit
+                    </Link>
                     <button type="button" @click="destroyDefault(row)" class="text-red-600 hover:text-red-800">Hapus</button>
                   </div>
                 </td>

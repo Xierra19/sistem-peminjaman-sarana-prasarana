@@ -11,7 +11,7 @@ const form = useForm({
 })
 
 const submit = () => {
-  form.post(route('admin.semesters.defaults.import.preview', { semester: props.semester.id }), {
+  form.post(route('admin.semesters.defaults.import.preview', [props.semester.id]), {
     forceFormData: true,
   })
 }
@@ -40,10 +40,20 @@ const onFile = (e) => {
             <input type="file" accept=".csv,text/csv" @change="onFile" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500" />
             <div v-if="form.errors.csv_file" class="mt-1 text-sm text-red-600">{{ form.errors.csv_file }}</div>
           </div>
-
           <div class="flex justify-end gap-3">
-            <Link :href="route('admin.semesters.defaults.index', { semester: props.semester.id })" class="rounded border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Batal</Link>
-            <button type="submit" class="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700" :disabled="form.processing">Preview</button>
+            <Link
+              :href="route('admin.semesters.defaults.index', [props.semester.id])"
+              class="rounded border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+            >
+              Batal
+            </Link>
+            <button
+              type="submit"
+              class="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+              :disabled="form.processing"
+            >
+              Preview
+            </button>
           </div>
         </form>
       </div>
