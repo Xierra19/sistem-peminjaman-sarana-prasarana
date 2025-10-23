@@ -111,13 +111,27 @@ function exportExcel() {
         </div>
 
         <!-- Rows per page -->
-        <div class="flex justify-end mb-2">
-          <label class="text-sm font-medium mr-2">Rows per page</label>
-          <select v-model.number="rowsPerPage" class="border rounded px-2 py-1 text-sm">
-            <option v-for="option in perPageOptions" :key="`rows-${option}`" :value="option">
-              {{ option }}
-            </option>
-          </select>
+        <div class="mb-2 flex justify-end">
+          <div class="flex items-center gap-3 text-sm text-gray-600">
+            <span class="font-medium text-gray-700">Rows per page</span>
+            <div class="inline-flex items-center gap-1 rounded border border-gray-300 px-2 py-1">
+              <select
+                v-model.number="rowsPerPage"
+                class="appearance-none bg-transparent pr-2 text-sm text-gray-700 focus:outline-none"
+              >
+                <option v-for="option in perPageOptions" :key="`rows-${option}`" :value="option">
+                  {{ option }}
+                </option>
+              </select>
+              <svg class="h-4 w-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                <path
+                  fill-rule="evenodd"
+                  d="M5.23 7.21a.75.75 0 011.06.02L10 10.939l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+            </div>
+          </div>
         </div>
 
         <!-- Table -->

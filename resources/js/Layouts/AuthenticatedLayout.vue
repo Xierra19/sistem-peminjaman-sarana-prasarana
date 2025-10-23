@@ -76,8 +76,9 @@ function showSuccess(message) {
     icon: 'success',
     title: 'Berhasil',
     text,
-    timer: 1800,
+    timer: 4000,
     showConfirmButton: false,
+    timerProgressBar: true,
     target: getSwalTarget(),
   })
   if (page?.props?.flash) page.props.flash.success = null

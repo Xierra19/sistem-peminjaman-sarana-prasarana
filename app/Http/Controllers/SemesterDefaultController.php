@@ -31,12 +31,12 @@ class SemesterDefaultController extends Controller
             ->get();
 
         $defaults = $raw->map(function (SemesterCourseDefault $d) {
-            $theoryStart = $d->theory_start_time instanceof \DateTimeInterface ? $d->theory_start_time->format('H:i') : ($d->theory_start_time ?: null);
-            $theoryEnd = $d->theory_end_time instanceof \DateTimeInterface ? $d->theory_end_time->format('H:i') : ($d->theory_end_time ?: null);
-            $prac1Start = $d->practicum1_start_time instanceof \DateTimeInterface ? $d->practicum1_start_time->format('H:i') : ($d->practicum1_start_time ?: null);
-            $prac1End = $d->practicum1_end_time instanceof \DateTimeInterface ? $d->practicum1_end_time->format('H:i') : ($d->practicum1_end_time ?: null);
-            $prac2Start = $d->practicum2_start_time instanceof \DateTimeInterface ? $d->practicum2_start_time->format('H:i') : ($d->practicum2_start_time ?: null);
-            $prac2End = $d->practicum2_end_time instanceof \DateTimeInterface ? $d->practicum2_end_time->format('H:i') : ($d->practicum2_end_time ?: null);
+            $theoryStart = $this->formatTimeValue($d->theory_start_time);
+            $theoryEnd = $this->formatTimeValue($d->theory_end_time);
+            $prac1Start = $this->formatTimeValue($d->practicum1_start_time);
+            $prac1End = $this->formatTimeValue($d->practicum1_end_time);
+            $prac2Start = $this->formatTimeValue($d->practicum2_start_time);
+            $prac2End = $this->formatTimeValue($d->practicum2_end_time);
             return [
                 'id' => $d->id,
                 'course_name' => $d->course_name,
@@ -63,6 +63,7 @@ class SemesterDefaultController extends Controller
         return Inertia::render('Admin/Semesters/Defaults/Index', [
             'semester' => $semesterPayload,
             'defaults' => $defaults,
+            'rooms' => Inertia::lazy(fn () => Room::orderBy('name')->get(['id', 'name'])),
         ]);
     }
 
@@ -101,16 +102,18 @@ class SemesterDefaultController extends Controller
         $data['semester_id'] = $semester->id;
 
         if ($message = $this->checkDuplicate($semester->id, $data)) {
-            return back()->withInput()->withErrors($message);
+            return back()->withInput()->withErrors($message)->with('error', reset($message));
         }
 
         if ($message = $this->checkOverlap($semester->id, $data)) {
-            return back()->withInput()->withErrors($message);
+            return back()->withInput()->withErrors($message)->with('error', reset($message));
         }
 
         SemesterCourseDefault::create($data);
 
-        return redirect()->route('admin.semesters.defaults.index', $semester)->with('status', 'Default jadwal berhasil dibuat.');
+        return redirect()
+            ->route('admin.semesters.defaults.index', $semester)
+            ->with('success', 'Default jadwal berhasil dibuat.');
     }
 
     public function edit(MasterSemester $semester, SemesterCourseDefault $default): Response
@@ -126,14 +129,14 @@ class SemesterDefaultController extends Controller
             'course_name' => $default->course_name,
             'course_code' => $default->course_code,
             'day_of_week' => $default->day_of_week,
-            'theory_start_time' => $default->theory_start_time instanceof \DateTimeInterface ? $default->theory_start_time->format('H:i') : ($default->theory_start_time ?: ''),
-            'theory_end_time' => $default->theory_end_time instanceof \DateTimeInterface ? $default->theory_end_time->format('H:i') : ($default->theory_end_time ?: ''),
+            'theory_start_time' => $this->formatTimeValue($default->theory_start_time) ?? '',
+            'theory_end_time' => $this->formatTimeValue($default->theory_end_time) ?? '',
             'theory_room_id' => $default->theory_room_id,
-            'practicum1_start_time' => $default->practicum1_start_time instanceof \DateTimeInterface ? $default->practicum1_start_time->format('H:i') : ($default->practicum1_start_time ?: ''),
-            'practicum1_end_time' => $default->practicum1_end_time instanceof \DateTimeInterface ? $default->practicum1_end_time->format('H:i') : ($default->practicum1_end_time ?: ''),
+            'practicum1_start_time' => $this->formatTimeValue($default->practicum1_start_time) ?? '',
+            'practicum1_end_time' => $this->formatTimeValue($default->practicum1_end_time) ?? '',
             'practicum1_room_id' => $default->practicum1_room_id ?? '',
-            'practicum2_start_time' => $default->practicum2_start_time instanceof \DateTimeInterface ? $default->practicum2_start_time->format('H:i') : ($default->practicum2_start_time ?: ''),
-            'practicum2_end_time' => $default->practicum2_end_time instanceof \DateTimeInterface ? $default->practicum2_end_time->format('H:i') : ($default->practicum2_end_time ?: ''),
+            'practicum2_start_time' => $this->formatTimeValue($default->practicum2_start_time) ?? '',
+            'practicum2_end_time' => $this->formatTimeValue($default->practicum2_end_time) ?? '',
             'practicum2_room_id' => $default->practicum2_room_id ?? '',
         ];
 
@@ -150,23 +153,27 @@ class SemesterDefaultController extends Controller
         $data = $this->prepareData($request->validated());
 
         if ($message = $this->checkDuplicate($semester->id, $data, $default->id)) {
-            return back()->withInput()->withErrors($message);
+            return back()->withInput()->withErrors($message)->with('error', reset($message));
         }
 
         if ($message = $this->checkOverlap($semester->id, $data, $default->id)) {
-            return back()->withInput()->withErrors($message);
+            return back()->withInput()->withErrors($message)->with('error', reset($message));
         }
 
         $default->update($data);
 
-        return redirect()->route('admin.semesters.defaults.index', $semester)->with('status', 'Default jadwal berhasil diperbarui.');
+        return redirect()
+            ->route('admin.semesters.defaults.index', $semester)
+            ->with('success', 'Default jadwal berhasil diperbarui.');
     }
 
     public function destroy(MasterSemester $semester, SemesterCourseDefault $default): RedirectResponse
     {
         $default->delete();
 
-        return redirect()->route('admin.semesters.defaults.index', $semester)->with('status', 'Default jadwal berhasil dihapus.');
+        return redirect()
+            ->route('admin.semesters.defaults.index', $semester)
+            ->with('success', 'Default jadwal berhasil dihapus.');
     }
 
     /**
@@ -180,6 +187,39 @@ class SemesterDefaultController extends Controller
         $data['practicum2_end_time'] = $data['practicum2_end_time'] ?? null;
 
         return $data;
+    }
+
+    private function formatTimeValue(mixed $value): ?string
+    {
+        if ($value instanceof \DateTimeInterface) {
+            return $value->format('H:i');
+        }
+
+        if ($value === null) {
+            return null;
+        }
+
+        if (is_string($value)) {
+            $value = trim($value);
+            if ($value === '') {
+                return null;
+            }
+
+            if (preg_match('/^\d{1,2}:\d{2}(:\d{2})?$/', $value)) {
+                $parts = explode(':', $value);
+                $hour = str_pad((string) ((int) $parts[0]), 2, '0', STR_PAD_LEFT);
+                $minute = $parts[1] ?? '00';
+
+                return $hour.':'.$minute;
+            }
+
+            $parsed = date_create($value);
+            if ($parsed instanceof \DateTimeInterface) {
+                return $parsed->format('H:i');
+            }
+        }
+
+        return null;
     }
 
     private function checkDuplicate(int $semesterId, array $data, ?int $excludeId = null): ?array

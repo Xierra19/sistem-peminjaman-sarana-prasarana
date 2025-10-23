@@ -143,16 +143,28 @@ const perPageOptions = [5, 10, 25, 50]
       <div class="overflow-x-auto">
         <div class="flex flex-col gap-3 pb-3 sm:flex-row sm:items-center sm:justify-between">
           <div class="text-sm font-semibold text-gray-700">Daftar Ruangan</div>
-          <div class="flex items-center justify-end gap-2 text-sm text-gray-600">
+          <div class="flex items-center justify-end gap-3 text-sm text-gray-600">
             <span>Rows per page</span>
-            <select
-              v-model.number="rowsPerPage"
-              class="rounded-md border border-gray-300 bg-white px-2 py-1 text-sm text-gray-700 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400"
-            >
-              <option v-for="option in perPageOptions" :key="option" :value="option">{{ option }}</option>
-            </select>
+            <div class="inline-flex items-center gap-1 rounded border border-gray-300 bg-white px-2 py-1">
+              <select
+                v-model.number="rowsPerPage"
+                class="border-none bg-transparent pr-4 text-sm text-gray-700 focus:outline-none focus:ring-0"
+              >
+                <option v-for="option in perPageOptions" :key="option" :value="option">
+                  {{ option }}
+                </option>
+              </select>
+              <svg class="h-4 w-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                <path
+                  fill-rule="evenodd"
+                  d="M5.23 7.21a.75.75 0 011.06.02L10 10.939l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+            </div>
           </div>
-        </div>        
+        </div>
+        
         <table class="min-w-full border border-gray-200 divide-y divide-gray-200">
           <thead class="bg-gray-100">
             <tr>

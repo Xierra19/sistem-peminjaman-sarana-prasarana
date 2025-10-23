@@ -306,6 +306,33 @@ class BookingController extends Controller
                         })
                         ->get();
 
+                    $fmt = static function ($value): ?string {
+                        if ($value === null) {
+                            return null;
+                        }
+
+                        if ($value instanceof \DateTimeInterface) {
+                            return $value->format('H:i');
+                        }
+
+                        $string = trim((string) $value);
+                        if ($string === '') {
+                            return null;
+                        }
+
+                        if (preg_match('/^\d{1,2}:\d{2}(:\d{2})?$/', $string)) {
+                            $parts = explode(':', $string);
+                            $hour = str_pad((string) ((int) $parts[0]), 2, '0', STR_PAD_LEFT);
+                            $minute = $parts[1] ?? '00';
+
+                            return $hour.':'.$minute;
+                        }
+
+                        $parsed = date_create($string);
+
+                        return $parsed instanceof \DateTimeInterface ? $parsed->format('H:i') : null;
+                    };
+
                     foreach ($defaults as $def) {
                         if ($def->theory_room_id === $room->id) {
                             $s = $fmt($def->theory_start_time);

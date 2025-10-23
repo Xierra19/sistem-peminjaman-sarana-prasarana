@@ -13,6 +13,15 @@
             line-height: 1.6;
         }
 
+        .logo-wrapper {
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .logo-wrapper img {
+            height: 80px;
+        }
+
         h1 {
             font-size: 22px;
             text-align: center;
@@ -59,6 +68,9 @@
     $start = Carbon::parse($booking->start_time)->locale('id');
     $end = Carbon::parse($booking->end_time)->locale('id');
 @endphp
+    <div class="logo-wrapper">
+        <img src="{{ public_path('images/LOGO_UEU_BY_ASU-06.png') }}" alt="Logo Universitas Esa Unggul">
+    </div>
     <h1>Surat Peminjaman Ruangan</h1>
 
     <p>
@@ -117,10 +129,10 @@
 
     <div class="signature">
         <p>Dicetak pada {{ Carbon::parse($generatedAt)->locale('id')->translatedFormat('d F Y H:i') }} WIB</p>
-        <p>Administrator Peminjaman Ruangan</p>
+        <p>Biro Administrasi Pembelajaran</p>
         <br><br>
         <br><br>        
-        <p><strong>{{ optional($booking->user)->name }}</p>
+        <p><strong>Biro Administrasi Pembelajaran</strong></p>
     </div>
 </body>
 </html>

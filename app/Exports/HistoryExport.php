@@ -19,12 +19,10 @@ class HistoryExport implements FromCollection, WithHeadings, WithMapping, Should
     public function collection()
     {
         $query = LogHistory::with(['booking.room.building.campus', 'user'])
-            ->orderBy('created_at', 'desc');
+            ->orderByDesc('created_at');
 
         if ($this->user->role !== 'admin') {
-            $query->whereHas('booking', function ($q) {
-                $q->where('user_id', $this->user->id);
-            });
+            $query->where('user_id', $this->user->id);
         }
 
         return $query->get();
@@ -62,4 +60,3 @@ class HistoryExport implements FromCollection, WithHeadings, WithMapping, Should
         ];
     }
 }
-

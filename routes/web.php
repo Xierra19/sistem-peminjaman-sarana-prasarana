@@ -70,7 +70,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     });
 
     Route::get('bookings', [BookingApprovalController::class, 'index'])->name('bookings.index');
-    Route::get('bookings/{booking}', [BookingApprovalController::class, 'show'])->name('bookings.show');
+    Route::get('bookings/{booking}', action: [BookingApprovalController::class, 'show'])->name('bookings.show');
     Route::post('bookings/{booking}/status', [BookingApprovalController::class, 'updateStatus'])->name('bookings.update-status');
     Route::get('bookings/export/excel', [BookingApprovalController::class, 'exportExcel'])->name('bookings.export.excel');
     Route::get('bookings/export/pdf', [BookingApprovalController::class, 'exportPdf'])->name('bookings.export.pdf');

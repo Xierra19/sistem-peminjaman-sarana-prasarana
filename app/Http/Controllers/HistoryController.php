@@ -14,19 +14,14 @@ class HistoryController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->role === 'admin') {
-            $histories = LogHistory::with(['booking.room.building.campus', 'user'])
-                ->orderBy('created_at', 'desc')
-                ->get();
-        } else {
-            $histories = LogHistory::with(['booking.room.building.campus', 'user'])
-                ->whereHas('booking', function ($query) use ($user) {
-                    $query->where('user_id', $user->id);
-                })
+        $query = LogHistory::with(['booking.room.building.campus', 'user'])
+            ->orderByDesc('created_at');
 
-                ->orderBy('created_at', 'desc')
-                ->get();
+        if ($user->role !== 'admin') {
+            $query->where('user_id', $user->id);
         }
+
+        $histories = $query->get();
 
         return inertia('History/Index', [
             'histories' => $histories,

@@ -35,4 +35,12 @@ class MasterSemester extends Model
     {
         return $this->hasMany(SemesterCourseDefault::class, 'semester_id');
     }
+
+    /**
+     * Alias untuk courseDefaults agar nested route binding Laravel tetap bekerja.
+     */
+    public function defaults(): HasMany
+    {
+        return $this->courseDefaults();
+    }
 }

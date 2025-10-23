@@ -33,10 +33,46 @@ class StoreDefaultRequest extends FormRequest
     public function prepareForValidation(): void
     {
         $this->merge([
+            'theory_start_time' => $this->normalizeTime($this->input('theory_start_time')),
+            'theory_end_time' => $this->normalizeTime($this->input('theory_end_time')),
+            'practicum1_start_time' => $this->normalizeTime($this->input('practicum1_start_time')),
+            'practicum1_end_time' => $this->normalizeTime($this->input('practicum1_end_time')),
+            'practicum2_start_time' => $this->normalizeTime($this->input('practicum2_start_time')),
+            'practicum2_end_time' => $this->normalizeTime($this->input('practicum2_end_time')),
             'theory_room_id' => $this->input('theory_room_id') ?: null,
             'practicum1_room_id' => $this->input('practicum1_room_id') ?: null,
             'practicum2_room_id' => $this->input('practicum2_room_id') ?: null,
         ]);
+    }
+
+    private function normalizeTime(mixed $value): mixed
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $value = is_string($value) ? trim($value) : $value;
+
+        if ($value === '' || $value === false) {
+            return null;
+        }
+
+        if (is_string($value) && preg_match('/^\d{1,2}:\d{2}(:\d{2})?$/', $value)) {
+            $parts = explode(':', $value);
+            $hour = str_pad((string) ((int) $parts[0]), 2, '0', STR_PAD_LEFT);
+            $minute = $parts[1] ?? '00';
+
+            return $hour.':'.$minute;
+        }
+
+        if (is_string($value)) {
+            $parsed = date_create($value);
+            if ($parsed instanceof \DateTimeInterface) {
+                return $parsed->format('H:i');
+            }
+        }
+
+        return $value;
     }
 
     public function messages(): array
