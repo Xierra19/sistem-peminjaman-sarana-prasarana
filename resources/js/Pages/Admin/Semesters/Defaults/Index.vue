@@ -176,23 +176,26 @@ const destroyDefault = (row) => {
           <div class="text-sm font-semibold text-gray-700">Daftar Default Jadwal</div>
           <div class="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-end">
             <div class="flex items-center gap-3 text-sm text-gray-600">
-              <span>Rows per page</span>
-              <div class="inline-flex items-center gap-1 rounded border border-gray-300 bg-white px-2 py-1">
+              <label class="font-medium text-gray-700" for="defaults-rows-per-page">Rows per page</label>
+              <div class="relative">
                 <select
+                  id="defaults-rows-per-page"
                   v-model.number="rowsPerPage"
-                  class="border-none bg-transparent pr-4 text-sm text-gray-700 focus:outline-none focus:ring-0"
+                  class="appearance-none w-20 rounded border border-gray-300 bg-white px-3 py-1.5 pr-8 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 >
                   <option v-for="option in perPageOptions" :key="`defaults-rows-${option}`" :value="option">
                     {{ option }}
                   </option>
                 </select>
-                <svg class="h-4 w-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path
-                    fill-rule="evenodd"
-                    d="M5.23 7.21a.75.75 0 011.06.02L10 10.939l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
-                    clip-rule="evenodd"
-                  />
-                </svg>
+                <span class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-gray-400">
+                  <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path
+                      fill-rule="evenodd"
+                      d="M5.23 7.21a.75.75 0 011.06.02L10 10.939l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
+                      clip-rule="evenodd"
+                    />
+                  </svg>
+                </span>
               </div>
             </div>
             <div class="flex flex-wrap items-center justify-end gap-2">
