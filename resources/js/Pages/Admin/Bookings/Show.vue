@@ -87,7 +87,7 @@ const submitApproval = (status) => {
                 class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold"
                 :class="statusColors[normalizedStatus] ?? 'bg-gray-100 text-gray-600 border-gray-200'"
               >
-                {{ statusLabels[normalizedStatus] ?? normalizedStatus || booking.status }}
+                {{ statusLabels[booking.normalizedStatus] ?? (booking.normalizedStatus || booking.status) }}
               </span>
             </header>
             <div class="grid gap-6 px-6 py-5 sm:grid-cols-2">
@@ -225,7 +225,7 @@ const submitApproval = (status) => {
                     <span class="text-xs text-gray-400">{{ formatDateTime(log.created_at) }}</span>
                   </div>
                   <p class="text-xs uppercase tracking-wide text-gray-400">
-                    {{ statusLabels[normalizeStatus(log.action)] ?? normalizeStatus(log.action) || log.action }}
+                    {{ statusLabels[normalizeStatus(log.action)] ?? (normalizeStatus(log.action) || log.action) }}
                   </p>
                   <p class="leading-snug text-gray-600">{{ log.description ?? '-' }}</p>
                 </div>
