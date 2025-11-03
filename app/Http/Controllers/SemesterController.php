@@ -50,6 +50,10 @@ class SemesterController extends Controller
             'anchor_date' => optional($semester->anchor_date)->format('Y-m-d'),
             'start_date' => optional($semester->start_date)->format('Y-m-d'),
             'end_date' => optional($semester->end_date)->format('Y-m-d'),
+            'uts_start_date' => optional($semester->uts_start_date)->format('Y-m-d'),
+            'uts_end_date' => optional($semester->uts_end_date)->format('Y-m-d'),
+            'uas_start_date' => optional($semester->uas_start_date)->format('Y-m-d'),
+            'uas_end_date' => optional($semester->uas_end_date)->format('Y-m-d'),
             'uts_week' => $semester->uts_week,
             'uas_week' => $semester->uas_week,
         ];

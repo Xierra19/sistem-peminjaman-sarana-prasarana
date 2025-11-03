@@ -16,6 +16,10 @@ const form = useForm({
   is_active: !!props.semester?.is_active,
   start_date: props.semester?.start_date ?? '',
   end_date: props.semester?.end_date ?? '',
+  uts_start_date: props.semester?.uts_start_date ?? '',
+  uts_end_date: props.semester?.uts_end_date ?? '',
+  uas_start_date: props.semester?.uas_start_date ?? '',
+  uas_end_date: props.semester?.uas_end_date ?? '',
   uts_week: props.semester?.uts_week ?? '',
   uas_week: props.semester?.uas_week ?? '',
 })
@@ -91,6 +95,32 @@ const submit = () => {
             </div>
           </div>
 
+          <div class="grid gap-6 md:grid-cols-2">
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Tanggal Mulai UTS</label>
+              <input v-model="form.uts_start_date" type="date" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500" />
+              <div v-if="form.errors.uts_start_date" class="mt-1 text-sm text-red-600">{{ form.errors.uts_start_date }}</div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Tanggal Selesai UTS</label>
+              <input v-model="form.uts_end_date" type="date" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500" />
+              <div v-if="form.errors.uts_end_date" class="mt-1 text-sm text-red-600">{{ form.errors.uts_end_date }}</div>
+            </div>
+          </div>
+
+          <div class="grid gap-6 md:grid-cols-2">
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Tanggal Mulai UAS</label>
+              <input v-model="form.uas_start_date" type="date" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500" />
+              <div v-if="form.errors.uas_start_date" class="mt-1 text-sm text-red-600">{{ form.errors.uas_start_date }}</div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Tanggal Selesai UAS</label>
+              <input v-model="form.uas_end_date" type="date" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500" />
+              <div v-if="form.errors.uas_end_date" class="mt-1 text-sm text-red-600">{{ form.errors.uas_end_date }}</div>
+            </div>
+          </div>
+
           <div class="flex justify-end gap-3">
             <Link :href="route('admin.semesters.index')" class="rounded border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Batal</Link>
             <button type="submit" class="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700" :disabled="form.processing">
@@ -102,4 +132,3 @@ const submit = () => {
     </div>
   </AuthenticatedLayout>
 </template>
-

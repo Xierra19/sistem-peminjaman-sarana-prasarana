@@ -17,6 +17,10 @@ class MasterSemester extends Model
         'anchor_date',
         'start_date',
         'end_date',
+        'uts_start_date',
+        'uts_end_date',
+        'uas_start_date',
+        'uas_end_date',
         'uts_week',
         'uas_week',
     ];
@@ -26,6 +30,10 @@ class MasterSemester extends Model
         'anchor_date' => 'date',
         'start_date' => 'date',
         'end_date' => 'date',
+        'uts_start_date' => 'date',
+        'uts_end_date' => 'date',
+        'uas_start_date' => 'date',
+        'uas_end_date' => 'date',
     ];
 
     /**

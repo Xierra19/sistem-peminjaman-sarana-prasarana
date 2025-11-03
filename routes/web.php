@@ -1,5 +1,7 @@
 <?php
 
+// file: routes/web.php
+
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -7,6 +9,8 @@ use Inertia\Inertia;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\Admin\BuildingController;
 use App\Http\Controllers\Admin\CampusController;
+use App\Http\Controllers\Admin\CourseImportController;
+use App\Http\Controllers\Admin\CourseOfferingController;
 use App\Http\Controllers\Admin\RoomController;
 use App\Http\Controllers\Admin\BookingApprovalController;
 use App\Http\Controllers\AdminController;
@@ -16,6 +20,7 @@ use App\Http\Controllers\ExportController;
 use App\Http\Controllers\SemesterController;
 use App\Http\Controllers\SemesterDefaultController;
 use App\Http\Controllers\SemesterDefaultImportController;
+use App\Http\Controllers\Admin\SemesterController as AdminSemesterController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -48,6 +53,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/export-users', [ExportController::class, 'exportUsers']);
 });
 
+Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('semester/edit', [AdminSemesterController::class, 'edit'])->name('semester.edit');
+    Route::put('semester', [AdminSemesterController::class, 'update'])->name('semester.update');
+});
+
 // Route khusus untuk admin, diproteksi oleh middleware 'role:admin'
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/home', [AdminController::class, 'index'])->name('home');
@@ -57,6 +67,12 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     Route::post('semesters/{semester}/toggle-active', [SemesterController::class, 'toggleActive'])->name('semesters.toggle-active');
     Route::resource('semesters', SemesterController::class)->except(['show']);
+
+    Route::get('courses/import', [CourseImportController::class, 'create'])->name('courses.import.create');
+    Route::post('courses/import', [CourseImportController::class, 'store'])->name('courses.import.store');
+    Route::get('semesters/{semester}/offerings', [CourseOfferingController::class, 'index'])->name('offerings.index');
+    Route::get('offerings/{offering}', [CourseOfferingController::class, 'show'])->name('offerings.show');
+    Route::put('offerings/{offering}/exam', [CourseOfferingController::class, 'updateExam'])->name('offerings.exam.update');
 
     Route::prefix('semesters/{semester}')->scopeBindings()->group(function () {
         Route::resource('defaults', SemesterDefaultController::class)
