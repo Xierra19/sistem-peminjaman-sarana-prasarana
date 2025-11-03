@@ -83,7 +83,7 @@ class BookingController extends Controller
 
         // Tambah user id yang login & status default
         $validated['user_id'] = Auth::id();
-        $validated['status']  = 'pending';
+        $validated['status']  = 'waiting';
 
         // Simpan booking
         $room = Room::with('bookings')->findOrFail($validated['room_id']);

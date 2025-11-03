@@ -20,7 +20,7 @@ class BookingApprovalController extends Controller
     public function index()
     {
         $bookings = Booking::with(['user', 'room.building.campus'])
-            ->orderByRaw("CASE status WHEN 'pending' THEN 1 WHEN 'approved' THEN 2 WHEN 'rejected' THEN 3 ELSE 4 END")
+            ->orderByRaw("CASE WHEN status IN ('waiting','pending') THEN 1 WHEN status = 'approved' THEN 2 WHEN status = 'rejected' THEN 3 ELSE 4 END")
             ->orderBy('start_time')
             ->get();
 

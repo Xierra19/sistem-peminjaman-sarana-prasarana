@@ -42,11 +42,12 @@ class BookingExport implements FromCollection, WithHeadings, WithMapping
     public function map($booking): array
     {
         $statusLabels = [
-            'pending' => 'Menunggu Persetujuan',
+            'waiting' => 'Menunggu Persetujuan',
             'approved' => 'Disetujui',
             'rejected' => 'Ditolak',
-            'requested' => 'Diajukan',
         ];
+
+        $status = $this->normalizeStatus($booking->status);
 
         return [
             $booking->id,
@@ -58,7 +59,7 @@ class BookingExport implements FromCollection, WithHeadings, WithMapping
             optional(optional(optional($booking->room)->building)->campus)->name,
             $this->formatDateTime($booking->start_time),
             $this->formatDateTime($booking->end_time),
-            $statusLabels[$booking->status] ?? ucfirst($booking->status ?? '-'),
+            $statusLabels[$status] ?? ucfirst($status ?? '-'),
         ];
     }
 
@@ -69,5 +70,14 @@ class BookingExport implements FromCollection, WithHeadings, WithMapping
         }
 
         return Carbon::parse($value)->timezone('Asia/Jakarta')->format('d-m-Y H:i');
+    }
+
+    protected function normalizeStatus(?string $status): ?string
+    {
+        if ($status === null) {
+            return null;
+        }
+
+        return in_array($status, ['pending', 'requested'], true) ? 'waiting' : $status;
     }
 }

@@ -12,17 +12,20 @@ const props = defineProps({
 })
 
 const statusLabels = {
-  pending: 'Menunggu Persetujuan',
+  waiting: 'Menunggu Persetujuan',
   approved: 'Disetujui',
   rejected: 'Ditolak',
-  requested: 'Diajukan',
 }
 
 const statusClasses = {
-  pending: 'bg-amber-100 text-amber-700 border-amber-200',
+  waiting: 'bg-amber-100 text-amber-700 border-amber-200',
   approved: 'bg-emerald-100 text-emerald-700 border-emerald-200',
   rejected: 'bg-rose-100 text-rose-700 border-rose-200',
-  requested: 'bg-sky-100 text-sky-700 border-sky-200',
+}
+
+const normalizeStatus = (status) => {
+  if (!status) return ''
+  return status === 'pending' || status === 'requested' ? 'waiting' : status
 }
 
 const perPageOptions = [5, 10, 25, 50]
@@ -46,7 +49,8 @@ const filteredBookings = computed(() => {
       .toLowerCase()
 
     const matchesSearch = !q || searchable.includes(q)
-    const matchesStatus = !status || booking.status === status
+    const bookingStatus = normalizeStatus(booking.status)
+    const matchesStatus = !status || bookingStatus === status
 
     return matchesSearch && matchesStatus
   })
@@ -113,10 +117,9 @@ const formatDateTime = (value) => {
                   class="w-full appearance-none rounded-md border border-gray-300 px-3 py-2 pr-9 text-sm leading-5 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 >
                   <option value="">Semua Status</option>
-                  <option value="pending">Menunggu Persetujuan</option>
+                  <option value="waiting">Menunggu Persetujuan</option>
                   <option value="approved">Disetujui</option>
                   <option value="rejected">Ditolak</option>
-                  <option value="requested">Diajukan</option>
                 </select>
                 <span class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-gray-400">
                   <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
@@ -192,13 +195,13 @@ const formatDateTime = (value) => {
                 <td class="px-4 py-3">
                   <span
                     class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold"
-                    :class="statusClasses[booking.status] ?? 'bg-gray-100 text-gray-600 border-gray-200'"
+                    :class="statusClasses[normalizeStatus(booking.status)] ?? 'bg-gray-100 text-gray-600 border-gray-200'"
                   >
-                    {{ statusLabels[booking.status] ?? booking.status }}
+                    {{ statusLabels[normalizeStatus(booking.status)] ?? booking.status }}
                   </span>
                 </td>
                 <td class="px-4 py-3">
-                  <template v-if="booking.status === 'approved'">
+                  <template v-if="normalizeStatus(booking.status) === 'approved'">
                     <a
                       :href="route('bookings.letter', booking.id)"
                       target="_blank"

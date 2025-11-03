@@ -19,7 +19,7 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->dateTime('start_time');
             $table->dateTime('end_time');
-            $table->string('status')->default('pending');
+            $table->string('status')->default('waiting');
             $table->string('attachment')->nullable();
             $table->timestamps();
         });

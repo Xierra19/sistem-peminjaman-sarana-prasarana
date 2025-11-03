@@ -13,15 +13,20 @@ const props = defineProps({
 })
 
 const statusLabels = {
-  pending: 'Menunggu Persetujuan',
+  waiting: 'Menunggu Persetujuan',
   approved: 'Disetujui',
   rejected: 'Ditolak',
 }
 
 const badgeClasses = {
-  pending: 'bg-amber-100 text-amber-700',
+  waiting: 'bg-amber-100 text-amber-700',
   approved: 'bg-emerald-100 text-emerald-700',
   rejected: 'bg-rose-100 text-rose-700',
+}
+
+const normalizeStatus = (status) => {
+  if (!status) return ''
+  return status === 'pending' || status === 'requested' ? 'waiting' : status
 }
 
 const formatDateTime = (value) => {
@@ -35,13 +40,17 @@ const formatDateTime = (value) => {
   })
 }
 
-const bookingsList = computed(() => props.bookings ?? [])
+const bookingsList = computed(() =>
+  (props.bookings ?? []).map((booking) => ({
+    ...booking,
+    normalizedStatus: normalizeStatus(booking.status),
+  })),
+)
 
 const {
   paginatedItems: paginatedBookings,
   currentPage,
   rowsPerPage,
-  totalPages,
   pageMeta,
   pages,
   changePage,
@@ -80,7 +89,7 @@ const exportPdf = () => {
                 <select
                   id="admin-bookings-rows"
                   v-model.number="rowsPerPage"
-                  class="appearance-none w-20 rounded border border-gray-300 bg-white px-3 py-1.5 pr-8 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  class="w-20 appearance-none rounded border border-gray-300 bg-white px-3 py-1.5 pr-8 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 >
                   <option v-for="option in perPageOptions" :key="option" :value="option">
                     {{ option }}
@@ -101,10 +110,9 @@ const exportPdf = () => {
               <template #trigger>
                 <button
                   type="button"
-                  class="inline-flex items-center justify-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 tex
-t-sm font-medium text-blue-700 transition hover:bg-blue-100"
+                  class="inline-flex items-center justify-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-100"
                 >
-                  📄 Export
+                  <span>Export</span>
                   <svg class="h-4 w-4" fill="none" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                     <path
                       d="M5.25 7.5 10 12.5l4.75-5"
@@ -123,20 +131,21 @@ t-sm font-medium text-blue-700 transition hover:bg-blue-100"
                     class="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-blue-50"
                     @click="exportExcel"
                   >
-                    📊 Export Excel
+                    <span>Export Excel</span>
                   </button>
                   <button
                     type="button"
                     class="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-blue-50"
                     @click="exportPdf"
                   >
-                    📑 Export PDF
+                    <span>Export PDF</span>
                   </button>
                 </div>
               </template>
             </Dropdown>
           </div>
         </div>
+
         <table class="min-w-full divide-y divide-gray-200 text-sm">
           <thead class="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
             <tr>
@@ -161,7 +170,7 @@ t-sm font-medium text-blue-700 transition hover:bg-blue-100"
               <td class="px-5 py-4">
                 <div class="font-medium text-gray-800">{{ booking.room?.name ?? '-' }}</div>
                 <div class="text-xs text-gray-500">
-                  {{ booking.room?.building?.name ?? '-' }} · {{ booking.room?.building?.campus?.name ?? '-' }}
+                  {{ booking.room?.building?.name ?? '-' }} - {{ booking.room?.building?.campus?.name ?? '-' }}
                 </div>
               </td>
               <td class="px-5 py-4 text-sm">
@@ -171,9 +180,9 @@ t-sm font-medium text-blue-700 transition hover:bg-blue-100"
               <td class="px-5 py-4 text-center">
                 <span
                   class="inline-flex rounded-full px-3 py-1 text-xs font-semibold"
-                  :class="badgeClasses[booking.status] ?? 'bg-gray-100 text-gray-600'"
+                  :class="badgeClasses[booking.normalizedStatus] ?? 'bg-gray-100 text-gray-600'"
                 >
-                  {{ statusLabels[booking.status] ?? booking.status }}
+                  {{ statusLabels[booking.normalizedStatus] ?? (booking.normalizedStatus || booking.status) }}
                 </span>
               </td>
               <td class="px-5 py-4 text-right">
@@ -192,39 +201,37 @@ t-sm font-medium text-blue-700 transition hover:bg-blue-100"
             </tr>
           </tbody>
         </table>
+
         <div
-          class="flex flex-col gap-3 border-t border-gray-100 px-5 py-4 text-sm text-gray-600 sm:flex-row sm:items-center sm:justi
-fy-between"
+          class="flex flex-col gap-3 border-t border-gray-100 px-5 py-4 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-between"
         >
           <div>
             <span v-if="pageMeta.of">Menampilkan {{ pageMeta.from }}-{{ pageMeta.to }} dari {{ pageMeta.of }} data</span>
             <span v-else>Menampilkan 0 data</span>
           </div>
-          <div class="flex items-center gap-1">
+          <div class="flex items-center gap-2">
             <button
               type="button"
-              class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 disabled:cursor-not-allowed disabled:opacity-5
-0"
+              class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
               @click="changePage(1)"
               :disabled="currentPage === 1 || !bookingsList.length"
             >
-              «
+              First
             </button>
             <button
               type="button"
-              class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 disabled:cursor-not-allowed disabled:opacity-5
-0"
+              class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
               @click="changePage(currentPage - 1)"
               :disabled="currentPage === 1 || !bookingsList.length"
             >
-              ‹
+              Prev
             </button>
             <template v-if="bookingsList.length">
               <button
                 v-for="page in pages"
                 :key="`page-${page}`"
                 type="button"
-                class="rounded border px-3 py-1 text-sm"
+                class="rounded border px-3 py-1 text-sm transition"
                 :class="
                   currentPage === page
                     ? 'border-blue-500 bg-blue-500 text-white'
@@ -237,21 +244,19 @@ fy-between"
             </template>
             <button
               type="button"
-              class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 disabled:cursor-not-allowed disabled:opacity-5
-0"
+              class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
               @click="changePage(currentPage + 1)"
               :disabled="currentPage === pages.length || !bookingsList.length"
             >
-              ›
+              Next
             </button>
             <button
               type="button"
-              class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 disabled:cursor-not-allowed disabled:opacity-5
-0"
+              class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
               @click="changePage(pages.length)"
               :disabled="currentPage === pages.length || !bookingsList.length"
             >
-              »
+              Last
             </button>
           </div>
         </div>

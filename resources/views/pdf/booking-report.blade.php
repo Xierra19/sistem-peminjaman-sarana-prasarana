@@ -52,11 +52,11 @@
 @php
     use Carbon\Carbon;
     $statusLabels = [
-        'pending' => 'Menunggu Persetujuan',
+        'waiting' => 'Menunggu Persetujuan',
         'approved' => 'Disetujui',
         'rejected' => 'Ditolak',
-        'requested' => 'Diajukan',
     ];
+    $normalizeStatus = static fn (?string $status): ?string => in_array($status, ['pending', 'requested'], true) ? 'waiting' : $status;
 @endphp
     <h1>Laporan Booking Ruangan</h1>
     <div class="subtitle">Dicetak pada {{ Carbon::parse($generatedAt)->locale('id')->translatedFormat('d F Y H:i') }} WIB</div>
@@ -86,7 +86,8 @@
                 <td>{{ optional(optional(optional($booking->room)->building)->campus)->name }}</td>
                 <td>{{ Carbon::parse($booking->start_time)->locale('id')->translatedFormat('d F Y H:i') }}</td>
                 <td>{{ Carbon::parse($booking->end_time)->locale('id')->translatedFormat('d F Y H:i') }}</td>
-                <td>{{ $statusLabels[$booking->status] ?? ucfirst($booking->status ?? '-') }}</td>
+                @php($status = $normalizeStatus($booking->status))
+                <td>{{ $statusLabels[$status] ?? ucfirst($status ?? '-') }}</td>
             </tr>
         @empty
             <tr>
