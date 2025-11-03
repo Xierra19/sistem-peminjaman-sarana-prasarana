@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Room extends Model
 {
@@ -14,25 +16,35 @@ class Room extends Model
         'building_id',
         'capacity',
         'is_available',
+        'features',
     ];
 
     protected $casts = [
         'is_available' => 'boolean',
+        'features' => 'array',
     ];
 
     /**
-     * Get the building that owns the room.
+     * @return BelongsTo<Building, Room>
      */
-    public function building()
+    public function building(): BelongsTo
     {
         return $this->belongsTo(Building::class);
     }
 
     /**
-     * Get the bookings for the room.
+     * @return HasMany<Booking>
      */
-    public function bookings()
+    public function bookings(): HasMany
     {
         return $this->hasMany(Booking::class);
+    }
+
+    /**
+     * @return HasMany<ImportedClassSchedule>
+     */
+    public function importedClassSchedules(): HasMany
+    {
+        return $this->hasMany(ImportedClassSchedule::class);
     }
 }
