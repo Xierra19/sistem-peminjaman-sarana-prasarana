@@ -42,6 +42,34 @@ class BookingController extends Controller
     }
 
     /**
+     * Display a specific booking requested by the authenticated user.
+     */
+    public function show(Booking $booking)
+    {
+        $user = Auth::user();
+
+        if ($user->role !== 'admin' && $booking->user_id !== $user->id) {
+            abort(403);
+        }
+
+        $booking->load([
+            'room.building.campus',
+            'logs' => function ($query) {
+                $query->with('user')->orderBy('created_at');
+            },
+        ]);
+
+        $latestDecisionLog = $booking->logs
+            ->filter(fn (LogHistory $log) => in_array($log->action, ['approved', 'rejected']))
+            ->last();
+
+        return Inertia::render('Bookings/Show', [
+            'booking' => $booking,
+            'latestDecisionLog' => $latestDecisionLog,
+        ]);
+    }
+
+    /**
      * Show the form for creating a new resource.
      */
     public function create()

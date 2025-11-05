@@ -45,6 +45,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/bookings/create', [BookingController::class, 'create'])->name('bookings.create');
     Route::post('/bookings', [BookingController::class, 'store'])->name('bookings.store');
     Route::get('/rooms/{room}/availability', [BookingController::class, 'availability'])->name('rooms.availability');
+    Route::get('/bookings/{booking}', [BookingController::class, 'show'])->name('bookings.show');
     Route::get('/bookings/{booking}/attachment', [BookingController::class, 'downloadAttachment'])->name('bookings.attachment');
     Route::get('/bookings/{booking}/letter', [BookingController::class, 'downloadLetter'])->name('bookings.letter');
 

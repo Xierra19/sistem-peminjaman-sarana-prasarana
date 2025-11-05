@@ -201,17 +201,25 @@ const formatDateTime = (value) => {
                   </span>
                 </td>
                 <td class="px-4 py-3">
-                  <template v-if="normalizeStatus(booking.status) === 'approved'">
-                    <a
-                      :href="route('bookings.letter', booking.id)"
-                      target="_blank"
-                      rel="noopener"
-                      class="inline-flex items-center rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+                  <div class="flex flex-col gap-2">
+                    <Link
+                      :href="route('bookings.show', booking.id)"
+                      class="inline-flex items-center justify-center rounded-md border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:border-blue-300 hover:text-blue-800"
                     >
-                      Download Surat
-                    </a>
-                  </template>
-                  <span v-else class="text-xs text-gray-400">Menunggu Persetujuan</span>
+                      Lihat Detail
+                    </Link>
+                    <template v-if="normalizeStatus(booking.status) === 'approved'">
+                      <a
+                        :href="route('bookings.letter', booking.id)"
+                        target="_blank"
+                        rel="noopener"
+                        class="inline-flex items-center justify-center rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+                      >
+                        Download Surat
+                      </a>
+                    </template>
+                    <span v-else class="text-xs text-gray-400">Menunggu Persetujuan</span>
+                  </div>
                 </td>
               </tr>
               <tr v-if="!paginatedBookings.length">
