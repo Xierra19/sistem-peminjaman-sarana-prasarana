@@ -1,5 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
+import { usePagination } from '@/Composables/usePagination'
 import { Head, Link, usePage } from '@inertiajs/vue3'
 import { computed, ref } from 'vue'
 
@@ -42,18 +43,15 @@ const isUser = computed(() => page.props.auth.user.role === 'user')
 const isAdmin = computed(() => page.props.auth.user.role === 'admin')
 
 const createEmptyFilters = () => ({
-  keyword: '',
-  user: '',
+  title: '',
+  applicant: '',
   room: '',
+  campus: '',
   status: '',
 })
 
 const filterDrafts = ref(createEmptyFilters())
 const activeFilters = ref(createEmptyFilters())
-
-const applyFilters = () => {
-  activeFilters.value = { ...filterDrafts.value }
-}
 
 const normalizedBookings = computed(() =>
   (props.bookings ?? []).map((booking) => ({
@@ -86,39 +84,32 @@ const matchesStatusFilter = (booking, status) => {
 }
 
 const filteredBookings = computed(() => {
-  const keyword = activeFilters.value.keyword.trim().toLowerCase()
+  const titleQuery = activeFilters.value.title.trim().toLowerCase()
+  const applicantQuery = activeFilters.value.applicant.trim().toLowerCase()
   const status = activeFilters.value.status
-  const userQuery = activeFilters.value.user.trim().toLowerCase()
   const roomQuery = activeFilters.value.room.trim().toLowerCase()
+  const campusQuery = activeFilters.value.campus.trim().toLowerCase()
 
   return normalizedBookings.value.filter((booking) => {
     if (!matchesStatusFilter(booking, status)) {
       return false
     }
 
-    if (keyword) {
-      const searchable = [
-        booking.title,
-        booking.description,
-        booking.user?.name,
-        booking.user?.email,
-        booking.room?.name,
-        booking.room?.building?.name,
-        booking.room?.building?.campus?.name,
-      ]
+    if (titleQuery) {
+      const titleSearchable = [booking.title, booking.description]
         .filter(Boolean)
         .join(' ')
         .toLowerCase()
 
-      if (!searchable.includes(keyword)) {
+      if (!titleSearchable.includes(titleQuery)) {
         return false
       }
     }
 
-    if (userQuery) {
+    if (applicantQuery) {
       const userSearchable = [booking.user?.name, booking.user?.email].filter(Boolean).join(' ').toLowerCase()
 
-      if (!userSearchable.includes(userQuery)) {
+      if (!userSearchable.includes(applicantQuery)) {
         return false
       }
     }
@@ -138,9 +129,40 @@ const filteredBookings = computed(() => {
       }
     }
 
+    if (campusQuery) {
+      const campusName = booking.room?.building?.campus?.name?.toLowerCase() ?? ''
+
+      if (!campusName.includes(campusQuery)) {
+        return false
+      }
+    }
+
     return true
   })
 })
+
+const perPageOptions = [5, 10, 25, 50]
+
+const {
+  paginatedItems: paginatedBookings,
+  currentPage,
+  rowsPerPage,
+  pageMeta,
+  pages,
+  changePage,
+} = usePagination(filteredBookings)
+
+const applyFilters = () => {
+  activeFilters.value = { ...filterDrafts.value }
+  changePage(1)
+}
+
+const resetFilters = () => {
+  const defaults = createEmptyFilters()
+  filterDrafts.value = { ...defaults }
+  activeFilters.value = { ...defaults }
+  changePage(1)
+}
 
 const summary = computed(() => ({
   total: props.statusSummary?.total ?? normalizedBookings.value.length,
@@ -207,25 +229,55 @@ const formatDateTime = (value) => {
           </div>
         </div>
 
-        <div class="rounded-xl border border-gray-200 bg-white shadow-sm">
-          <div class="border-b border-gray-100 p-4">
-            <div class="grid gap-4 md:grid-cols-3">
-              <div class="md:col-span-2">
-                <label class="mb-1 block text-sm font-medium text-gray-700" for="dashboard-search">Pencarian</label>
+        <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+          <div class="border-b border-gray-100 px-5 py-4">
+            <form class="grid gap-4 sm:grid-cols-2 xl:grid-cols-6" @submit.prevent="applyFilters">
+              <div class="flex flex-col gap-1">
+                <label class="text-sm font-medium text-gray-700" for="dashboard-title">Judul</label>
                 <input
-                  id="dashboard-search"
-                  v-model="searchQuery"
+                  id="dashboard-title"
+                  v-model="filterDrafts.title"
                   type="text"
-                  placeholder="Cari judul, pemohon, ruangan, atau kampus..."
+                  placeholder="Masukkan judul kegiatan"
                   class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm leading-5 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
               </div>
-              <div>
-                <label class="mb-1 block text-sm font-medium text-gray-700" for="dashboard-status">Status</label>
+              <div class="flex flex-col gap-1">
+                <label class="text-sm font-medium text-gray-700" for="dashboard-applicant">Pemohon</label>
+                <input
+                  id="dashboard-applicant"
+                  v-model="filterDrafts.applicant"
+                  type="text"
+                  placeholder="Nama atau email pemohon"
+                  class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm leading-5 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-sm font-medium text-gray-700" for="dashboard-room">Ruangan</label>
+                <input
+                  id="dashboard-room"
+                  v-model="filterDrafts.room"
+                  type="text"
+                  placeholder="Nama ruangan atau gedung"
+                  class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm leading-5 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-sm font-medium text-gray-700" for="dashboard-campus">Kampus</label>
+                <input
+                  id="dashboard-campus"
+                  v-model="filterDrafts.campus"
+                  type="text"
+                  placeholder="Nama kampus"
+                  class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm leading-5 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-sm font-medium text-gray-700" for="dashboard-status">Status</label>
                 <div class="relative">
                   <select
                     id="dashboard-status"
-                    v-model="statusFilter"
+                    v-model="filterDrafts.status"
                     class="w-full appearance-none rounded-md border border-gray-300 px-3 py-2 pr-9 text-sm leading-5 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   >
                     <option value="">Semua Status</option>
@@ -244,6 +296,47 @@ const formatDateTime = (value) => {
                   </span>
                 </div>
               </div>
+              <div class="flex items-center justify-end gap-2 sm:col-span-2 xl:col-span-1">
+                <button
+                  type="button"
+                  class="inline-flex items-center justify-center rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+                  @click="resetFilters"
+                >
+                  Reset
+                </button>
+                <button
+                  type="submit"
+                  class="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700"
+                >
+                  Cari
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div class="border-b border-gray-100 px-5 py-4">
+            <div class="flex items-center justify-end gap-3 text-sm text-gray-600">
+              <label class="font-medium text-gray-700" for="dashboard-rows">Rows per page</label>
+              <div class="relative">
+                <select
+                  id="dashboard-rows"
+                  v-model.number="rowsPerPage"
+                  class="w-24 appearance-none rounded border border-gray-300 bg-white px-3 py-1.5 pr-8 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  <option v-for="option in perPageOptions" :key="`per-page-${option}`" :value="option">
+                    {{ option }}
+                  </option>
+                </select>
+                <span class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-gray-400">
+                  <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path
+                      fill-rule="evenodd"
+                      d="M5.23 7.21a.75.75 0 011.06.02L10 10.939l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
+                      clip-rule="evenodd"
+                    />
+                  </svg>
+                </span>
+              </div>
             </div>
           </div>
 
@@ -251,36 +344,36 @@ const formatDateTime = (value) => {
             <table class="min-w-full divide-y divide-gray-200 text-sm text-gray-700">
               <thead class="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
                 <tr>
-                  <th class="px-4 py-3 text-left">Judul</th>
-                  <th v-if="isAdmin" class="px-4 py-3 text-left">Pemohon</th>
-                  <th class="px-4 py-3 text-left">Ruangan</th>
-                  <th class="px-4 py-3 text-left">Mulai</th>
-                  <th class="px-4 py-3 text-left">Selesai</th>
-                  <th class="px-4 py-3 text-left">Status</th>
-                  <th v-if="isAdmin" class="px-4 py-3 text-left">Aksi</th>
+                  <th class="px-5 py-3 text-left">Judul</th>
+                  <th v-if="isAdmin" class="px-5 py-3 text-left">Pemohon</th>
+                  <th class="px-5 py-3 text-left">Ruangan</th>
+                  <th class="px-5 py-3 text-left">Mulai</th>
+                  <th class="px-5 py-3 text-left">Selesai</th>
+                  <th class="px-5 py-3 text-left">Status</th>
+                  <th v-if="isAdmin" class="px-5 py-3 text-left">Aksi</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-100">
-                <tr v-for="booking in filteredBookings" :key="booking.id" class="hover:bg-gray-50">
-                  <td class="px-4 py-3">
+                <tr v-for="booking in paginatedBookings" :key="booking.id" class="hover:bg-gray-50">
+                  <td class="px-5 py-4">
                     <div class="font-semibold text-gray-900">{{ booking.title }}</div>
                     <div class="text-xs text-gray-500">
                       {{ booking.description || 'Tidak ada deskripsi tambahan.' }}
                     </div>
                   </td>
-                  <td v-if="isAdmin" class="px-4 py-3">
+                  <td v-if="isAdmin" class="px-5 py-4">
                     <div class="font-medium text-gray-900">{{ booking.user?.name ?? '-' }}</div>
                     <div class="text-xs text-gray-500">{{ booking.user?.email ?? '-' }}</div>
                   </td>
-                  <td class="px-4 py-3">
+                  <td class="px-5 py-4">
                     <div class="font-medium text-gray-900">{{ booking.room?.name ?? '-' }}</div>
                     <div class="text-xs text-gray-500">
                       {{ booking.room?.building?.name ?? '-' }} - {{ booking.room?.building?.campus?.name ?? '-' }}
                     </div>
                   </td>
-                  <td class="px-4 py-3 text-gray-700">{{ formatDateTime(booking.start_time) }}</td>
-                  <td class="px-4 py-3 text-gray-700">{{ formatDateTime(booking.end_time) }}</td>
-                  <td class="px-4 py-3">
+                  <td class="px-5 py-4 text-gray-700">{{ formatDateTime(booking.start_time) }}</td>
+                  <td class="px-5 py-4 text-gray-700">{{ formatDateTime(booking.end_time) }}</td>
+                  <td class="px-5 py-4">
                     <span
                       class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold capitalize"
                       :class="statusBadgeClasses[booking.normalizedStatus] ?? 'bg-gray-100 text-gray-600 border border-gray-200'"
@@ -288,7 +381,7 @@ const formatDateTime = (value) => {
                       {{ statusLabels[booking.normalizedStatus] ?? (booking.normalizedStatus || booking.status) }}
                     </span>
                   </td>
-                  <td v-if="isAdmin" class="px-4 py-3">
+                  <td v-if="isAdmin" class="px-5 py-4">
                     <Link
                       :href="route('admin.bookings.show', booking.id)"
                       class="inline-flex items-center rounded-md border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-50"
@@ -298,12 +391,71 @@ const formatDateTime = (value) => {
                   </td>
                 </tr>
                 <tr v-if="!filteredBookings.length">
-                  <td :colspan="isAdmin ? 7 : 6" class="px-4 py-10 text-center text-sm text-gray-500">
+                  <td :colspan="isAdmin ? 7 : 6" class="px-5 py-10 text-center text-sm text-gray-500">
                     Tidak ada data booking yang cocok dengan filter saat ini.
                   </td>
                 </tr>
               </tbody>
             </table>
+          </div>
+
+          <div
+            class="flex flex-col gap-3 border-t border-gray-100 px-5 py-4 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div>
+              <span v-if="pageMeta.of">Menampilkan {{ pageMeta.from }}-{{ pageMeta.to }} dari {{ pageMeta.of }} data</span>
+              <span v-else>Menampilkan 0 data</span>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+                @click="changePage(1)"
+                :disabled="currentPage === 1 || !filteredBookings.length"
+              >
+                First
+              </button>
+              <button
+                type="button"
+                class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+                @click="changePage(currentPage - 1)"
+                :disabled="currentPage === 1 || !filteredBookings.length"
+              >
+                Prev
+              </button>
+              <template v-if="filteredBookings.length">
+                <button
+                  v-for="page in pages"
+                  :key="`dashboard-page-${page}`"
+                  type="button"
+                  class="rounded border px-3 py-1 text-sm transition"
+                  :class="
+                    currentPage === page
+                      ? 'border-blue-500 bg-blue-500 text-white'
+                      : 'border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600'
+                  "
+                  @click="changePage(page)"
+                >
+                  {{ page }}
+                </button>
+              </template>
+              <button
+                type="button"
+                class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+                @click="changePage(currentPage + 1)"
+                :disabled="currentPage === pages.length || !filteredBookings.length"
+              >
+                Next
+              </button>
+              <button
+                type="button"
+                class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+                @click="changePage(pages.length)"
+                :disabled="currentPage === pages.length || !filteredBookings.length"
+              >
+                Last
+              </button>
+            </div>
           </div>
         </div>
       </div>
