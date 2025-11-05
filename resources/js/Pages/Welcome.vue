@@ -58,7 +58,7 @@ const features = [
         icon: 'document',
         badgeClass: 'bg-emerald-100',
         iconClass: 'text-emerald-600',
-        title: 'Penyuratan Mudah',
+        title: 'Room Request Letter',
         description: 'Template surat dan lampiran siap pakai sehingga dokumen bisa diunduh hanya dalam satu klik.',
     },
 ];
