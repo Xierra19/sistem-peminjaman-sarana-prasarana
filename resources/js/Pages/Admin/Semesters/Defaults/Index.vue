@@ -1,6 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import Modal from '@/Components/Modal.vue'
+import TimePicker24 from '@/Components/TimePicker24.vue'
 import { usePagination } from '@/Composables/usePagination'
 import { Head, Link, router, useForm } from '@inertiajs/vue3'
 import { computed, ref, watch } from 'vue'
@@ -438,23 +439,16 @@ const destroyDefault = (row) => {
           <div class="grid gap-6 md:grid-cols-3">
             <div class="md:col-span-3">
               <h3 class="text-sm font-semibold uppercase tracking-wide text-gray-800">Sesi Teori</h3>
+              <p class="mt-1 text-xs text-gray-500">Gunakan format 24 jam (00:00 = tengah malam, 12:00 = tengah hari).</p>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700">Jam Mulai *</label>
-              <input
-                v-model="createForm.theory_start_time"
-                type="time"
-                class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
+              <TimePicker24 v-model="createForm.theory_start_time" class="mt-1" />
               <div v-if="createForm.errors.theory_start_time" class="mt-1 text-xs text-red-600">{{ createForm.errors.theory_start_time }}</div>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700">Jam Selesai *</label>
-              <input
-                v-model="createForm.theory_end_time"
-                type="time"
-                class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
+              <TimePicker24 v-model="createForm.theory_end_time" class="mt-1" />
               <div v-if="createForm.errors.theory_end_time" class="mt-1 text-xs text-red-600">{{ createForm.errors.theory_end_time }}</div>
             </div>
             <div>
@@ -479,22 +473,14 @@ const destroyDefault = (row) => {
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700">Jam Mulai</label>
-              <input
-                v-model="createForm.practicum1_start_time"
-                type="time"
-                class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
+              <TimePicker24 v-model="createForm.practicum1_start_time" class="mt-1" />
               <div v-if="createForm.errors.practicum1_start_time" class="mt-1 text-xs text-red-600">
                 {{ createForm.errors.practicum1_start_time }}
               </div>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700">Jam Selesai</label>
-              <input
-                v-model="createForm.practicum1_end_time"
-                type="time"
-                class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
+              <TimePicker24 v-model="createForm.practicum1_end_time" class="mt-1" />
               <div v-if="createForm.errors.practicum1_end_time" class="mt-1 text-xs text-red-600">
                 {{ createForm.errors.practicum1_end_time }}
               </div>
@@ -523,22 +509,14 @@ const destroyDefault = (row) => {
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700">Jam Mulai</label>
-              <input
-                v-model="createForm.practicum2_start_time"
-                type="time"
-                class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
+              <TimePicker24 v-model="createForm.practicum2_start_time" class="mt-1" />
               <div v-if="createForm.errors.practicum2_start_time" class="mt-1 text-xs text-red-600">
                 {{ createForm.errors.practicum2_start_time }}
               </div>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700">Jam Selesai</label>
-              <input
-                v-model="createForm.practicum2_end_time"
-                type="time"
-                class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
+              <TimePicker24 v-model="createForm.practicum2_end_time" class="mt-1" />
               <div v-if="createForm.errors.practicum2_end_time" class="mt-1 text-xs text-red-600">
                 {{ createForm.errors.practicum2_end_time }}
               </div>
@@ -582,22 +560,14 @@ const destroyDefault = (row) => {
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700">Jam Mulai</label>
-              <input
-                v-model="createForm[`${slot.key}_start_time`]"
-                type="time"
-                class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
+              <TimePicker24 v-model="createForm[`${slot.key}_start_time`]" class="mt-1" />
               <div v-if="createForm.errors[`${slot.key}_start_time`]" class="mt-1 text-xs text-red-600">
                 {{ createForm.errors[`${slot.key}_start_time`] }}
               </div>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700">Jam Selesai</label>
-              <input
-                v-model="createForm[`${slot.key}_end_time`]"
-                type="time"
-                class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
+              <TimePicker24 v-model="createForm[`${slot.key}_end_time`]" class="mt-1" />
               <div v-if="createForm.errors[`${slot.key}_end_time`]" class="mt-1 text-xs text-red-600">
                 {{ createForm.errors[`${slot.key}_end_time`] }}
               </div>
@@ -690,20 +660,12 @@ const destroyDefault = (row) => {
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700">Jam Mulai *</label>
-              <input
-                v-model="editForm.theory_start_time"
-                type="time"
-                class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
+              <TimePicker24 v-model="editForm.theory_start_time" class="mt-1" />
               <div v-if="editForm.errors.theory_start_time" class="mt-1 text-xs text-red-600">{{ editForm.errors.theory_start_time }}</div>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700">Jam Selesai *</label>
-              <input
-                v-model="editForm.theory_end_time"
-                type="time"
-                class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
+              <TimePicker24 v-model="editForm.theory_end_time" class="mt-1" />
               <div v-if="editForm.errors.theory_end_time" class="mt-1 text-xs text-red-600">{{ editForm.errors.theory_end_time }}</div>
             </div>
             <div>
@@ -728,22 +690,14 @@ const destroyDefault = (row) => {
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700">Jam Mulai</label>
-              <input
-                v-model="editForm.practicum1_start_time"
-                type="time"
-                class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
+              <TimePicker24 v-model="editForm.practicum1_start_time" class="mt-1" />
               <div v-if="editForm.errors.practicum1_start_time" class="mt-1 text-xs text-red-600">
                 {{ editForm.errors.practicum1_start_time }}
               </div>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700">Jam Selesai</label>
-              <input
-                v-model="editForm.practicum1_end_time"
-                type="time"
-                class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
+              <TimePicker24 v-model="editForm.practicum1_end_time" class="mt-1" />
               <div v-if="editForm.errors.practicum1_end_time" class="mt-1 text-xs text-red-600">
                 {{ editForm.errors.practicum1_end_time }}
               </div>
@@ -772,22 +726,14 @@ const destroyDefault = (row) => {
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700">Jam Mulai</label>
-              <input
-                v-model="editForm.practicum2_start_time"
-                type="time"
-                class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
+              <TimePicker24 v-model="editForm.practicum2_start_time" class="mt-1" />
               <div v-if="editForm.errors.practicum2_start_time" class="mt-1 text-xs text-red-600">
                 {{ editForm.errors.practicum2_start_time }}
               </div>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700">Jam Selesai</label>
-              <input
-                v-model="editForm.practicum2_end_time"
-                type="time"
-                class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
+              <TimePicker24 v-model="editForm.practicum2_end_time" class="mt-1" />
               <div v-if="editForm.errors.practicum2_end_time" class="mt-1 text-xs text-red-600">
                 {{ editForm.errors.practicum2_end_time }}
               </div>
@@ -831,22 +777,14 @@ const destroyDefault = (row) => {
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700">Jam Mulai</label>
-              <input
-                v-model="editForm[`${slot.key}_start_time`]"
-                type="time"
-                class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
+              <TimePicker24 v-model="editForm[`${slot.key}_start_time`]" class="mt-1" />
               <div v-if="editForm.errors[`${slot.key}_start_time`]" class="mt-1 text-xs text-red-600">
                 {{ editForm.errors[`${slot.key}_start_time`] }}
               </div>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700">Jam Selesai</label>
-              <input
-                v-model="editForm[`${slot.key}_end_time`]"
-                type="time"
-                class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
+              <TimePicker24 v-model="editForm[`${slot.key}_end_time`]" class="mt-1" />
               <div v-if="editForm.errors[`${slot.key}_end_time`]" class="mt-1 text-xs text-red-600">
                 {{ editForm.errors[`${slot.key}_end_time`] }}
               </div>

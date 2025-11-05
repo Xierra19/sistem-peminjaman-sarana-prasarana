@@ -61,17 +61,18 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div class="md:col-span-3">
                     <h3 class="text-lg font-semibold text-gray-800">Sesi Teori *</h3>
+                    <p class="mt-1 text-xs text-gray-500">Gunakan format 24 jam (00:00 = tengah malam, 12:00 = tengah hari).</p>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Jam Mulai</label>
-                    <input type="time" name="theory_start_time" value="{{ old('theory_start_time', optional($default->theory_start_time)->format('H:i')) }}" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500" required>
+                    <input type="text" inputmode="numeric" pattern="^(?:[01]\d|2[0-3]):[0-5]\d$" maxlength="5" placeholder="HH:MM" name="theory_start_time" value="{{ old('theory_start_time', optional($default->theory_start_time)->format('H:i')) }}" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500" required>
                     @error('theory_start_time')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Jam Selesai</label>
-                    <input type="time" name="theory_end_time" value="{{ old('theory_end_time', optional($default->theory_end_time)->format('H:i')) }}" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500" required>
+                    <input type="text" inputmode="numeric" pattern="^(?:[01]\d|2[0-3]):[0-5]\d$" maxlength="5" placeholder="HH:MM" name="theory_end_time" value="{{ old('theory_end_time', optional($default->theory_end_time)->format('H:i')) }}" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500" required>
                     @error('theory_end_time')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
@@ -98,14 +99,14 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Jam Mulai</label>
-                        <input type="time" name="practicum1_start_time" value="{{ old('practicum1_start_time', optional($default->practicum1_start_time)->format('H:i')) }}" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                        <input type="text" inputmode="numeric" pattern="^(?:[01]\d|2[0-3]):[0-5]\d$" maxlength="5" placeholder="HH:MM" name="practicum1_start_time" value="{{ old('practicum1_start_time', optional($default->practicum1_start_time)->format('H:i')) }}" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                         @error('practicum1_start_time')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Jam Selesai</label>
-                        <input type="time" name="practicum1_end_time" value="{{ old('practicum1_end_time', optional($default->practicum1_end_time)->format('H:i')) }}" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                        <input type="text" inputmode="numeric" pattern="^(?:[01]\d|2[0-3]):[0-5]\d$" maxlength="5" placeholder="HH:MM" name="practicum1_end_time" value="{{ old('practicum1_end_time', optional($default->practicum1_end_time)->format('H:i')) }}" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                         @error('practicum1_end_time')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
@@ -131,14 +132,14 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Jam Mulai</label>
-                        <input type="time" name="practicum2_start_time" value="{{ old('practicum2_start_time', optional($default->practicum2_start_time)->format('H:i')) }}" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                        <input type="text" inputmode="numeric" pattern="^(?:[01]\d|2[0-3]):[0-5]\d$" maxlength="5" placeholder="HH:MM" name="practicum2_start_time" value="{{ old('practicum2_start_time', optional($default->practicum2_start_time)->format('H:i')) }}" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                         @error('practicum2_start_time')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Jam Selesai</label>
-                        <input type="time" name="practicum2_end_time" value="{{ old('practicum2_end_time', optional($default->practicum2_end_time)->format('H:i')) }}" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                        <input type="text" inputmode="numeric" pattern="^(?:[01]\d|2[0-3]):[0-5]\d$" maxlength="5" placeholder="HH:MM" name="practicum2_end_time" value="{{ old('practicum2_end_time', optional($default->practicum2_end_time)->format('H:i')) }}" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                         @error('practicum2_end_time')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
@@ -172,14 +173,14 @@
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700">Jam Mulai</label>
-                <input type="time" name="uts_start_time" value="{{ old('uts_start_time', optional($default->uts_start_time)->format('H:i')) }}" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                <input type="text" inputmode="numeric" pattern="^(?:[01]\d|2[0-3]):[0-5]\d$" maxlength="5" placeholder="HH:MM" name="uts_start_time" value="{{ old('uts_start_time', optional($default->uts_start_time)->format('H:i')) }}" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                 @error('uts_start_time')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700">Jam Selesai</label>
-                <input type="time" name="uts_end_time" value="{{ old('uts_end_time', optional($default->uts_end_time)->format('H:i')) }}" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                <input type="text" inputmode="numeric" pattern="^(?:[01]\d|2[0-3]):[0-5]\d$" maxlength="5" placeholder="HH:MM" name="uts_end_time" value="{{ old('uts_end_time', optional($default->uts_end_time)->format('H:i')) }}" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                 @error('uts_end_time')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
@@ -212,14 +213,14 @@
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700">Jam Mulai</label>
-                <input type="time" name="uas_start_time" value="{{ old('uas_start_time', optional($default->uas_start_time)->format('H:i')) }}" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                <input type="text" inputmode="numeric" pattern="^(?:[01]\d|2[0-3]):[0-5]\d$" maxlength="5" placeholder="HH:MM" name="uas_start_time" value="{{ old('uas_start_time', optional($default->uas_start_time)->format('H:i')) }}" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                 @error('uas_start_time')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700">Jam Selesai</label>
-                <input type="time" name="uas_end_time" value="{{ old('uas_end_time', optional($default->uas_end_time)->format('H:i')) }}" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                <input type="text" inputmode="numeric" pattern="^(?:[01]\d|2[0-3]):[0-5]\d$" maxlength="5" placeholder="HH:MM" name="uas_end_time" value="{{ old('uas_end_time', optional($default->uas_end_time)->format('H:i')) }}" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                 @error('uas_end_time')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror

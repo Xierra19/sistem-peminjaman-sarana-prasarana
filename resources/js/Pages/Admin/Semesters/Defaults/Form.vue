@@ -1,5 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
+import TimePicker24 from '@/Components/TimePicker24.vue'
 import { Head, Link, useForm } from '@inertiajs/vue3'
 
 const props = defineProps({
@@ -80,15 +81,16 @@ const submit = () => {
           <div class="grid gap-6 md:grid-cols-3">
             <div class="md:col-span-3">
               <h3 class="text-lg font-semibold text-gray-800">Sesi Teori *</h3>
+              <p class="mt-1 text-xs text-gray-500">Gunakan format 24 jam (00:00 = tengah malam, 12:00 = tengah hari).</p>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700">Jam Mulai</label>
-              <input v-model="form.theory_start_time" type="time" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500" />
+              <TimePicker24 v-model="form.theory_start_time" class="mt-1" />
               <div v-if="form.errors.theory_start_time" class="mt-1 text-sm text-red-600">{{ form.errors.theory_start_time }}</div>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700">Jam Selesai</label>
-              <input v-model="form.theory_end_time" type="time" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500" />
+              <TimePicker24 v-model="form.theory_end_time" class="mt-1" />
               <div v-if="form.errors.theory_end_time" class="mt-1 text-sm text-red-600">{{ form.errors.theory_end_time }}</div>
             </div>
             <div>
@@ -108,12 +110,12 @@ const submit = () => {
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700">Jam Mulai</label>
-                <input v-model="form.practicum1_start_time" type="time" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500" />
+                <TimePicker24 v-model="form.practicum1_start_time" class="mt-1" />
                 <div v-if="form.errors.practicum1_start_time" class="mt-1 text-sm text-red-600">{{ form.errors.practicum1_start_time }}</div>
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700">Jam Selesai</label>
-                <input v-model="form.practicum1_end_time" type="time" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500" />
+                <TimePicker24 v-model="form.practicum1_end_time" class="mt-1" />
                 <div v-if="form.errors.practicum1_end_time" class="mt-1 text-sm text-red-600">{{ form.errors.practicum1_end_time }}</div>
               </div>
               <div>
@@ -132,12 +134,12 @@ const submit = () => {
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700">Jam Mulai</label>
-                <input v-model="form.practicum2_start_time" type="time" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500" />
+                <TimePicker24 v-model="form.practicum2_start_time" class="mt-1" />
                 <div v-if="form.errors.practicum2_start_time" class="mt-1 text-sm text-red-600">{{ form.errors.practicum2_start_time }}</div>
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700">Jam Selesai</label>
-                <input v-model="form.practicum2_end_time" type="time" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500" />
+                <TimePicker24 v-model="form.practicum2_end_time" class="mt-1" />
                 <div v-if="form.errors.practicum2_end_time" class="mt-1 text-sm text-red-600">{{ form.errors.practicum2_end_time }}</div>
               </div>
               <div>
@@ -162,12 +164,12 @@ const submit = () => {
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700">Jam Mulai</label>
-              <input v-model="form.uts_start_time" type="time" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500" />
+              <TimePicker24 v-model="form.uts_start_time" class="mt-1" />
               <div v-if="form.errors.uts_start_time" class="mt-1 text-sm text-red-600">{{ form.errors.uts_start_time }}</div>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700">Jam Selesai</label>
-              <input v-model="form.uts_end_time" type="time" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500" />
+              <TimePicker24 v-model="form.uts_end_time" class="mt-1" />
               <div v-if="form.errors.uts_end_time" class="mt-1 text-sm text-red-600">{{ form.errors.uts_end_time }}</div>
             </div>
             <div>
@@ -191,12 +193,12 @@ const submit = () => {
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700">Jam Mulai</label>
-              <input v-model="form.uas_start_time" type="time" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500" />
+              <TimePicker24 v-model="form.uas_start_time" class="mt-1" />
               <div v-if="form.errors.uas_start_time" class="mt-1 text-sm text-red-600">{{ form.errors.uas_start_time }}</div>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700">Jam Selesai</label>
-              <input v-model="form.uas_end_time" type="time" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500" />
+              <TimePicker24 v-model="form.uas_end_time" class="mt-1" />
               <div v-if="form.errors.uas_end_time" class="mt-1 text-sm text-red-600">{{ form.errors.uas_end_time }}</div>
             </div>
             <div>
