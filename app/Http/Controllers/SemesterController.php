@@ -7,7 +7,6 @@ use App\Http\Requests\Semester\UpdateSemesterRequest;
 use App\Models\MasterSemester;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -40,28 +39,9 @@ class SemesterController extends Controller
         return redirect()->route('admin.semesters.index')->with('status', 'Semester berhasil dibuat.');
     }
 
-    public function edit(MasterSemester $semester): Response
+    public function edit(MasterSemester $semester): RedirectResponse
     {
-        $semesterPayload = [
-            'id' => $semester->id,
-            'year' => $semester->year,
-            'term' => $semester->term,
-            'is_active' => (bool) $semester->is_active,
-            'anchor_date' => optional($semester->anchor_date)->format('Y-m-d'),
-            'start_date' => optional($semester->start_date)->format('Y-m-d'),
-            'end_date' => optional($semester->end_date)->format('Y-m-d'),
-            'uts_start_date' => optional($semester->uts_start_date)->format('Y-m-d'),
-            'uts_end_date' => optional($semester->uts_end_date)->format('Y-m-d'),
-            'uas_start_date' => optional($semester->uas_start_date)->format('Y-m-d'),
-            'uas_end_date' => optional($semester->uas_end_date)->format('Y-m-d'),
-            'uts_week' => $semester->uts_week,
-            'uas_week' => $semester->uas_week,
-        ];
-
-        return Inertia::render('Admin/Semesters/Form', [
-            'semester' => $semesterPayload,
-            'mode' => 'edit',
-        ]);
+        return redirect()->route('admin.semester.edit', ['semester' => $semester->id]);
     }
 
     public function update(UpdateSemesterRequest $request, MasterSemester $semester): RedirectResponse

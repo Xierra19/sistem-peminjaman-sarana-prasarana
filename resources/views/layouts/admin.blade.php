@@ -47,7 +47,7 @@
                             <a href="{{ route('admin.campus.index') }}" class="block rounded-md px-3 py-1.5 text-sm {{ request()->routeIs('admin.campus.*') ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-600 hover:bg-gray-100' }}">Master Campus</a>
                             <a href="{{ route('admin.buildings.index') }}" class="block rounded-md px-3 py-1.5 text-sm {{ request()->routeIs('admin.buildings.*') ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-600 hover:bg-gray-100' }}">Master Building</a>
                             <a href="{{ route('admin.rooms.index') }}" class="block rounded-md px-3 py-1.5 text-sm {{ request()->routeIs('admin.rooms.*') ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-600 hover:bg-gray-100' }}">Master Rooms</a>
-                            <a href="{{ route('admin.semesters.index') }}" class="block rounded-md px-3 py-1.5 text-sm {{ request()->routeIs('admin.semesters.*') || request()->routeIs('admin.semesters.defaults.*') ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-600 hover:bg-gray-100' }}">Master Semester</a>
+                            <a href="{{ route('admin.semesters.index') }}" class="block rounded-md px-3 py-1.5 text-sm {{ request()->routeIs('admin.semesters.*') || request()->routeIs('admin.semester.*') || request()->routeIs('admin.offerings.*') || request()->routeIs('admin.courses.import.*') ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-600 hover:bg-gray-100' }}">Master Semester</a>
                         </div>
                     </div>
                 @endif

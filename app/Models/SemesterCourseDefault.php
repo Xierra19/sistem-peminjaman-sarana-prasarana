@@ -24,6 +24,14 @@ class SemesterCourseDefault extends Model
         'practicum2_start_time',
         'practicum2_end_time',
         'practicum2_room_id',
+        'uts_exam_date',
+        'uts_start_time',
+        'uts_end_time',
+        'uts_room_id',
+        'uas_exam_date',
+        'uas_start_time',
+        'uas_end_time',
+        'uas_room_id',
     ];
 
     protected $casts = [
@@ -34,6 +42,12 @@ class SemesterCourseDefault extends Model
         'practicum1_end_time' => 'string',
         'practicum2_start_time' => 'string',
         'practicum2_end_time' => 'string',
+        'uts_exam_date' => 'date',
+        'uts_start_time' => 'string',
+        'uts_end_time' => 'string',
+        'uas_exam_date' => 'date',
+        'uas_start_time' => 'string',
+        'uas_end_time' => 'string',
     ];
 
     /**
@@ -57,5 +71,15 @@ class SemesterCourseDefault extends Model
     public function practicum2Room(): BelongsTo
     {
         return $this->belongsTo(Room::class, 'practicum2_room_id');
+    }
+
+    public function utsRoom(): BelongsTo
+    {
+        return $this->belongsTo(Room::class, 'uts_room_id');
+    }
+
+    public function uasRoom(): BelongsTo
+    {
+        return $this->belongsTo(Room::class, 'uas_room_id');
     }
 }

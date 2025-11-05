@@ -26,6 +26,14 @@ const form = useForm({
   practicum2_start_time: props.defaultItem?.practicum2_start_time ?? '',
   practicum2_end_time: props.defaultItem?.practicum2_end_time ?? '',
   practicum2_room_id: props.defaultItem?.practicum2_room_id ?? '',
+  uts_exam_date: props.defaultItem?.uts_exam_date ?? '',
+  uts_start_time: props.defaultItem?.uts_start_time ?? '',
+  uts_end_time: props.defaultItem?.uts_end_time ?? '',
+  uts_room_id: props.defaultItem?.uts_room_id ?? '',
+  uas_exam_date: props.defaultItem?.uas_exam_date ?? '',
+  uas_start_time: props.defaultItem?.uas_start_time ?? '',
+  uas_end_time: props.defaultItem?.uas_end_time ?? '',
+  uas_room_id: props.defaultItem?.uas_room_id ?? '',
 })
 
 const submit = () => {
@@ -87,7 +95,7 @@ const submit = () => {
               <label class="block text-sm font-medium text-gray-700">Ruang</label>
               <select v-model="form.theory_room_id" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                 <option value="">-- Tanpa Ruang --</option>
-                <option v-for="room in props.rooms" :key="room.id" :value="room.id">{{ room.name }}</option>
+                <option v-for="room in props.rooms" :key="room.id" :value="room.id">{{ room.label ?? room.name }}</option>
               </select>
               <div v-if="form.errors.theory_room_id" class="mt-1 text-sm text-red-600">{{ form.errors.theory_room_id }}</div>
             </div>
@@ -112,7 +120,7 @@ const submit = () => {
                 <label class="block text-sm font-medium text-gray-700">Ruang</label>
                 <select v-model="form.practicum1_room_id" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                   <option value="">-- Tanpa Ruang --</option>
-                  <option v-for="room in props.rooms" :key="room.id" :value="room.id">{{ room.name }}</option>
+                <option v-for="room in props.rooms" :key="room.id" :value="room.id">{{ room.label ?? room.name }}</option>
                 </select>
                 <div v-if="form.errors.practicum1_room_id" class="mt-1 text-sm text-red-600">{{ form.errors.practicum1_room_id }}</div>
               </div>
@@ -136,10 +144,68 @@ const submit = () => {
                 <label class="block text-sm font-medium text-gray-700">Ruang</label>
                 <select v-model="form.practicum2_room_id" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                   <option value="">-- Tanpa Ruang --</option>
-                  <option v-for="room in props.rooms" :key="room.id" :value="room.id">{{ room.name }}</option>
+                <option v-for="room in props.rooms" :key="room.id" :value="room.id">{{ room.label ?? room.name }}</option>
                 </select>
                 <div v-if="form.errors.practicum2_room_id" class="mt-1 text-sm text-red-600">{{ form.errors.practicum2_room_id }}</div>
               </div>
+            </div>
+          </div>
+
+          <div class="grid gap-6 md:grid-cols-4">
+            <div class="md:col-span-4 flex items-center justify-between">
+              <h3 class="text-lg font-semibold text-gray-800">UTS (opsional)</h3>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Tanggal UTS</label>
+              <input v-model="form.uts_exam_date" type="date" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500" />
+              <div v-if="form.errors.uts_exam_date" class="mt-1 text-sm text-red-600">{{ form.errors.uts_exam_date }}</div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Jam Mulai</label>
+              <input v-model="form.uts_start_time" type="time" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500" />
+              <div v-if="form.errors.uts_start_time" class="mt-1 text-sm text-red-600">{{ form.errors.uts_start_time }}</div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Jam Selesai</label>
+              <input v-model="form.uts_end_time" type="time" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500" />
+              <div v-if="form.errors.uts_end_time" class="mt-1 text-sm text-red-600">{{ form.errors.uts_end_time }}</div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Ruang</label>
+              <select v-model="form.uts_room_id" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                <option value="">-- Tanpa Ruang --</option>
+                <option v-for="room in props.rooms" :key="`uts-room-${room.id}`" :value="room.id">{{ room.label ?? room.name }}</option>
+              </select>
+              <div v-if="form.errors.uts_room_id" class="mt-1 text-sm text-red-600">{{ form.errors.uts_room_id }}</div>
+            </div>
+          </div>
+
+          <div class="grid gap-6 md:grid-cols-4">
+            <div class="md:col-span-4 flex items-center justify-between">
+              <h3 class="text-lg font-semibold text-gray-800">UAS (opsional)</h3>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Tanggal UAS</label>
+              <input v-model="form.uas_exam_date" type="date" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500" />
+              <div v-if="form.errors.uas_exam_date" class="mt-1 text-sm text-red-600">{{ form.errors.uas_exam_date }}</div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Jam Mulai</label>
+              <input v-model="form.uas_start_time" type="time" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500" />
+              <div v-if="form.errors.uas_start_time" class="mt-1 text-sm text-red-600">{{ form.errors.uas_start_time }}</div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Jam Selesai</label>
+              <input v-model="form.uas_end_time" type="time" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500" />
+              <div v-if="form.errors.uas_end_time" class="mt-1 text-sm text-red-600">{{ form.errors.uas_end_time }}</div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Ruang</label>
+              <select v-model="form.uas_room_id" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                <option value="">-- Tanpa Ruang --</option>
+                <option v-for="room in props.rooms" :key="`uas-room-${room.id}`" :value="room.id">{{ room.label ?? room.name }}</option>
+              </select>
+              <div v-if="form.errors.uas_room_id" class="mt-1 text-sm text-red-600">{{ form.errors.uas_room_id }}</div>
             </div>
           </div>
 

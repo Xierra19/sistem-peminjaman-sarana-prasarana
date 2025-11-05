@@ -1,7 +1,7 @@
 // file: resources/js/Pages/Admin/Offerings/Index.vue
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
-import { Head, Link } from '@inertiajs/vue3'
+import { Head, Link, useForm } from '@inertiajs/vue3'
 
 const props = defineProps({
   semesterId: {
@@ -14,9 +14,19 @@ const props = defineProps({
   },
 })
 
-const badgeClass = (value) => {
-  if (!value) return 'bg-gray-100 text-gray-600'
-  return value === 1 ? 'bg-indigo-100 text-indigo-700' : 'bg-purple-100 text-purple-700'
+const form = useForm({
+  semester_id: props.semesterId,
+  course_code: '',
+  course_name: '',
+})
+
+const submit = () => {
+  form.post(route('admin.offerings.store'), {
+    preserveScroll: true,
+    onSuccess: () => {
+      form.reset('course_code', 'course_name')
+    },
+  })
 }
 </script>
 
@@ -24,75 +34,76 @@ const badgeClass = (value) => {
   <Head title="Course Offerings" />
 
   <AuthenticatedLayout>
-    <div class="bg-white rounded-lg shadow">
-      <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+    <div class="space-y-6">
+      <header class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 class="text-lg font-semibold text-gray-800">Course Offerings</h1>
-          <p class="text-sm text-gray-500">Semester ID: {{ props.semesterId }}</p>
+          <h1 class="text-2xl font-semibold text-gray-900">Course Offerings</h1>
+          <p class="text-sm text-gray-600">Semester ID: {{ semesterId }}</p>
         </div>
         <Link
           :href="route('admin.courses.import.create')"
-          class="inline-flex items-center rounded bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-blue-700"
+          class="inline-flex items-center rounded bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white shadow hover:bg-blue-500"
         >
-          Import Courses
+          Import CSV
         </Link>
-      </div>
+      </header>
 
-      <div class="overflow-x-auto">
+      <section class="bg-white shadow rounded-lg p-6 space-y-4">
+        <h2 class="text-lg font-semibold text-gray-900">Add Offering</h2>
+        <form class="grid gap-4 sm:grid-cols-[200px,1fr,auto]" @submit.prevent="submit">
+          <div>
+            <label for="course_code" class="block text-sm font-medium text-gray-700">Course Code</label>
+            <input
+              id="course_code"
+              v-model="form.course_code"
+              type="text"
+              class="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+              placeholder="e.g. INF101"
+            />
+            <p v-if="form.errors.course_code" class="mt-1 text-sm text-red-600">{{ form.errors.course_code }}</p>
+          </div>
+          <div>
+            <label for="course_name" class="block text-sm font-medium text-gray-700">Course Name</label>
+            <input
+              id="course_name"
+              v-model="form.course_name"
+              type="text"
+              class="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+              placeholder="Course title"
+            />
+            <p v-if="form.errors.course_name" class="mt-1 text-sm text-red-600">{{ form.errors.course_name }}</p>
+          </div>
+          <div class="flex items-end">
+            <button
+              type="submit"
+              :disabled="form.processing"
+              class="inline-flex items-center rounded bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-60"
+            >
+              {{ form.processing ? 'Saving...' : 'Save' }}
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <section class="bg-white shadow rounded-lg overflow-hidden">
         <table class="min-w-full divide-y divide-gray-200 text-sm">
-          <thead class="bg-gray-50">
-            <tr class="text-left font-semibold uppercase tracking-wider text-gray-500">
+          <thead class="bg-gray-50 text-left font-semibold uppercase tracking-wide text-gray-600">
+            <tr>
               <th class="px-4 py-3">Code</th>
-              <th class="px-4 py-3">Course</th>
-              <th class="px-4 py-3">Meetings</th>
-              <th class="px-4 py-3">UTS</th>
-              <th class="px-4 py-3">UAS</th>
-              <th class="px-4 py-3"></th>
+              <th class="px-4 py-3">Name</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-100 text-gray-700">
-            <tr v-if="!props.offerings.length">
-              <td colspan="6" class="px-4 py-6 text-center text-sm text-gray-500">No offerings found.</td>
+          <tbody class="divide-y divide-gray-100">
+            <tr v-if="!offerings.length">
+              <td colspan="2" class="px-4 py-6 text-center text-sm text-gray-500">No offerings yet.</td>
             </tr>
-            <tr v-for="offering in props.offerings" :key="offering.id">
-              <td class="px-4 py-3 font-semibold text-gray-800">{{ offering.course_code }}</td>
-              <td class="px-4 py-3">
-                <div class="text-sm font-medium text-gray-800">
-                  {{ offering.course_name }}
-                </div>
-                <div v-if="offering.class_group" class="text-xs text-gray-500">
-                  Group {{ offering.class_group }}
-                </div>
-              </td>
-              <td class="px-4 py-3 text-sm text-gray-600">{{ offering.meetings_count }}</td>
-              <td class="px-4 py-3">
-                <span
-                  class="inline-flex items-center rounded px-2 py-0.5 text-xs font-semibold"
-                  :class="badgeClass(offering.uts_week_seq)"
-                >
-                  {{ offering.has_uts ? `Week ${offering.uts_week_seq ?? '-'}` : '-' }}
-                </span>
-              </td>
-              <td class="px-4 py-3">
-                <span
-                  class="inline-flex items-center rounded px-2 py-0.5 text-xs font-semibold"
-                  :class="badgeClass(offering.uas_week_seq)"
-                >
-                  {{ offering.has_uas ? `Week ${offering.uas_week_seq ?? '-'}` : '-' }}
-                </span>
-              </td>
-              <td class="px-4 py-3 text-right">
-                <Link
-                  :href="route('admin.offerings.show', offering.id)"
-                  class="text-sm font-semibold text-blue-600 hover:text-blue-700"
-                >
-                  View
-                </Link>
-              </td>
+            <tr v-for="offering in offerings" :key="offering.id" class="text-gray-800">
+              <td class="px-4 py-3 font-medium">{{ offering.course_code }}</td>
+              <td class="px-4 py-3">{{ offering.course_name }}</td>
             </tr>
           </tbody>
         </table>
-      </div>
+      </section>
     </div>
   </AuthenticatedLayout>
 </template>

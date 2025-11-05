@@ -122,7 +122,7 @@ const submit = () => {
           </div>
 
           <div class="flex justify-end gap-3">
-            <Link :href="route('admin.semesters.index')" class="rounded border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Batal</Link>
+            <Link :href="route('admin.semester.edit')" class="rounded border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Batal</Link>
             <button type="submit" class="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700" :disabled="form.processing">
               {{ isEdit ? 'Simpan Perubahan' : 'Simpan Semester' }}
             </button>

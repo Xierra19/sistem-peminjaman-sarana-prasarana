@@ -17,7 +17,6 @@ class CourseOffering extends Model
         'semester_id',
         'course_code',
         'course_name',
-        'class_group',
     ];
 
     /**
@@ -26,14 +25,6 @@ class CourseOffering extends Model
     public function semester(): BelongsTo
     {
         return $this->belongsTo(Semester::class);
-    }
-
-    /**
-     * @return HasMany<CourseMeeting>
-     */
-    public function courseMeetings(): HasMany
-    {
-        return $this->hasMany(CourseMeeting::class);
     }
 
     /**

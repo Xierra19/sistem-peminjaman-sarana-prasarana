@@ -9,6 +9,7 @@ use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Schema;
 
 class Semester extends Model
 {
@@ -33,6 +34,10 @@ class Semester extends Model
         'uts_end_date' => 'date',
         'uas_start_date' => 'date',
         'uas_end_date' => 'date',
+        'teaching_1_7_start_date' => 'date',
+        'teaching_1_7_end_date' => 'date',
+        'teaching_8_14_start_date' => 'date',
+        'teaching_8_14_end_date' => 'date',
         'is_active' => 'boolean',
     ];
 
@@ -41,7 +46,11 @@ class Semester extends Model
      */
     public function scopeActive(Builder $query): Builder
     {
-        return $query->where('is_active', true);
+        if (Schema::hasColumn($this->getTable(), 'is_active')) {
+            return $query->where('is_active', true);
+        }
+
+        return $query;
     }
 
     /**
@@ -83,6 +92,8 @@ class Semester extends Model
             'semester' => $this->formatRange($this->start_date, $this->end_date),
             'uts' => $this->formatRange($this->uts_start_date, $this->uts_end_date),
             'uas' => $this->formatRange($this->uas_start_date, $this->uas_end_date),
+            'teaching_1_7' => $this->formatRange($this->teaching_1_7_start_date, $this->teaching_1_7_end_date),
+            'teaching_8_14' => $this->formatRange($this->teaching_8_14_start_date, $this->teaching_8_14_end_date),
         ];
     }
 
@@ -108,4 +119,3 @@ class Semester extends Model
         return $start->format('Y-m-d') . ' s.d. ' . $end->format('Y-m-d');
     }
 }
-

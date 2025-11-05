@@ -26,12 +26,14 @@ class SemesterUpdateRequest extends FormRequest
         return [
             'start_date' => ['nullable', 'date'],
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+            'teaching_1_7_start_date' => ['nullable', 'date'],
+            'teaching_1_7_end_date' => ['nullable', 'date', 'after_or_equal:teaching_1_7_start_date'],
+            'teaching_8_14_start_date' => ['nullable', 'date'],
+            'teaching_8_14_end_date' => ['nullable', 'date', 'after_or_equal:teaching_8_14_start_date'],
             'uts_start_date' => ['nullable', 'date'],
             'uts_end_date' => ['nullable', 'date', 'after_or_equal:uts_start_date'],
             'uas_start_date' => ['nullable', 'date'],
             'uas_end_date' => ['nullable', 'date', 'after_or_equal:uas_start_date'],
-            'teaching_weeks_before_uts' => ['required', 'integer', 'min:1', 'max:14'],
-            'teaching_weeks_after_uts' => ['required', 'integer', 'min:1', 'max:14'],
             'is_active' => ['sometimes', 'boolean'],
         ];
     }
@@ -45,9 +47,10 @@ class SemesterUpdateRequest extends FormRequest
     {
         return [
             'end_date.after_or_equal' => 'End date must be on or after the start date.',
+            'teaching_1_7_end_date.after_or_equal' => 'Teaching weeks 1-7 end date must be on or after the start date.',
+            'teaching_8_14_end_date.after_or_equal' => 'Teaching weeks 8-14 end date must be on or after the start date.',
             'uts_end_date.after_or_equal' => 'UTS end date must be on or after the UTS start date.',
             'uas_end_date.after_or_equal' => 'UAS end date must be on or after the UAS start date.',
         ];
     }
 }
-

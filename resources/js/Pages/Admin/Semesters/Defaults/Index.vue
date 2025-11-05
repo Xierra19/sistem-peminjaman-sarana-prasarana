@@ -18,6 +18,11 @@ const showEditModal = ref(false)
 const selectedDefault = ref(null)
 const roomsLoading = ref(false)
 
+const examSlots = [
+  { key: 'uts', title: 'UTS' },
+  { key: 'uas', title: 'UAS' },
+]
+
 const baseFormState = () => ({
   course_name: '',
   course_code: '',
@@ -31,6 +36,14 @@ const baseFormState = () => ({
   practicum2_start_time: '',
   practicum2_end_time: '',
   practicum2_room_id: '',
+  uts_exam_date: '',
+  uts_start_time: '',
+  uts_end_time: '',
+  uts_room_id: '',
+  uas_exam_date: '',
+  uas_start_time: '',
+  uas_end_time: '',
+  uas_room_id: '',
 })
 
 const createForm = useForm(baseFormState())
@@ -40,7 +53,7 @@ const defaultsList = computed(() => props.defaults ?? [])
 const hasRooms = computed(() => Array.isArray(props.rooms) && props.rooms.length > 0)
 const roomOptions = computed(() => {
   const list = hasRooms.value ? props.rooms : []
-  return list.map((room) => ({ id: room.id, name: room.name }))
+  return list.map((room) => ({ id: room.id, name: room.label ?? room.name }))
 })
 
 watch(
@@ -68,8 +81,36 @@ const formatTime = (value) =>
   value ? new Date(`1970-01-01T${value}`).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : ''
 const timeRange = (start, end) => (start && end ? `${formatTime(start)} - ${formatTime(end)}` : '-')
 const roomName = (row, key) => {
-  const rel = row?.[key]
-  return rel && rel.name ? rel.name : 'Tanpa ruang'
+  const rel = row ? row[key] : null
+  if (!rel) return 'Tanpa ruang'
+  return rel.label ?? rel.name ?? 'Tanpa ruang'
+}
+
+const formatDate = (value) =>
+  value ? new Date(value).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : ''
+
+const examSummary = (row, prefix) => {
+  const date = formatDate(row[`${prefix}_exam_date`])
+  const start = formatTime(row[`${prefix}_start_time`])
+  const end = formatTime(row[`${prefix}_end_time`])
+  const room = roomName(row, `${prefix}_room`)
+
+  if (!date && !start && !end && (!row[`${prefix}_room`] || !row[`${prefix}_room`].name)) {
+    return 'Belum diatur'
+  }
+
+  const parts = []
+  if (date) parts.push(date)
+  if (start && end) {
+    parts.push(`${start} - ${end}`)
+  } else if (start || end) {
+    parts.push([start, end].filter(Boolean).join(' s/d '))
+  }
+  if (room && room !== 'Tanpa ruang') {
+    parts.push(room)
+  }
+
+  return parts.length ? parts.join(' • ') : 'Belum diatur'
 }
 
 const ensureRoomsLoaded = () => {
@@ -126,6 +167,14 @@ const openEditModal = (row) => {
   editForm.practicum2_start_time = row.practicum2_start_time ?? ''
   editForm.practicum2_end_time = row.practicum2_end_time ?? ''
   editForm.practicum2_room_id = row.practicum2_room?.id ?? ''
+  editForm.uts_exam_date = row.uts_exam_date ?? ''
+  editForm.uts_start_time = row.uts_start_time ?? ''
+  editForm.uts_end_time = row.uts_end_time ?? ''
+  editForm.uts_room_id = row.uts_room?.id ?? ''
+  editForm.uas_exam_date = row.uas_exam_date ?? ''
+  editForm.uas_start_time = row.uas_start_time ?? ''
+  editForm.uas_end_time = row.uas_end_time ?? ''
+  editForm.uas_room_id = row.uas_room?.id ?? ''
   editForm.clearErrors()
   showEditModal.value = true
   ensureRoomsLoaded()
@@ -169,6 +218,10 @@ const destroyDefault = (row) => {
       <div>
         <h1 class="text-2xl font-semibold text-gray-800">Default Jadwal</h1>
         <p class="text-sm text-gray-600">Semester {{ props.semester.term }} {{ props.semester.year }}</p>
+      </div>
+
+      <div class="rounded-lg border border-blue-100 bg-blue-50 px-4 py-4 text-sm text-blue-800">
+        Atur jadwal rutin perkuliahan sekaligus jadwal UTS/UAS untuk setiap mata kuliah di semester ini. Perubahan akan langsung tersimpan sebagai acuan default.
       </div>
 
       <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
@@ -225,6 +278,8 @@ const destroyDefault = (row) => {
               <th class="px-5 py-3 text-left">Teori</th>
               <th class="px-5 py-3 text-left">Praktikum 1</th>
               <th class="px-5 py-3 text-left">Praktikum 2</th>
+              <th class="px-5 py-3 text-left">UTS</th>
+              <th class="px-5 py-3 text-left">UAS</th>
               <th class="px-5 py-3 text-left">Aksi</th>
             </tr>
           </thead>
@@ -253,6 +308,12 @@ const destroyDefault = (row) => {
                 </template>
                 <span v-else class="text-gray-400">-</span>
               </td>
+              <td class="px-5 py-3 text-gray-700">
+                <div>{{ examSummary(row, 'uts') }}</div>
+              </td>
+              <td class="px-5 py-3 text-gray-700">
+                <div>{{ examSummary(row, 'uas') }}</div>
+              </td>
               <td class="px-5 py-3 text-sm">
                 <div class="flex flex-wrap gap-2">
                   <button type="button" class="text-amber-600 hover:text-amber-800" @click="openEditModal(row)">
@@ -265,7 +326,7 @@ const destroyDefault = (row) => {
               </td>
             </tr>
             <tr v-if="!defaultsList.length">
-              <td colspan="7" class="px-5 py-10 text-center text-sm text-gray-400">
+              <td colspan="9" class="px-5 py-10 text-center text-sm text-gray-400">
                 Belum ada default jadwal untuk semester ini.
               </td>
             </tr>
@@ -499,6 +560,66 @@ const destroyDefault = (row) => {
               </div>
             </div>
           </div>
+
+          <section
+            v-for="slot in examSlots"
+            :key="`create-${slot.key}`"
+            class="grid gap-6 md:grid-cols-4"
+          >
+            <div class="md:col-span-4 flex items-center justify-between">
+              <h3 class="text-sm font-semibold uppercase tracking-wide text-gray-800">{{ slot.title }} (opsional)</h3>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Tanggal {{ slot.title }}</label>
+              <input
+                v-model="createForm[`${slot.key}_exam_date`]"
+                type="date"
+                class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+              <div v-if="createForm.errors[`${slot.key}_exam_date`]" class="mt-1 text-xs text-red-600">
+                {{ createForm.errors[`${slot.key}_exam_date`] }}
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Jam Mulai</label>
+              <input
+                v-model="createForm[`${slot.key}_start_time`]"
+                type="time"
+                class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+              <div v-if="createForm.errors[`${slot.key}_start_time`]" class="mt-1 text-xs text-red-600">
+                {{ createForm.errors[`${slot.key}_start_time`] }}
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Jam Selesai</label>
+              <input
+                v-model="createForm[`${slot.key}_end_time`]"
+                type="time"
+                class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+              <div v-if="createForm.errors[`${slot.key}_end_time`]" class="mt-1 text-xs text-red-600">
+                {{ createForm.errors[`${slot.key}_end_time`] }}
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Ruang</label>
+              <select
+                v-model="createForm[`${slot.key}_room_id`]"
+                :disabled="roomsLoading && !roomOptions.length"
+                class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100"
+              >
+                <option value="">{{ roomsLoading && !roomOptions.length ? 'Memuat daftar ruang...' : '-- Tanpa Ruang --' }}</option>
+                <option v-for="room in roomOptions" :key="`create-${slot.key}-room-${room.id}`" :value="room.id">
+                  {{ room.name }}
+                </option>
+              </select>
+              <div v-if="createForm.errors[`${slot.key}_room_id`]" class="mt-1 text-xs text-red-600">
+                {{ createForm.errors[`${slot.key}_room_id`] }}
+              </div>
+            </div>
+          </section>
+
         </div>
 
         <div class="flex flex-shrink-0 justify-end gap-2 border-t border-gray-100 pt-4">
@@ -688,6 +809,65 @@ const destroyDefault = (row) => {
               </div>
             </div>
           </div>
+
+          <section
+            v-for="slot in examSlots"
+            :key="`edit-${slot.key}`"
+            class="grid gap-6 md:grid-cols-4"
+          >
+            <div class="md:col-span-4 flex items-center justify-between">
+              <h3 class="text-sm font-semibold uppercase tracking-wide text-gray-800">{{ slot.title }} (opsional)</h3>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Tanggal {{ slot.title }}</label>
+              <input
+                v-model="editForm[`${slot.key}_exam_date`]"
+                type="date"
+                class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+              <div v-if="editForm.errors[`${slot.key}_exam_date`]" class="mt-1 text-xs text-red-600">
+                {{ editForm.errors[`${slot.key}_exam_date`] }}
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Jam Mulai</label>
+              <input
+                v-model="editForm[`${slot.key}_start_time`]"
+                type="time"
+                class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+              <div v-if="editForm.errors[`${slot.key}_start_time`]" class="mt-1 text-xs text-red-600">
+                {{ editForm.errors[`${slot.key}_start_time`] }}
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Jam Selesai</label>
+              <input
+                v-model="editForm[`${slot.key}_end_time`]"
+                type="time"
+                class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+              <div v-if="editForm.errors[`${slot.key}_end_time`]" class="mt-1 text-xs text-red-600">
+                {{ editForm.errors[`${slot.key}_end_time`] }}
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Ruang</label>
+              <select
+                v-model="editForm[`${slot.key}_room_id`]"
+                :disabled="roomsLoading && !roomOptions.length"
+                class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100"
+              >
+                <option value="">{{ roomsLoading && !roomOptions.length ? 'Memuat daftar ruang...' : '-- Tanpa Ruang --' }}</option>
+                <option v-for="room in roomOptions" :key="`edit-${slot.key}-room-${room.id}`" :value="room.id">
+                  {{ room.name }}
+                </option>
+              </select>
+              <div v-if="editForm.errors[`${slot.key}_room_id`]" class="mt-1 text-xs text-red-600">
+                {{ editForm.errors[`${slot.key}_room_id`] }}
+              </div>
+            </div>
+          </section>
         </div>
 
         <div class="flex flex-shrink-0 justify-end gap-2 border-t border-gray-100 pt-4">

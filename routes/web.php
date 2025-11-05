@@ -56,6 +56,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('semester/edit', [AdminSemesterController::class, 'edit'])->name('semester.edit');
     Route::put('semester', [AdminSemesterController::class, 'update'])->name('semester.update');
+
+    Route::get('semesters/{semester}/offerings', [CourseOfferingController::class, 'index'])->name('offerings.index');
+    Route::post('offerings', [CourseOfferingController::class, 'store'])->name('offerings.store');
+    Route::put('offerings/{offering}/exam', [CourseOfferingController::class, 'updateExam'])->name('offerings.exam.update');
+
+    Route::get('courses/import', [CourseImportController::class, 'create'])->name('courses.import.create');
+    Route::post('courses/import', [CourseImportController::class, 'store'])->name('courses.import.store');
 });
 
 // Route khusus untuk admin, diproteksi oleh middleware 'role:admin'
@@ -67,12 +74,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     Route::post('semesters/{semester}/toggle-active', [SemesterController::class, 'toggleActive'])->name('semesters.toggle-active');
     Route::resource('semesters', SemesterController::class)->except(['show']);
-
-    Route::get('courses/import', [CourseImportController::class, 'create'])->name('courses.import.create');
-    Route::post('courses/import', [CourseImportController::class, 'store'])->name('courses.import.store');
-    Route::get('semesters/{semester}/offerings', [CourseOfferingController::class, 'index'])->name('offerings.index');
-    Route::get('offerings/{offering}', [CourseOfferingController::class, 'show'])->name('offerings.show');
-    Route::put('offerings/{offering}/exam', [CourseOfferingController::class, 'updateExam'])->name('offerings.exam.update');
 
     Route::prefix('semesters/{semester}')->scopeBindings()->group(function () {
         Route::resource('defaults', SemesterDefaultController::class)

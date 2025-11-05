@@ -23,17 +23,19 @@ const destroySemester = (semester) => {
 
     <div class="mx-auto max-w-6xl space-y-6 py-6">
       <div class="rounded-xl bg-white p-6 shadow-sm">
-        <div class="mb-6 flex items-center justify-between">
+        <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 class="text-2xl font-semibold text-gray-800">Daftar Semester</h1>
             <p class="mt-1 text-sm text-gray-500">Kelola data semester akademik.</p>
           </div>
-          <Link
-            :href="route('admin.semesters.create')"
-            class="inline-flex items-center rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-          >
-            + Tambah Semester
-          </Link>
+          <div class="flex flex-wrap gap-2">
+            <Link
+              :href="route('admin.semesters.create')"
+              class="inline-flex items-center rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+            >
+              + Tambah Semester
+            </Link>
+          </div>
         </div>
 
         <div class="overflow-x-auto">
@@ -76,7 +78,7 @@ const destroySemester = (semester) => {
                     >
                       Defaults
                     </Link>
-                    <Link :href="route('admin.semesters.edit', { semester: sem.id })" class="text-amber-600 hover:text-amber-800">Edit</Link>
+                    <Link :href="route('admin.semester.edit', { semester: sem.id })" class="text-amber-600 hover:text-amber-800">Edit</Link>
                     <button type="button" @click="toggleActive(sem)" class="text-indigo-600 hover:text-indigo-800">
                       {{ sem.is_active ? 'Nonaktifkan' : 'Aktifkan' }}
                     </button>

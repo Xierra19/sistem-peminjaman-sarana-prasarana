@@ -22,6 +22,9 @@ const masterDataActive = computed(() =>
     'admin.rooms.*',
     'admin.semesters.*',
     'admin.semesters.defaults.*',
+    'admin.semester.*',
+    'admin.offerings.*',
+    'admin.courses.import.*',
   )
 )
 
@@ -156,7 +159,7 @@ watch(
               <!-- ✅ baru: master semester -->
               <Link
                 :href="route('admin.semesters.index')"
-                :class="subLinkClasses(isRouteActive('admin.semesters.*', 'admin.semesters.defaults.*'))"
+                :class="subLinkClasses(isRouteActive('admin.semesters.*', 'admin.semesters.defaults.*', 'admin.semester.*', 'admin.offerings.*', 'admin.courses.import.*'))"
               >
                 🗓️ Master Semester
               </Link>

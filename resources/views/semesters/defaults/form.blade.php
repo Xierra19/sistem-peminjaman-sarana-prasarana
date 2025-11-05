@@ -154,9 +154,89 @@
                         @error('practicum2_room_id')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
-                    </div>
                 </div>
             </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div class="md:col-span-4 flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-gray-800">UTS (Opsional)</h3>
+                <span class="text-xs text-gray-500">Isi bila jadwal UTS sudah tersedia.</span>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Tanggal UTS</label>
+                <input type="date" name="uts_exam_date" value="{{ old('uts_exam_date', optional($default->uts_exam_date)->format('Y-m-d')) }}" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                @error('uts_exam_date')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Jam Mulai</label>
+                <input type="time" name="uts_start_time" value="{{ old('uts_start_time', optional($default->uts_start_time)->format('H:i')) }}" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                @error('uts_start_time')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Jam Selesai</label>
+                <input type="time" name="uts_end_time" value="{{ old('uts_end_time', optional($default->uts_end_time)->format('H:i')) }}" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                @error('uts_end_time')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Ruang</label>
+                <select name="uts_room_id" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                    <option value="">-- Tanpa Ruang --</option>
+                    @foreach ($rooms as $room)
+                        <option value="{{ $room->id }}" @selected(old('uts_room_id', $default->uts_room_id) == $room->id)>{{ $room->name }}</option>
+                    @endforeach
+                </select>
+                @error('uts_room_id')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div class="md:col-span-4 flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-gray-800">UAS (Opsional)</h3>
+                <span class="text-xs text-gray-500">Isi bila jadwal UAS sudah tersedia.</span>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Tanggal UAS</label>
+                <input type="date" name="uas_exam_date" value="{{ old('uas_exam_date', optional($default->uas_exam_date)->format('Y-m-d')) }}" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                @error('uas_exam_date')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Jam Mulai</label>
+                <input type="time" name="uas_start_time" value="{{ old('uas_start_time', optional($default->uas_start_time)->format('H:i')) }}" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                @error('uas_start_time')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Jam Selesai</label>
+                <input type="time" name="uas_end_time" value="{{ old('uas_end_time', optional($default->uas_end_time)->format('H:i')) }}" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                @error('uas_end_time')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Ruang</label>
+                <select name="uas_room_id" class="mt-1 w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                    <option value="">-- Tanpa Ruang --</option>
+                    @foreach ($rooms as $room)
+                        <option value="{{ $room->id }}" @selected(old('uas_room_id', $default->uas_room_id) == $room->id)>{{ $room->name }}</option>
+                    @endforeach
+                </select>
+                @error('uas_room_id')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+        </div>
 
             <div class="flex justify-end gap-3">
                 <a href="{{ route('admin.semesters.defaults.index', $semester) }}" class="rounded border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Batal</a>

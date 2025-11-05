@@ -25,7 +25,7 @@ class SemesterDefaultController extends Controller
     public function index(MasterSemester $semester): Response
     {
         $raw = $semester->courseDefaults()
-            ->with(['theoryRoom', 'practicum1Room', 'practicum2Room'])
+            ->with(['theoryRoom', 'practicum1Room', 'practicum2Room', 'utsRoom', 'uasRoom'])
             ->orderBy('day_of_week')
             ->orderBy('theory_start_time')
             ->get();
@@ -37,6 +37,10 @@ class SemesterDefaultController extends Controller
             $prac1End = $this->formatTimeValue($d->practicum1_end_time);
             $prac2Start = $this->formatTimeValue($d->practicum2_start_time);
             $prac2End = $this->formatTimeValue($d->practicum2_end_time);
+            $utsStart = $this->formatTimeValue($d->uts_start_time);
+            $utsEnd = $this->formatTimeValue($d->uts_end_time);
+            $uasStart = $this->formatTimeValue($d->uas_start_time);
+            $uasEnd = $this->formatTimeValue($d->uas_end_time);
             return [
                 'id' => $d->id,
                 'course_name' => $d->course_name,
@@ -48,9 +52,17 @@ class SemesterDefaultController extends Controller
                 'practicum1_end_time' => $prac1End,
                 'practicum2_start_time' => $prac2Start,
                 'practicum2_end_time' => $prac2End,
-                'theory_room' => $d->theoryRoom ? ['id' => $d->theoryRoom->id, 'name' => $d->theoryRoom->name] : null,
-                'practicum1_room' => $d->practicum1Room ? ['id' => $d->practicum1Room->id, 'name' => $d->practicum1Room->name] : null,
-                'practicum2_room' => $d->practicum2Room ? ['id' => $d->practicum2Room->id, 'name' => $d->practicum2Room->name] : null,
+                'uts_exam_date' => $d->uts_exam_date ? $d->uts_exam_date->toDateString() : null,
+                'uts_start_time' => $utsStart,
+                'uts_end_time' => $utsEnd,
+                'uas_exam_date' => $d->uas_exam_date ? $d->uas_exam_date->toDateString() : null,
+                'uas_start_time' => $uasStart,
+                'uas_end_time' => $uasEnd,
+                'theory_room' => $d->theoryRoom ? ['id' => $d->theoryRoom->id, 'name' => $d->theoryRoom->name, 'label' => $d->theoryRoom->name] : null,
+                'practicum1_room' => $d->practicum1Room ? ['id' => $d->practicum1Room->id, 'name' => $d->practicum1Room->name, 'label' => $d->practicum1Room->name] : null,
+                'practicum2_room' => $d->practicum2Room ? ['id' => $d->practicum2Room->id, 'name' => $d->practicum2Room->name, 'label' => $d->practicum2Room->name] : null,
+                'uts_room' => $d->utsRoom ? ['id' => $d->utsRoom->id, 'name' => $d->utsRoom->name, 'label' => $d->utsRoom->name] : null,
+                'uas_room' => $d->uasRoom ? ['id' => $d->uasRoom->id, 'name' => $d->uasRoom->name, 'label' => $d->uasRoom->name] : null,
             ];
         });
 
@@ -63,7 +75,7 @@ class SemesterDefaultController extends Controller
         return Inertia::render('Admin/Semesters/Defaults/Index', [
             'semester' => $semesterPayload,
             'defaults' => $defaults,
-            'rooms' => Inertia::lazy(fn () => Room::orderBy('name')->get(['id', 'name'])),
+            'rooms' => Inertia::lazy(fn () => $this->roomOptions()),
         ]);
     }
 
@@ -90,8 +102,16 @@ class SemesterDefaultController extends Controller
                 'practicum2_start_time' => '',
                 'practicum2_end_time' => '',
                 'practicum2_room_id' => '',
+                'uts_exam_date' => '',
+                'uts_start_time' => '',
+                'uts_end_time' => '',
+                'uts_room_id' => '',
+                'uas_exam_date' => '',
+                'uas_start_time' => '',
+                'uas_end_time' => '',
+                'uas_room_id' => '',
             ],
-            'rooms' => Room::orderBy('name')->get(['id','name']),
+            'rooms' => $this->roomOptions(),
             'mode' => 'create',
         ]);
     }
@@ -138,12 +158,20 @@ class SemesterDefaultController extends Controller
             'practicum2_start_time' => $this->formatTimeValue($default->practicum2_start_time) ?? '',
             'practicum2_end_time' => $this->formatTimeValue($default->practicum2_end_time) ?? '',
             'practicum2_room_id' => $default->practicum2_room_id ?? '',
+            'uts_exam_date' => $default->uts_exam_date ? $default->uts_exam_date->toDateString() : '',
+            'uts_start_time' => $this->formatTimeValue($default->uts_start_time) ?? '',
+            'uts_end_time' => $this->formatTimeValue($default->uts_end_time) ?? '',
+            'uts_room_id' => $default->uts_room_id ?? '',
+            'uas_exam_date' => $default->uas_exam_date ? $default->uas_exam_date->toDateString() : '',
+            'uas_start_time' => $this->formatTimeValue($default->uas_start_time) ?? '',
+            'uas_end_time' => $this->formatTimeValue($default->uas_end_time) ?? '',
+            'uas_room_id' => $default->uas_room_id ?? '',
         ];
 
         return Inertia::render('Admin/Semesters/Defaults/Form', [
             'semester' => $semesterPayload,
             'defaultItem' => $defaultPayload,
-            'rooms' => Room::orderBy('name')->get(['id','name']),
+            'rooms' => $this->roomOptions(),
             'mode' => 'edit',
         ]);
     }
@@ -185,8 +213,32 @@ class SemesterDefaultController extends Controller
         $data['practicum1_end_time'] = $data['practicum1_end_time'] ?? null;
         $data['practicum2_start_time'] = $data['practicum2_start_time'] ?? null;
         $data['practicum2_end_time'] = $data['practicum2_end_time'] ?? null;
+        $data['uts_exam_date'] = $data['uts_exam_date'] ?? null;
+        $data['uts_start_time'] = $data['uts_start_time'] ?? null;
+        $data['uts_end_time'] = $data['uts_end_time'] ?? null;
+        $data['uts_room_id'] = $data['uts_room_id'] ?? null;
+        $data['uas_exam_date'] = $data['uas_exam_date'] ?? null;
+        $data['uas_start_time'] = $data['uas_start_time'] ?? null;
+        $data['uas_end_time'] = $data['uas_end_time'] ?? null;
+        $data['uas_room_id'] = $data['uas_room_id'] ?? null;
 
         return $data;
+    }
+
+    private function roomOptions()
+    {
+        return Room::with('building:id,name')
+            ->orderBy('name')
+            ->get()
+            ->map(function (Room $room) {
+                $buildingName = ($room->relationLoaded('building') && $room->building)
+                    ? $room->building->name
+                    : null;
+
+                $room->setAttribute('label', $buildingName ? "{$room->name} • {$buildingName}" : $room->name);
+
+                return $room;
+            });
     }
 
     private function formatTimeValue(mixed $value): ?string

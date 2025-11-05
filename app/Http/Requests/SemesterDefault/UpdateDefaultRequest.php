@@ -27,6 +27,14 @@ class UpdateDefaultRequest extends FormRequest
             'practicum2_start_time' => ['nullable','date_format:H:i'],
             'practicum2_end_time' => ['nullable','date_format:H:i','after:practicum2_start_time'],
             'practicum2_room_id' => ['nullable','exists:rooms,id'],
+            'uts_exam_date' => ['nullable','date'],
+            'uts_start_time' => ['nullable','date_format:H:i'],
+            'uts_end_time' => ['nullable','date_format:H:i','after:uts_start_time'],
+            'uts_room_id' => ['nullable','exists:rooms,id'],
+            'uas_exam_date' => ['nullable','date'],
+            'uas_start_time' => ['nullable','date_format:H:i'],
+            'uas_end_time' => ['nullable','date_format:H:i','after:uas_start_time'],
+            'uas_room_id' => ['nullable','exists:rooms,id'],
         ];
     }
 
@@ -42,6 +50,14 @@ class UpdateDefaultRequest extends FormRequest
             'theory_room_id' => $this->input('theory_room_id') ?: null,
             'practicum1_room_id' => $this->input('practicum1_room_id') ?: null,
             'practicum2_room_id' => $this->input('practicum2_room_id') ?: null,
+            'uts_exam_date' => $this->normalizeDate($this->input('uts_exam_date')),
+            'uts_start_time' => $this->normalizeTime($this->input('uts_start_time')),
+            'uts_end_time' => $this->normalizeTime($this->input('uts_end_time')),
+            'uts_room_id' => $this->input('uts_room_id') ?: null,
+            'uas_exam_date' => $this->normalizeDate($this->input('uas_exam_date')),
+            'uas_start_time' => $this->normalizeTime($this->input('uas_start_time')),
+            'uas_end_time' => $this->normalizeTime($this->input('uas_end_time')),
+            'uas_room_id' => $this->input('uas_room_id') ?: null,
         ]);
     }
 
@@ -75,6 +91,33 @@ class UpdateDefaultRequest extends FormRequest
         return $value;
     }
 
+    private function normalizeDate(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        if (is_string($value)) {
+            $value = trim($value);
+            if ($value === '') {
+                return null;
+            }
+        }
+
+        if ($value instanceof \DateTimeInterface) {
+            return $value->format('Y-m-d');
+        }
+
+        if (is_string($value)) {
+            $parsed = date_create($value);
+            if ($parsed instanceof \DateTimeInterface) {
+                return $parsed->format('Y-m-d');
+            }
+        }
+
+        return $value;
+    }
+
     public function messages(): array
     {
         return [
@@ -89,6 +132,10 @@ class UpdateDefaultRequest extends FormRequest
             'theory_room_id.exists' => 'Ruang teori tidak ditemukan.',
             'practicum1_room_id.exists' => 'Ruang praktikum 1 tidak ditemukan.',
             'practicum2_room_id.exists' => 'Ruang praktikum 2 tidak ditemukan.',
+            'uts_end_time.after' => 'Jam selesai UTS harus setelah jam mulai.',
+            'uas_end_time.after' => 'Jam selesai UAS harus setelah jam mulai.',
+            'uts_room_id.exists' => 'Ruang UTS tidak ditemukan.',
+            'uas_room_id.exists' => 'Ruang UAS tidak ditemukan.',
         ];
     }
 }
