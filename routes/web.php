@@ -22,6 +22,7 @@ use App\Http\Controllers\SemesterDefaultController;
 use App\Http\Controllers\SemesterDefaultImportController;
 use App\Http\Controllers\Admin\SemesterController as AdminSemesterController;
 use App\Http\Controllers\Admin\UserOnboardingController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -72,6 +73,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::resource('campus', CampusController::class)->except(['show']);
     Route::resource('buildings', BuildingController::class)->except(['show']);
     Route::resource('rooms', RoomController::class)->except(['show']);
+    Route::resource('users', AdminUserController::class)->only(['index', 'edit', 'update', 'destroy']);
 
     Route::post('semesters/{semester}/toggle-active', [SemesterController::class, 'toggleActive'])->name('semesters.toggle-active');
     Route::resource('semesters', SemesterController::class)->except(['show']);

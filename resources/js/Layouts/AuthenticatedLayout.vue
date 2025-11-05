@@ -191,6 +191,16 @@ watch(
           </div>
 
           <div v-if="$page.props.auth.user.role === 'admin'">
+            <Link
+              :href="route('admin.users.index')"
+              :class="[navLinkClasses(isRouteActive('admin.users.index', 'admin.users.edit'))]"
+            >
+              <span class="text-lg">👥</span>
+              <span>Kelola User</span>
+            </Link>
+          </div>
+
+          <div v-if="$page.props.auth.user.role === 'admin'">
             <Link :href="route('admin.users.onboarding')" :class="[navLinkClasses(isRouteActive('admin.users.onboarding'))]">
               <span class="text-lg">🧑‍🤝‍🧑</span>
               <span>Onboarding User</span>
