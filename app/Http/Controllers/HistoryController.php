@@ -14,14 +14,13 @@ class HistoryController extends Controller
     {
         $user = Auth::user();
 
-        $query = LogHistory::with(['booking.room.building.campus', 'user'])
-            ->orderByDesc('created_at');
-
-        if ($user->role !== 'admin') {
-            $query->where('user_id', $user->id);
+        if ($user?->role !== 'admin') {
+            abort(403);
         }
 
-        $histories = $query->get();
+        $histories = LogHistory::with(['booking.room.building.campus', 'user'])
+            ->orderByDesc('created_at')
+            ->get();
 
         return inertia('History/Index', [
             'histories' => $histories,
@@ -31,6 +30,10 @@ class HistoryController extends Controller
     public function exportExcel()
     {
         $user = Auth::user();
+
+        if ($user?->role !== 'admin') {
+            abort(403);
+        }
 
         return Excel::download(new HistoryExport($user), 'log-history-booking.xlsx');
     }

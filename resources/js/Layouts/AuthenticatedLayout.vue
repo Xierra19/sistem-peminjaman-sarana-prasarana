@@ -183,7 +183,7 @@ watch(
             </Link>
           </div>
 
-          <div>
+          <div v-if="$page.props.auth.user.role === 'admin'">
             <Link :href="route('history.index')" :class="[navLinkClasses(isRouteActive('history.*'))]">
               <span class="text-lg">🕑</span>
               <span>History</span>

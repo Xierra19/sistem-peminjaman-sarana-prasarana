@@ -48,9 +48,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/bookings/{booking}/attachment', [BookingController::class, 'downloadAttachment'])->name('bookings.attachment');
     Route::get('/bookings/{booking}/letter', [BookingController::class, 'downloadLetter'])->name('bookings.letter');
 
-    // ✅ History
-    Route::get('/history', [HistoryController::class, 'index'])->name('history.index');
-    Route::get('/history/export/excel', [HistoryController::class, 'exportExcel'])->name('history.export.excel');
+    // ✅ History (admin only)
+    Route::middleware('role:admin')->group(function () {
+        Route::get('/history', [HistoryController::class, 'index'])->name('history.index');
+        Route::get('/history/export/excel', [HistoryController::class, 'exportExcel'])->name('history.export.excel');
+    });
 
     Route::get('/export-users', [ExportController::class, 'exportUsers']);
 });
