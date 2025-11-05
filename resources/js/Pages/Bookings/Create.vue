@@ -62,17 +62,47 @@ const selectedBuilding = computed(() => findById(filteredBuildings.value, form.b
 const selectedRoom = computed(() => findById(filteredRooms.value, form.room_id))
 
 const isTimeBlocked = (time) =>
-  bookedIntervals.value.some(
-    (interval) => time >= interval.start && time < interval.end,
-  )
+  bookedIntervals.value.some((interval) => time >= interval.start && time < interval.end)
+
+const isEndTimeBlocked = (time) =>
+  bookedIntervals.value.some((interval) => time > interval.start && time < interval.end)
 
 const availableStartOptions = computed(() =>
   timeSlots.filter((slot) => !isTimeBlocked(slot)),
 )
 
 const availableEndOptions = computed(() =>
-  timeSlots.filter((slot) => slot > form.start_time && !isTimeBlocked(slot)),
+  timeSlots.filter((slot) => slot > form.start_time && !isEndTimeBlocked(slot)),
 )
+
+const startOptionLabel = (slot) =>
+  isTimeBlocked(slot) ? `${slot} — tidak tersedia` : slot
+
+const endOptionLabel = (slot) => {
+  if (!form.start_time) {
+    return slot
+  }
+
+  if (slot <= form.start_time) {
+    return `${slot} — sebelum jam mulai`
+  }
+
+  return isEndTimeBlocked(slot) ? `${slot} — tidak tersedia` : slot
+}
+
+const isStartOptionDisabled = (slot) => isTimeBlocked(slot)
+
+const isEndOptionDisabled = (slot) => {
+  if (!form.start_time) {
+    return true
+  }
+
+  if (slot <= form.start_time) {
+    return true
+  }
+
+  return isEndTimeBlocked(slot)
+}
 
 watch(availableStartOptions, (options) => {
   if (form.start_time && !options.includes(form.start_time)) {
@@ -340,8 +370,13 @@ const submit = () => {
                       : 'Pilih ruangan terlebih dahulu'
                   }}
                 </option>
-                <option v-for="slot in availableStartOptions" :key="slot" :value="slot">
-                  {{ slot }}
+                <option
+                  v-for="slot in timeSlots"
+                  :key="slot"
+                  :value="slot"
+                  :disabled="isStartOptionDisabled(slot)"
+                >
+                  {{ startOptionLabel(slot) }}
                 </option>
               </select>
             </div>
@@ -361,8 +396,13 @@ const submit = () => {
                       : 'Pilih jam mulai terlebih dahulu'
                   }}
                 </option>
-                <option v-for="slot in availableEndOptions" :key="slot" :value="slot">
-                  {{ slot }}
+                <option
+                  v-for="slot in timeSlots"
+                  :key="slot"
+                  :value="slot"
+                  :disabled="isEndOptionDisabled(slot)"
+                >
+                  {{ endOptionLabel(slot) }}
                 </option>
               </select>
             </div>

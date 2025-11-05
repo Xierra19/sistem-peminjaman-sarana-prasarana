@@ -59,3 +59,10 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+## Brevo Email Notifications
+
+- Create an SMTP key inside your Brevo account (Transactional > SMTP & API) and note the login/email and generated key.
+- Update your local `.env` with the same settings shipped in `.env.example`, replacing `MAIL_USERNAME`, `MAIL_PASSWORD`, and `MAIL_FROM_ADDRESS` with your Brevo credentials and desired sender address.
+- Ensure at least one admin user exists with a valid email (`users.role = 'admin'`), as booking requests will be routed to every admin mailbox.
+- After changing the environment file, run `php artisan config:clear` so Laravel picks up the new mail configuration.

@@ -41,8 +41,19 @@ const statusBadgeClasses = {
 const isUser = computed(() => page.props.auth.user.role === 'user')
 const isAdmin = computed(() => page.props.auth.user.role === 'admin')
 
-const searchQuery = ref('')
-const statusFilter = ref('')
+const createEmptyFilters = () => ({
+  keyword: '',
+  user: '',
+  room: '',
+  status: '',
+})
+
+const filterDrafts = ref(createEmptyFilters())
+const activeFilters = ref(createEmptyFilters())
+
+const applyFilters = () => {
+  activeFilters.value = { ...filterDrafts.value }
+}
 
 const normalizedBookings = computed(() =>
   (props.bookings ?? []).map((booking) => ({
@@ -51,31 +62,83 @@ const normalizedBookings = computed(() =>
   })),
 )
 
+const matchesStatusFilter = (booking, status) => {
+  if (!status) {
+    return true
+  }
+
+  const normalizedStatus = booking.normalizedStatus ?? ''
+  const rawStatus = booking.status ?? ''
+
+  if (status === 'requested') {
+    return rawStatus === 'requested' || rawStatus === 'pending' || normalizedStatus === 'waiting'
+  }
+
+  if (status === 'approved') {
+    return normalizedStatus === 'approved' || rawStatus === 'approved'
+  }
+
+  if (status === 'rejected') {
+    return normalizedStatus === 'rejected' || rawStatus === 'rejected'
+  }
+
+  return normalizedStatus === status || rawStatus === status
+}
+
 const filteredBookings = computed(() => {
-  const q = searchQuery.value.trim().toLowerCase()
-  const status = statusFilter.value
+  const keyword = activeFilters.value.keyword.trim().toLowerCase()
+  const status = activeFilters.value.status
+  const userQuery = activeFilters.value.user.trim().toLowerCase()
+  const roomQuery = activeFilters.value.room.trim().toLowerCase()
 
   return normalizedBookings.value.filter((booking) => {
-    const matchesStatus = !status || booking.normalizedStatus === status
-
-    if (!q) {
-      return matchesStatus
+    if (!matchesStatusFilter(booking, status)) {
+      return false
     }
 
-    const searchable = [
-      booking.title,
-      booking.description,
-      booking.user?.name,
-      booking.user?.email,
-      booking.room?.name,
-      booking.room?.building?.name,
-      booking.room?.building?.campus?.name,
-    ]
-      .filter(Boolean)
-      .join(' ')
-      .toLowerCase()
+    if (keyword) {
+      const searchable = [
+        booking.title,
+        booking.description,
+        booking.user?.name,
+        booking.user?.email,
+        booking.room?.name,
+        booking.room?.building?.name,
+        booking.room?.building?.campus?.name,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
 
-    return matchesStatus && searchable.includes(q)
+      if (!searchable.includes(keyword)) {
+        return false
+      }
+    }
+
+    if (userQuery) {
+      const userSearchable = [booking.user?.name, booking.user?.email].filter(Boolean).join(' ').toLowerCase()
+
+      if (!userSearchable.includes(userQuery)) {
+        return false
+      }
+    }
+
+    if (roomQuery) {
+      const roomSearchable = [
+        booking.room?.name,
+        booking.room?.building?.name,
+        booking.room?.building?.campus?.name,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+
+      if (!roomSearchable.includes(roomQuery)) {
+        return false
+      }
+    }
+
+    return true
   })
 })
 

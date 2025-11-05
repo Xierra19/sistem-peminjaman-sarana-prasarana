@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Exports\BookingExport;
 use App\Models\LogHistory;
+use App\Notifications\BookingStatusUpdatedNotification;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Facades\Excel;
@@ -79,6 +80,23 @@ class BookingApprovalController extends Controller
             'action'      => $data['status'],
             'description' => $description,
         ]);
+
+        if ($statusChanged) {
+            $booking->load(['user', 'room.building.campus']);
+
+            if ($booking->user && ! empty($booking->user->email)) {
+                try {
+                    $booking->user->notify(new BookingStatusUpdatedNotification(
+                        $booking,
+                        $data['status'],
+                        $data['notes'] ?? null,
+                        Auth::user()?->name
+                    ));
+                } catch (\Throwable $exception) {
+                    report($exception);
+                }
+            }
+        }
 
         return redirect()->back()->with('success', 'Status booking berhasil diperbarui.');
     }
