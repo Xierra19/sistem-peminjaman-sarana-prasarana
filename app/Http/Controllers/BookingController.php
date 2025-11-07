@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\DB;
 
 use Inertia\Inertia;
 use App\Models\MasterSemester;
@@ -486,15 +487,63 @@ class BookingController extends Controller
         }
 
         $booking->load(['user', 'room.building.campus']);
+        $approvedAt = $booking->logs()
+            ->where('action', 'approved')
+            ->latest('created_at')
+            ->value('created_at');
+        $approvedAt = $approvedAt ? Carbon::parse($approvedAt) : null;
+        $this->ensureLetterNumber($booking);
 
         $pdf = Pdf::loadView('pdf.booking-letter', [
             'booking' => $booking,
             'generatedAt' => now(),
+            'approvedAt' => $approvedAt,
         ])->setPaper('a4');
 
         $filename = 'Surat-Peminjaman-Ruangan-' . $booking->id . '.pdf';
 
         return $pdf->download($filename);
+    }
+
+    private function ensureLetterNumber(Booking $booking): void
+    {
+        if ($booking->letter_number) {
+            return;
+        }
+
+        DB::transaction(function () use ($booking): void {
+            $booking->refresh();
+
+            if ($booking->letter_number) {
+                return;
+            }
+
+            $issuedAt = now();
+            $year = (int) $issuedAt->format('Y');
+            $month = (int) $issuedAt->format('m');
+
+            $latestSequence = Booking::whereYear('letter_generated_at', $year)
+                ->whereMonth('letter_generated_at', $month)
+                ->lockForUpdate()
+                ->orderByDesc('letter_sequence')
+                ->value('letter_sequence');
+
+            $nextSequence = ((int) $latestSequence) + 1;
+
+            $formattedNumber = sprintf(
+                '%d/BAP-Bekasi/Booking/%s/%s',
+                $nextSequence,
+                $issuedAt->format('m'),
+                $issuedAt->format('Y')
+            );
+
+            $booking->letter_sequence = $nextSequence;
+            $booking->letter_number = $formattedNumber;
+            $booking->letter_generated_at = $issuedAt;
+            $booking->save();
+        });
+
+        $booking->refresh();
     }
 
     private function isWithinExamWindow(?MasterSemester $semester, Carbon $date): bool

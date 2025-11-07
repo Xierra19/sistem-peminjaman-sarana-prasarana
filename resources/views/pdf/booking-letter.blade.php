@@ -67,11 +67,19 @@
     use Carbon\Carbon;
     $start = Carbon::parse($booking->start_time)->locale('id');
     $end = Carbon::parse($booking->end_time)->locale('id');
+    $approvalDate = $approvedAt
+        ? $approvedAt->copy()->locale('id')
+        : Carbon::parse($generatedAt)->locale('id');
 @endphp
     <div class="logo-wrapper">
         <img src="{{ public_path('images/LOGO_UEU_BY_ASU-06.png') }}" alt="Logo Universitas Esa Unggul">
     </div>
     <h1>Surat Peminjaman Ruangan</h1>
+    @if ($booking->letter_number)
+        <p style="text-align: left; font-weight: 600; margin-top: -12px; margin-bottom: 24px; font-size: 14px;">
+            Nomor: {{ $booking->letter_number }}
+        </p>
+    @endif
 
     <p>
         Dengan ini kami menyatakan bahwa permohonan peminjaman ruangan berikut telah
@@ -128,11 +136,11 @@
     </p>
 
     <div class="signature">
-        <p>Dicetak pada {{ Carbon::parse($generatedAt)->locale('id')->translatedFormat('d F Y H:i') }} WIB</p>
-        <p>Biro Administrasi Pembelajaran</p>
+        <p>Disetujui pada {{ $approvalDate->translatedFormat('d F Y H:i') }} WIB</p>
+        <p>Biro Administrasi Pembelajaran Kampus Bekasi</p>
         <br><br>
         <br><br>        
-        <p><strong>Biro Administrasi Pembelajaran</strong></p>
+        <p><strong>Biro Administrasi Pembelajaran Kampus Bekasi</strong></p>
     </div>
 </body>
 </html>

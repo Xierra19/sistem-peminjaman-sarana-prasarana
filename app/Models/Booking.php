@@ -23,12 +23,17 @@ class Booking extends Model
         'status',
         'type',
         'attachment',
+        'letter_sequence',
+        'letter_number',
+        'letter_generated_at',
     ];
 
     protected $casts = [
         'date' => 'date',
         'start_time' => 'string',
         'end_time' => 'string',
+        'letter_generated_at' => 'datetime',
+        'letter_sequence' => 'integer',
     ];
 
     /**
