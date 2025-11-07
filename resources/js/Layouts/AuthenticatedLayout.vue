@@ -8,6 +8,28 @@ import Swal from 'sweetalert2'
 
 const page = usePage()
 
+const user = computed(() => page?.props?.auth?.user ?? {})
+
+const userInitials = computed(() => {
+  const name = (user.value?.name ?? '').trim()
+  if (!name) return '?'
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0].toUpperCase())
+    .join('')
+})
+
+const roleLabel = computed(() => {
+  const role = user.value?.role ?? ''
+  if (!role) return 'Pengguna'
+  return role
+    .split(/[\s_-]+/)
+    .map((chunk) => chunk.charAt(0).toUpperCase() + chunk.slice(1))
+    .join(' ')
+})
+
 const currentUrl = computed(() => page.url)
 
 const isRouteActive = (...names) => {
@@ -212,38 +234,53 @@ watch(
 
     <div class="flex min-h-screen flex-1 flex-col">
       <!-- Navbar Atas -->
-      <nav class="bg-white border-b border-gray-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="flex justify-between h-16">
-            <!-- Logo -->
-            <div class="shrink-0 flex items-center">
-              <Link :href="route('dashboard')">
-                <ApplicationLogo class="block h-9 w-auto fill-current text-gray-800" />
-              </Link>
-            </div>
+      <nav class="sticky top-0 z-20 border-b border-gray-200 bg-white shadow-sm">
+        <div class="flex h-20 items-center justify-between px-4 sm:px-6 lg:px-10">
+          <div class="flex flex-1 items-center justify-start">
+            <Link
+              :href="route('dashboard')"
+              class="group flex items-center gap-4 rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-sm transition hover:-translate-y-0.5 hover:border-gray-300 hover:bg-gray-50"
+            >
+              <div class="relative flex h-12 w-12 items-center justify-center rounded-2xl border border-gray-200 bg-gradient-to-br from-blue-50 via-white to-blue-100 p-1 shadow-inner">
+                <div class="flex h-full w-full items-center justify-center rounded-xl bg-white shadow-sm">
+                  <ApplicationLogo class="!h-10 !w-10 object-contain" />
+                </div>
+                <span class="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-inset ring-gray-100/80"></span>
+              </div>
+              <div class="flex flex-col leading-tight text-left">
+                <span class="text-xs font-semibold uppercase tracking-[0.35em] text-blue-500">Esa Unggul</span>
+                <span class="text-base font-semibold text-gray-900">Sistem Booking Ruangan</span>
+                <span class="text-xs text-gray-500">Universitas Esa Unggul</span>
+              </div>
+            </Link>
+          </div>
 
-            <!-- Profil + Logout -->
-            <div class="flex items-center">
-              <Dropdown align="right" width="48">
-                <template #trigger>
-                  <span class="inline-flex rounded-md">
-                    <button
-                      type="button"
-                      class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition"
-                    >
-                      {{ $page.props.auth.user.name }}
-                      <svg class="ml-2 -mr-0.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </button>
-                  </span>
-                </template>
-                <template #content>
-                  <DropdownLink :href="route('profile.edit')">Profile</DropdownLink>
-                  <DropdownLink :href="route('logout')" method="post" as="button">Log Out</DropdownLink>
-                </template>
-              </Dropdown>
+          <div class="flex items-center gap-4">
+            <div class="hidden flex-col text-right sm:flex">
+              <span class="text-sm font-semibold text-gray-900">{{ user.name }}</span>
+              <span class="text-xs text-gray-500">{{ roleLabel }}</span>
             </div>
+            <Dropdown align="right" width="56">
+              <template #trigger>
+                <button
+                  type="button"
+                  :aria-label="'Buka menu akun ' + (user.name || '')"
+                  class="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 transition hover:border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200"
+                >
+                  <span class="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 text-white text-sm font-semibold shadow-inner">
+                    {{ userInitials }}
+                  </span>
+                  <span class="text-sm font-semibold text-gray-900 sm:hidden">{{ user.name }}</span>
+                  <svg class="h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+              </template>
+              <template #content>
+                <DropdownLink :href="route('profile.edit')">Profile</DropdownLink>
+                <DropdownLink :href="route('logout')" method="post" as="button">Log Out</DropdownLink>
+              </template>
+            </Dropdown>
           </div>
         </div>
       </nav>

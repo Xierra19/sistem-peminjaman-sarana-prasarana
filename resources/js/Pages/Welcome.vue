@@ -275,7 +275,7 @@ const aboutBadges = [
                                     alt="Kampus Bekasi"
                                     class="size-full object-cover"
                                     loading="lazy"
-                                    src="https://images.unsplash.com/photo-1670284768187-5cc68eada1b3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjB1bml2ZXJzaXR5JTIwY2FtcHVzJTIwYnVpbGRpbmd8ZW58MXx8fHwxNzYyMzU3NTc0fDA&ixlib=rb-4.1.0&q=80&w=1080"
+                                    src="/images/Kampus Bekasi IMG.jpg"
                                 />
                                 <div class="absolute inset-0 bg-gradient-to-br from-blue-600/10 via-transparent to-purple-600/20"></div>
                             </div>
