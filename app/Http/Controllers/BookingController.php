@@ -98,13 +98,18 @@ class BookingController extends Controller
      */
     public function store(Request $request)
     {
+        $minimumStartTime = now()->addDays(3)->startOfDay();
+        $minStartDateLabel = $minimumStartTime->format('d/m/Y');
+
         $validated = $request->validate([
             'room_id'     => 'required|exists:rooms,id',
             'title'       => 'required|string|max:255',
             'description' => 'nullable|string',
-            'start_time'  => 'required|date',
+            'start_time'  => 'required|date|after_or_equal:'.$minimumStartTime->toDateTimeString(),
             'end_time'    => 'required|date|after:start_time',
             'attachment'  => 'nullable|file|mimes:pdf,jpg,png|max:2048',
+        ], [
+            'start_time.after_or_equal' => 'Tanggal penggunaan minimal '.$minStartDateLabel.' (H+3 dari hari ini).',
         ]);
 
         // Upload file kalau ada

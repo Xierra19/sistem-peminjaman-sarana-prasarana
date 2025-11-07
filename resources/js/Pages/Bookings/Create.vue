@@ -28,6 +28,20 @@ const bookedIntervals = ref([])
 const availabilityMessage = ref('')
 const isAvailabilityLoading = ref(false)
 
+const formatDateForInput = (date) => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+const minBookingDate = computed(() => {
+  const date = new Date()
+  date.setHours(0, 0, 0, 0)
+  date.setDate(date.getDate() + 3)
+  return formatDateForInput(date)
+})
+
 const generateTimeSlots = (startHour = 7, endHour = 21, stepMinutes = 30) => {
   const slots = []
   for (let hour = startHour; hour <= endHour; hour++) {
@@ -139,6 +153,16 @@ watch(
   () => {
     form.room_id = ''
     resetAvailability()
+  },
+)
+
+watch(
+  () => form.date,
+  (value) => {
+    if (value && value < minBookingDate.value) {
+      form.date = ''
+      resetAvailability()
+    }
   },
 )
 
@@ -351,8 +375,10 @@ const submit = () => {
               <input
                 v-model="form.date"
                 type="date"
+                :min="minBookingDate"
                 class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
+              <p class="text-xs text-gray-500">Tanggal minimal peminjaman: {{ minBookingDate }} (H+3)</p>
             </div>
             <div class="space-y-2">
               <label class="block text-sm font-medium text-gray-700">Waktu Mulai</label>
