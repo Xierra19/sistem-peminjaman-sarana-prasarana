@@ -21,7 +21,6 @@ use App\Http\Controllers\SemesterController;
 use App\Http\Controllers\SemesterDefaultController;
 use App\Http\Controllers\SemesterDefaultImportController;
 use App\Http\Controllers\Admin\SemesterController as AdminSemesterController;
-use App\Http\Controllers\Admin\UserOnboardingController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 
 Route::get('/', function () {
@@ -97,8 +96,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('bookings/{booking}/status', [BookingApprovalController::class, 'updateStatus'])->name('bookings.update-status');
     Route::get('bookings/export/excel', [BookingApprovalController::class, 'exportExcel'])->name('bookings.export.excel');
     Route::get('bookings/export/pdf', [BookingApprovalController::class, 'exportPdf'])->name('bookings.export.pdf');
-    Route::get('users/onboarding', [UserOnboardingController::class, 'index'])->name('users.onboarding');
-    Route::post('users/onboarding', [UserOnboardingController::class, 'store'])->name('users.onboarding.store');
 });
 
 require __DIR__.'/auth.php';

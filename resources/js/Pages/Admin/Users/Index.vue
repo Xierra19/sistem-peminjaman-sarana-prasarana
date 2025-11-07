@@ -118,12 +118,6 @@ const formatDate = (value) => {
           >
             Refresh
           </Link>
-          <Link
-            :href="route('admin.users.onboarding')"
-            class="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
-          >
-            <span>+ Tambah User</span>
-          </Link>
         </div>
       </div>
 
@@ -300,4 +294,3 @@ const formatDate = (value) => {
     </div>
   </AuthenticatedLayout>
 </template>
-

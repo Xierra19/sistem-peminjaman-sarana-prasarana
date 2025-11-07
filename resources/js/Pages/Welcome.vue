@@ -99,6 +99,13 @@ const aboutBadges = [
                 </div>
                 <div class="flex items-center gap-3">
                     <Link
+                        v-if="props.canRegister"
+                        :href="route('register')"
+                        class="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400"
+                    >
+                        Register
+                    </Link>
+                    <Link
                         v-if="props.canLogin"
                         :href="route('login')"
                         class="rounded-full border border-blue-200 px-4 py-2 text-sm font-semibold text-blue-600 transition hover:border-blue-400 hover:text-blue-700"
@@ -144,6 +151,17 @@ const aboutBadges = [
                                 </p>
                                 <div class="flex flex-wrap justify-center gap-3 pt-5">
                                     <Link
+                                        v-if="props.canRegister"
+                                        :href="route('register')"
+                                        class="inline-flex items-center gap-2 rounded-full border border-blue-200 px-6 py-3 text-base font-semibold text-blue-700 transition hover:border-blue-400 hover:text-blue-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400"
+                                    >
+                                        <svg class="size-4 text-blue-600" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" viewBox="0 0 24 24">
+                                            <path d="M12 5v14" />
+                                            <path d="M5 12h14" />
+                                        </svg>
+                                        Register
+                                    </Link>
+                                    <Link
                                         v-if="props.canLogin"
                                         :href="route('login')"
                                         class="group relative inline-flex items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-3 text-base font-semibold text-white shadow-lg shadow-blue-500/30 transition hover:-translate-y-0.5 hover:from-blue-700 hover:to-purple-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400"
@@ -158,6 +176,9 @@ const aboutBadges = [
                                         </span>
                                     </Link>
                                 </div>
+                                <p v-if="props.canRegister" class="text-xs font-semibold uppercase tracking-wide text-blue-500">
+                                    Registrasi hanya tersedia untuk email @student.esaunggul.ac.id.
+                                </p>
                             </div>
                         </div>
                     </div>

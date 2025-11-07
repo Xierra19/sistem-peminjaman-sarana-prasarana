@@ -51,8 +51,12 @@ const submit = () => {
                     v-model="form.email"
                     required
                     autocomplete="username"
+                    pattern="^[^@\\s]+@student\\.esaunggul\\.ac\\.id$"
+                    title="Gunakan email student.esaunggul.ac.id"
+                    placeholder="nama@student.esaunggul.ac.id"
                 />
 
+                <p class="mt-2 text-xs text-gray-500">Hanya alamat @student.esaunggul.ac.id yang dapat melakukan registrasi.</p>
                 <InputError class="mt-2" :message="form.errors.email" />
             </div>
 

@@ -222,12 +222,6 @@ watch(
             </Link>
           </div>
 
-          <div v-if="$page.props.auth.user.role === 'admin'">
-            <Link :href="route('admin.users.onboarding')" :class="[navLinkClasses(isRouteActive('admin.users.onboarding'))]">
-              <span class="text-lg">🧑‍🤝‍🧑</span>
-              <span>Onboarding User</span>
-            </Link>
-          </div>
         </nav>
       </aside>
     </div>
