@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'captcha' => [
+        'enabled' => env('CAPTCHA_ENABLED', false),
+        'secret' => env('CAPTCHA_SECRET'),
+        'verify_url' => env('CAPTCHA_VERIFY_URL', 'https://challenges.cloudflare.com/turnstile/v0/siteverify'),
+    ],
+
 ];
