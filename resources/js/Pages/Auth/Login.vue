@@ -1,9 +1,16 @@
 <script setup>
 import { ref } from 'vue';
-import { useForm, Head } from '@inertiajs/vue3';
+import { useForm, Head, Link } from '@inertiajs/vue3';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-vue-next'; // Ganti ini sesuai dengan library ikon yang Anda gunakan
 
 const showPassword = ref(false);
+
+defineProps({
+    canResetPassword: {
+        type: Boolean,
+        default: false,
+    },
+});
 
 const form = useForm({
     email: '',
@@ -73,10 +80,13 @@ const submit = () => {
                         </div>
                     </div>
 
-                    <div class="flex items-center justify-between">
-                        <a href="#" class="text-sm text-blue-600 hover:text-blue-800 hover:underline">
+                    <div v-if="canResetPassword" class="flex items-center justify-between">
+                        <Link
+                            :href="route('password.request')"
+                            class="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                        >
                             Forgot your password?
-                        </a>
+                        </Link>
                     </div>
 
                     <button type="submit" class="w-full py-2 px-4 rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
