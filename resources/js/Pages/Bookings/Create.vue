@@ -347,22 +347,46 @@ const submit = () => {
   <AuthenticatedLayout>
     <Head title="Request Booking" />
 
-    <div class="mx-auto max-w-5xl space-y-6 py-6">
-      <div class="rounded-xl bg-white p-6 shadow-sm">
-        <div class="mb-6 border-b border-gray-200 pb-4">
-          <h1 class="text-2xl font-semibold text-gray-800">Request Booking Ruangan</h1>
-          <p class="mt-1 text-sm text-gray-500">
+    <div class="mx-auto max-w-5xl space-y-6 px-4 py-6 sm:px-0">
+      <div class="card-surface space-y-6 p-5 sm:p-6">
+        <div class="border-b border-slate-200 pb-5">
+          <h1 class="text-2xl font-semibold text-slate-900">Request Booking Ruangan</h1>
+          <p class="mt-1 text-sm text-slate-500">
             Pilih kampus, gedung, dan ruangan yang tersedia lalu tentukan jadwal penggunaan.
           </p>
+        </div>
+
+        <div class="grid gap-3 rounded-2xl bg-slate-50 p-4 text-xs text-slate-600 sm:grid-cols-3">
+          <div class="flex items-start gap-3">
+            <span class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">1</span>
+            <div>
+              <p class="font-semibold text-slate-800">Pilih Lokasi</p>
+              <p>Pilih kampus, gedung, dan ruangan yang tersedia.</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3">
+            <span class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">2</span>
+            <div>
+              <p class="font-semibold text-slate-800">Atur Jadwal</p>
+              <p>Tentukan tanggal, jam mulai, dan selesai.</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3">
+            <span class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">3</span>
+            <div>
+              <p class="font-semibold text-slate-800">Lengkapi Detail</p>
+              <p>Isi deskripsi kegiatan dan lampiran jika diperlukan.</p>
+            </div>
+          </div>
         </div>
 
         <form @submit.prevent="submit" class="space-y-8">
           <div class="grid gap-6 md:grid-cols-2">
             <div class="space-y-2">
-              <label class="block text-sm font-medium text-gray-700">Kampus</label>
+              <label class="block text-sm font-medium text-slate-700">Kampus</label>
               <select
                 v-model="form.campus_id"
-                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               >
                 <option value="" disabled>Pilih kampus</option>
                 <option
@@ -377,11 +401,11 @@ const submit = () => {
             </div>
 
             <div class="space-y-2">
-              <label class="block text-sm font-medium text-gray-700">Gedung</label>
+              <label class="block text-sm font-medium text-slate-700">Gedung</label>
               <select
                 v-model="form.building_id"
                 :disabled="!filteredBuildings.length"
-                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100"
+                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-slate-100"
               >
                 <option value="" disabled>
                   {{ filteredBuildings.length ? 'Pilih gedung' : 'Pilih kampus terlebih dahulu' }}
@@ -398,11 +422,11 @@ const submit = () => {
             </div>
 
             <div class="space-y-2 md:col-span-2">
-              <label class="block text-sm font-medium text-gray-700">Ruangan</label>
+              <label class="block text-sm font-medium text-slate-700">Ruangan</label>
               <select
                 v-model="form.room_id"
                 :disabled="!filteredRooms.length"
-                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100"
+                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-slate-100"
               >
                 <option value="" disabled>
                   {{ filteredRooms.length ? 'Pilih ruangan' : 'Pilih gedung untuk melihat ruangan' }}
@@ -418,7 +442,7 @@ const submit = () => {
                 </option>
               </select>
               <div v-if="form.errors.room_id" class="text-sm text-red-500">{{ form.errors.room_id }}</div>
-              <p v-if="!filteredRooms.length && form.building_id" class="text-xs text-gray-400">
+              <p v-if="!filteredRooms.length && form.building_id" class="text-xs text-slate-400">
                 Tidak ada ruangan yang terdaftar pada gedung ini.
               </p>
             </div>
@@ -426,15 +450,15 @@ const submit = () => {
 
           <div
             v-if="selectedRoom"
-            class="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600"
+            class="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm text-slate-600"
           >
             <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
-                <p class="text-sm font-semibold text-gray-700">Detail Ruangan</p>
-                <p class="mt-1">Kampus: <span class="font-medium text-gray-800">{{ currentCampus?.name ?? '-' }}</span></p>
-                <p>Gedung: <span class="font-medium text-gray-800">{{ selectedBuilding?.name ?? '-' }}</span></p>
-                <p>Ruangan: <span class="font-medium text-gray-800">{{ selectedRoom.name }}</span></p>
-                <p>Kapasitas: <span class="font-medium text-gray-800">{{ selectedRoom.capacity }} orang</span></p>
+                <p class="text-sm font-semibold text-slate-700">Detail Ruangan</p>
+                <p class="mt-1">Kampus: <span class="font-medium text-slate-800">{{ currentCampus?.name ?? '-' }}</span></p>
+                <p>Gedung: <span class="font-medium text-slate-800">{{ selectedBuilding?.name ?? '-' }}</span></p>
+                <p>Ruangan: <span class="font-medium text-slate-800">{{ selectedRoom.name }}</span></p>
+                <p>Kapasitas: <span class="font-medium text-slate-800">{{ selectedRoom.capacity }} orang</span></p>
               </div>
               <div>
                 <span
@@ -451,48 +475,48 @@ const submit = () => {
 
           <div class="grid gap-6 md:grid-cols-2">
             <div class="space-y-2">
-              <label class="block text-sm font-medium text-gray-700">Tanggal Mulai</label>
+              <label class="block text-sm font-medium text-slate-700">Tanggal Mulai</label>
               <input
                 v-model="form.start_date"
                 type="date"
                 :min="minBookingDate"
-                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
-              <p class="text-xs text-gray-500">Tanggal minimal peminjaman: {{ minBookingDate }} (H+3)</p>
+              <p class="text-xs text-slate-500">Tanggal minimal peminjaman: {{ minBookingDate }} (H+3)</p>
             </div>
             <div class="space-y-2">
-              <label class="block text-sm font-medium text-gray-700">Tanggal Selesai</label>
+              <label class="block text-sm font-medium text-slate-700">Tanggal Selesai</label>
               <input
                 v-model="form.end_date"
                 type="date"
                 :min="minEndDate"
-                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
-              <p class="text-xs text-gray-500">Samakan dengan tanggal mulai bila booking hanya satu hari.</p>
+              <p class="text-xs text-slate-500">Samakan dengan tanggal mulai bila booking hanya satu hari.</p>
             </div>
           </div>
 
           <div class="grid gap-6 md:grid-cols-3">
             <div class="space-y-2">
-              <label class="block text-sm font-medium text-gray-700">Tanggal Cek Ketersediaan</label>
+              <label class="block text-sm font-medium text-slate-700">Tanggal Cek Ketersediaan</label>
               <input
                 v-model="availabilityDate"
                 type="date"
                 :min="form.start_date || minBookingDate"
                 :max="form.end_date || undefined"
                 :disabled="!form.start_date"
-                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100"
+                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-slate-100"
               />
-              <p class="text-xs text-gray-500">
+              <p class="text-xs text-slate-500">
                 Gunakan untuk mengecek setiap hari dalam rentang booking apabila perlu.
               </p>
             </div>
             <div class="space-y-2">
-              <label class="block text-sm font-medium text-gray-700">Waktu Mulai</label>
+              <label class="block text-sm font-medium text-slate-700">Waktu Mulai</label>
               <select
                 v-model="form.start_time"
                 :disabled="!selectedRoom || !selectedRoom.is_available || !form.start_date || isAvailabilityLoading"
-                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100"
+                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-slate-100"
               >
                 <option value="" disabled>
                   {{
@@ -514,11 +538,11 @@ const submit = () => {
               </select>
             </div>
             <div class="space-y-2">
-              <label class="block text-sm font-medium text-gray-700">Waktu Selesai</label>
+              <label class="block text-sm font-medium text-slate-700">Waktu Selesai</label>
               <select
                 v-model="form.end_time"
                 :disabled="!selectedRoom || !selectedRoom.is_available || !form.start_time || isAvailabilityLoading"
-                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100"
+                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-slate-100"
               >
                 <option value="" disabled>
                   {{
@@ -545,47 +569,47 @@ const submit = () => {
             </div>
           </div>
 
-          <div class="space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm">
+          <div class="space-y-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm">
             <div class="flex items-center justify-between">
-              <p class="font-semibold text-gray-700">Waktu yang Tidak Tersedia untuk Ruangan Ini</p>
+              <p class="font-semibold text-slate-700">Waktu yang Tidak Tersedia untuk Ruangan Ini</p>
               <span v-if="isAvailabilityLoading" class="text-xs text-blue-500">Memuat jadwal...</span>
             </div>
-            <p v-if="availabilityMessage" class="text-sm text-gray-600">{{ availabilityMessage }}</p>
-            <ul v-else-if="bookedIntervals.length" class="space-y-1 text-sm text-gray-600">
+            <p v-if="availabilityMessage" class="text-sm text-slate-600">{{ availabilityMessage }}</p>
+            <ul v-else-if="bookedIntervals.length" class="space-y-1 text-sm text-slate-600">
               <li
                 v-for="interval in bookedIntervals"
                 :key="interval.id"
                 class="flex items-center justify-between rounded-md bg-white px-3 py-2 shadow-sm"
               >
                 <span>{{ formatInterval(interval) }}</span>
-                <span class="text-xs font-semibold uppercase text-gray-400">{{ interval.status }}</span>
+                <span class="text-xs font-semibold uppercase text-slate-400">{{ interval.status }}</span>
               </li>
             </ul>
-            <p v-else-if="form.room_id && availabilityDate" class="text-sm text-gray-500">
+            <p v-else-if="form.room_id && availabilityDate" class="text-sm text-slate-500">
               Belum ada jadwal lain di tanggal yang dipilih.
             </p>
-            <p v-else class="text-sm text-gray-500">
+            <p v-else class="text-sm text-slate-500">
               Pilih ruangan serta tanggal pengecekan untuk melihat ketersediaan waktunya.
             </p>
           </div>
 
           <div class="space-y-2">
-            <label class="block text-sm font-medium text-gray-700">Judul Kegiatan</label>
+            <label class="block text-sm font-medium text-slate-700">Judul Kegiatan</label>
             <input
               v-model="form.title"
               type="text"
-              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               placeholder="Contoh: Rapat Koordinasi Proyek"
             />
             <div v-if="form.errors.title" class="text-sm text-red-500">{{ form.errors.title }}</div>
           </div>
 
           <div class="space-y-2">
-            <label class="block text-sm font-medium text-gray-700">Deskripsi</label>
+            <label class="block text-sm font-medium text-slate-700">Deskripsi</label>
             <textarea
               v-model="form.description"
               rows="4"
-              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               placeholder="Tuliskan detail kegiatan, kebutuhan fasilitas, atau catatan lainnya."
             />
             <div v-if="form.errors.description" class="text-sm text-red-500">{{ form.errors.description }}</div>
@@ -593,21 +617,21 @@ const submit = () => {
 
           <div class="space-y-3">
             <div class="flex items-center justify-between">
-              <label class="block text-sm font-medium text-gray-700">Lampiran Pendukung</label>
-              <span class="text-xs text-gray-400">PDF, JPG, atau PNG maks. 2MB</span>
+              <label class="block text-sm font-medium text-slate-700">Lampiran Pendukung</label>
+              <span class="text-xs text-slate-400">PDF, JPG, atau PNG maks. 2MB</span>
             </div>
             <input
               type="file"
               @change="handleFileChange"
-              class="w-full rounded-lg border border-dashed border-gray-300 px-3 py-2 text-sm file:mr-4 file:rounded-md file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-blue-600 hover:file:bg-blue-100"
+              class="w-full rounded-2xl border border-dashed border-slate-200 px-3 py-2 text-sm file:mr-4 file:rounded-md file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-blue-600 hover:file:bg-blue-100"
             />
             <div v-if="form.errors.attachment" class="text-sm text-red-500">{{ form.errors.attachment }}</div>
           </div>
 
-          <div class="flex items-center justify-end gap-3">
+          <div class="flex flex-col gap-3 sm:flex-row sm:justify-end">
             <button
               type="submit"
-              class="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+              class="inline-flex w-full items-center justify-center rounded-2xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 sm:w-auto"
               :disabled="form.processing"
             >
               Ajukan Booking

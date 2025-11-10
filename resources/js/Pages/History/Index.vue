@@ -77,16 +77,16 @@ const exportExcel = () => {
 
     <div class="space-y-6">
       <div>
-        <h1 class="text-2xl font-semibold text-gray-800">Riwayat Aktivitas</h1>
-        <p class="text-sm text-gray-500">Pantau semua perubahan booking ruangan yang terekam di sistem.</p>
+        <h1 class="text-2xl font-semibold text-slate-900">Riwayat Aktivitas</h1>
+        <p class="text-sm text-slate-500">Pantau semua perubahan booking ruangan yang terekam di sistem.</p>
       </div>
 
-      <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-        <div class="flex flex-col gap-4 border-b border-gray-100 px-5 py-4">
+      <div class="card-surface overflow-hidden">
+        <div class="flex flex-col gap-4 border-b border-slate-100 px-5 py-4">
           <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div class="flex flex-1 flex-col gap-3 md:flex-row md:items-center md:gap-4">
               <div class="relative w-full md:max-w-xs">
-                <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400">
+                <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">
                   <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path
                       stroke-linecap="round"
@@ -100,26 +100,26 @@ const exportExcel = () => {
                   v-model="searchQuery"
                   type="text"
                   placeholder="Cari pengguna, ruangan, atau aksi…"
-                  class="w-full rounded-lg border border-gray-300 bg-white py-2 pl-10 pr-3 text-sm text-gray-700 placeholder-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  class="w-full rounded-xl border border-slate-200 bg-white py-2 pl-10 pr-3 text-sm text-slate-700 placeholder-slate-400 transition focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
               </div>
-              <div class="flex flex-wrap items-center gap-3 text-sm text-gray-600">
+              <div class="flex flex-wrap items-center gap-3 text-sm text-slate-600">
                 <div class="flex items-center gap-2">
-                  <label class="font-medium text-gray-600" for="history-start">Dari</label>
+                  <label class="font-medium text-slate-600" for="history-start">Dari</label>
                   <input
                     id="history-start"
                     v-model="startDate"
                     type="date"
-                    class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 transition focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    class="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 transition focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
                 <div class="flex items-center gap-2">
-                  <label class="font-medium text-gray-600" for="history-end">Sampai</label>
+                  <label class="font-medium text-slate-600" for="history-end">Sampai</label>
                   <input
                     id="history-end"
                     v-model="endDate"
                     type="date"
-                    class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 transition focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    class="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 transition focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
               </div>
@@ -128,7 +128,7 @@ const exportExcel = () => {
               <template #trigger>
                 <button
                   type="button"
-                  class="inline-flex items-center justify-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-100"
+                  class="inline-flex items-center justify-center gap-2 rounded-2xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-100"
                 >
                   <span>Export</span>
                   <svg class="h-4 w-4" fill="none" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
@@ -143,7 +143,7 @@ const exportExcel = () => {
                 </button>
               </template>
               <template #content>
-                <div class="flex flex-col gap-1 p-2 text-sm text-gray-700">
+                <div class="flex flex-col gap-1 p-2 text-sm text-slate-700">
                   <button
                     type="button"
                     class="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-blue-50"
@@ -155,19 +155,19 @@ const exportExcel = () => {
               </template>
             </Dropdown>
           </div>
-          <div class="flex items-center justify-end gap-3 text-sm text-gray-600">
-            <label class="font-medium text-gray-700" for="history-rows">Baris per halaman</label>
+          <div class="flex items-center justify-end gap-3 text-sm text-slate-600">
+            <label class="font-medium text-slate-700" for="history-rows">Baris per halaman</label>
             <div class="relative">
               <select
                 id="history-rows"
                 v-model.number="rowsPerPage"
-                class="w-24 appearance-none rounded border border-gray-300 bg-white px-3 py-1.5 pr-8 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                class="w-24 appearance-none rounded-xl border border-slate-200 bg-white px-3 py-1.5 pr-8 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               >
                 <option v-for="option in perPageOptions" :key="`rows-${option}`" :value="option">
                   {{ option }}
                 </option>
               </select>
-              <span class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-gray-400">
+              <span class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-slate-400">
                 <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                   <path
                     fill-rule="evenodd"
@@ -181,8 +181,8 @@ const exportExcel = () => {
         </div>
 
         <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200 text-sm">
-            <thead class="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
+          <table class="mobile-friendly-table min-w-full divide-y divide-slate-200 text-sm text-slate-700">
+            <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
               <tr>
                 <th class="px-5 py-3 text-left">ID</th>
                 <th class="px-5 py-3 text-left">Pengguna</th>
@@ -192,36 +192,35 @@ const exportExcel = () => {
                 <th class="px-5 py-3 text-left">Deskripsi</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100 text-gray-700">
-              <tr v-for="history in paginatedHistories" :key="history.id" class="hover:bg-gray-50">
-                <td class="px-5 py-4 text-sm text-gray-500">#{{ history.id }}</td>
-                <td class="px-5 py-4">
-                  <div class="font-medium text-gray-900">{{ history.user?.name ?? '-' }}</div>
-                  <div class="text-xs text-gray-500">{{ history.user?.email ?? '-' }}</div>
+            <tbody class="divide-y divide-slate-100 text-slate-700">
+              <tr v-for="history in paginatedHistories" :key="history.id" class="hover:bg-slate-50">
+                <td class="px-5 py-4 text-sm text-slate-500" data-title="ID">#{{ history.id }}</td>
+                <td class="px-5 py-4" data-title="Pengguna">
+                  <div class="font-medium text-slate-900">{{ history.user?.name ?? '-' }}</div>
+                  <div class="text-xs text-slate-500">{{ history.user?.email ?? '-' }}</div>
                 </td>
-                <td class="px-5 py-4">
-                  <div class="font-medium text-gray-800">{{ history.booking?.room?.name ?? '-' }}</div>
-                  <div class="text-xs text-gray-500">
-                    {{ history.booking?.room?.building?.name ?? '-' }} -
-                    {{ history.booking?.room?.building?.campus?.name ?? '-' }}
+                <td class="px-5 py-4" data-title="Ruangan">
+                  <div class="font-medium text-slate-900">{{ history.booking?.room?.name ?? '-' }}</div>
+                  <div class="text-xs text-slate-500">
+                    {{ history.booking?.room?.building?.name ?? '-' }} - {{ history.booking?.room?.building?.campus?.name ?? '-' }}
                   </div>
                 </td>
-                <td class="px-5 py-4">
+                <td class="px-5 py-4" data-title="Aksi">
                   <span
                     class="inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-600"
                   >
                     {{ history.action ?? '-' }}
                   </span>
                 </td>
-                <td class="px-5 py-4 text-sm text-gray-600">
-                  <div class="font-medium text-gray-800">{{ formatDateTime(history.created_at) }}</div>
+                <td class="px-5 py-4 text-sm text-slate-600" data-title="Waktu">
+                  <div class="font-medium text-slate-800">{{ formatDateTime(history.created_at) }}</div>
                 </td>
-                <td class="px-5 py-4 text-sm text-gray-600">
+                <td class="px-5 py-4 text-sm text-slate-600" data-title="Deskripsi">
                   <span>{{ history.description ?? '-' }}</span>
                 </td>
               </tr>
               <tr v-if="!paginatedHistories.length">
-                <td colspan="6" class="px-5 py-10 text-center text-sm text-gray-400">
+                <td colspan="6" class="px-5 py-10 text-center text-sm text-slate-400" data-title="Info">
                   Belum ada riwayat yang sesuai dengan filter.
                 </td>
               </tr>
@@ -230,7 +229,7 @@ const exportExcel = () => {
         </div>
 
         <div
-          class="flex flex-col gap-3 border-t border-gray-100 px-5 py-4 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-between"
+          class="flex flex-col gap-3 border-t border-slate-100 px-5 py-4 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between"
         >
           <div>
             <span v-if="pageMeta.of">Menampilkan {{ pageMeta.from }}-{{ pageMeta.to }} dari {{ pageMeta.of }} data</span>
@@ -239,7 +238,7 @@ const exportExcel = () => {
           <div class="flex items-center gap-2">
             <button
               type="button"
-              class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+              class="rounded-xl border border-slate-300 px-3 py-1 text-sm text-slate-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
               @click="changePage(1)"
               :disabled="currentPage === 1 || !pageMeta.of"
             >
@@ -247,7 +246,7 @@ const exportExcel = () => {
             </button>
             <button
               type="button"
-              class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+              class="rounded-xl border border-slate-300 px-3 py-1 text-sm text-slate-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
               @click="changePage(currentPage - 1)"
               :disabled="currentPage === 1 || !pageMeta.of"
             >
@@ -258,11 +257,11 @@ const exportExcel = () => {
                 v-for="page in pages"
                 :key="`history-page-${page}`"
                 type="button"
-                class="rounded border px-3 py-1 text-sm transition"
+                class="rounded-xl border px-3 py-1 text-sm transition"
                 :class="
                   currentPage === page
                     ? 'border-blue-500 bg-blue-500 text-white'
-                    : 'border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600'
+                    : 'border-slate-300 text-slate-600 hover:border-blue-400 hover:text-blue-600'
                 "
                 @click="changePage(page)"
               >
@@ -271,7 +270,7 @@ const exportExcel = () => {
             </template>
             <button
               type="button"
-              class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+              class="rounded-xl border border-slate-300 px-3 py-1 text-sm text-slate-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
               @click="changePage(currentPage + 1)"
               :disabled="currentPage === pages.length || !pageMeta.of"
             >
@@ -279,7 +278,7 @@ const exportExcel = () => {
             </button>
             <button
               type="button"
-              class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+              class="rounded-xl border border-slate-300 px-3 py-1 text-sm text-slate-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
               @click="changePage(pages.length)"
               :disabled="currentPage === pages.length || !pageMeta.of"
             >

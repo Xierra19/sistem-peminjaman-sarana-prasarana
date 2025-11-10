@@ -84,130 +84,145 @@ const formatDateTime = (value) => {
     <Head title="Request Booking Ruangan" />
 
     <div class="space-y-6">
-      <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 class="text-2xl font-semibold text-gray-800">Request Booking Ruangan</h1>
-          <p class="text-sm text-gray-500">
+          <h1 class="text-2xl font-semibold text-slate-900">Request Booking Ruangan</h1>
+          <p class="text-sm text-slate-500">
             Pantau status persetujuan booking ruangan yang telah kamu ajukan.
           </p>
         </div>
         <Link
           :href="route('bookings.create')"
-          class="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
+          class="inline-flex w-full items-center justify-center rounded-2xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 sm:w-auto"
         >
           + Buat Request Baru
         </Link>
       </div>
 
-      <div class="rounded-xl border border-gray-200 bg-white shadow-sm">
-        <div class="grid gap-4 border-b border-gray-100 p-4 md:grid-cols-3">
-          <div class="md:col-span-2 flex flex-wrap gap-4">
-            <div class="min-w-[200px] flex-1">
-              <label class="mb-1 block text-sm font-medium text-gray-700">Pencarian</label>
-              <input
-                v-model="searchQuery"
-                type="text"
-                placeholder="Cari judul, ruangan, atau kampus..."
-                class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm leading-5 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-            <div class="w-full min-w-[180px] md:w-auto">
-              <label class="mb-1 block text-sm font-medium text-gray-700">Status</label>
-              <div class="relative">
-                <select
-                  v-model="statusFilter"
-                  class="w-full appearance-none rounded-md border border-gray-300 px-3 py-2 pr-9 text-sm leading-5 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                >
-                  <option value="">Semua Status</option>
-                  <option value="waiting">Menunggu Persetujuan</option>
-                  <option value="approved">Disetujui</option>
-                  <option value="rejected">Ditolak</option>
-                  <option value="cancelled">Dibatalkan Admin</option>
-                </select>
-                <span class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-gray-400">
-                  <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                    <path
-                      fill-rule="evenodd"
-                      d="M5.23 7.21a.75.75 0 011.06.02L10 10.939l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
-                      clip-rule="evenodd"
-                    />
-                  </svg>
-                </span>
+      <div class="card-surface overflow-hidden">
+        <div class="space-y-4 border-b border-slate-100 px-5 py-4">
+          <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div class="flex flex-1 flex-col gap-3 md:flex-row md:items-center">
+              <div class="w-full md:max-w-sm">
+                <label class="mb-1 block text-sm font-medium text-slate-700" for="user-bookings-search">Pencarian</label>
+                <div class="relative">
+                  <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35M10 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16Z" />
+                    </svg>
+                  </span>
+                  <input
+                    id="user-bookings-search"
+                    v-model="searchQuery"
+                    type="text"
+                    placeholder="Cari judul, ruangan, atau kampus..."
+                    class="w-full rounded-xl border border-slate-200 bg-white py-2 pl-10 pr-3 text-sm text-slate-700 placeholder-slate-400 transition focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
               </div>
+              <div class="w-full md:w-60">
+                <label class="mb-1 block text-sm font-medium text-slate-700" for="user-bookings-status">Status</label>
+                <div class="relative">
+                  <select
+                    id="user-bookings-status"
+                    v-model="statusFilter"
+                    class="w-full appearance-none rounded-xl border border-slate-200 bg-white px-3 py-2 pr-9 text-sm leading-5 text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  >
+                    <option value="">Semua Status</option>
+                    <option value="waiting">Menunggu Persetujuan</option>
+                    <option value="approved">Disetujui</option>
+                    <option value="rejected">Ditolak</option>
+                    <option value="cancelled">Dibatalkan Admin</option>
+                  </select>
+                  <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-400">
+                    <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                      <path
+                        fill-rule="evenodd"
+                        d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z"
+                        clip-rule="evenodd"
+                      />
+                    </svg>
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center gap-3 rounded-2xl bg-slate-50 px-3 py-2 text-sm text-slate-600">
+              <span class="font-medium">Total data</span>
+              <span class="inline-flex h-8 w-12 items-center justify-center rounded-xl bg-white text-sm font-semibold text-slate-900 shadow-sm">
+                {{ paginatedBookings.length }}
+              </span>
             </div>
           </div>
-          <div class="flex items-end justify-end">
-            <div class="flex items-center gap-3">
-              <label class="text-sm font-medium text-gray-700" for="user-bookings-rows">Rows per page</label>
-              <div class="relative">
-                <select
-                  id="user-bookings-rows"
-                  v-model.number="rowsPerPage"
-                  class="appearance-none w-20 rounded border border-gray-300 bg-white px-3 py-1.5 pr-8 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                >
-                  <option v-for="option in perPageOptions" :key="`bookings-rows-${option}`" :value="option">
-                    {{ option }}
-                  </option>
-                </select>
-                <span class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-gray-400">
-                  <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                    <path
-                      fill-rule="evenodd"
-                      d="M5.23 7.21a.75.75 0 011.06.02L10 10.939l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
-                      clip-rule="evenodd"
-                    />
-                  </svg>
-                </span>
-              </div>
+          <div class="flex flex-col gap-2 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-end">
+            <label class="font-medium text-slate-700" for="user-bookings-rows">Rows per page</label>
+            <div class="relative">
+              <select
+                id="user-bookings-rows"
+                v-model.number="rowsPerPage"
+                class="w-24 appearance-none rounded-xl border border-slate-200 bg-white px-3 py-1.5 pr-9 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              >
+                <option v-for="option in perPageOptions" :key="`bookings-rows-${option}`" :value="option">
+                  {{ option }}
+                </option>
+              </select>
+              <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-400">
+                <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path
+                    fill-rule="evenodd"
+                    d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+              </span>
             </div>
           </div>
         </div>
 
         <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200 text-sm">
-            <thead class="bg-gray-50">
+          <table class="mobile-friendly-table min-w-full divide-y divide-slate-200 text-sm text-slate-700">
+            <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
               <tr>
-                <th class="px-4 py-3 text-left font-semibold text-gray-600">#</th>
-                <th class="px-4 py-3 text-left font-semibold text-gray-600">Judul</th>
-                <th class="px-4 py-3 text-left font-semibold text-gray-600">Ruangan</th>
-                <th class="px-4 py-3 text-left font-semibold text-gray-600">Mulai</th>
-                <th class="px-4 py-3 text-left font-semibold text-gray-600">Selesai</th>
-                <th class="px-4 py-3 text-left font-semibold text-gray-600">Status</th>
-                <th class="px-4 py-3 text-left font-semibold text-gray-600">Aksi</th>
+                <th class="px-4 py-3 text-left">#</th>
+                <th class="px-4 py-3 text-left">Judul</th>
+                <th class="px-4 py-3 text-left">Ruangan</th>
+                <th class="px-4 py-3 text-left">Mulai</th>
+                <th class="px-4 py-3 text-left">Selesai</th>
+                <th class="px-4 py-3 text-left">Status</th>
+                <th class="px-4 py-3 text-left">Aksi</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100">
-              <tr v-for="(booking, index) in paginatedBookings" :key="booking.id" class="hover:bg-gray-50">
-                <td class="px-4 py-3 text-gray-600">
+            <tbody class="divide-y divide-slate-100">
+              <tr v-for="(booking, index) in paginatedBookings" :key="booking.id" class="hover:bg-slate-50">
+                <td class="px-4 py-3 text-slate-500" data-title="#">
                   {{ pageMeta.from + index }}
                 </td>
-                <td class="px-4 py-3">
-                  <div class="font-semibold text-gray-800">{{ booking.title }}</div>
-                  <div class="mt-1 text-xs text-gray-500">
+                <td class="px-4 py-3" data-title="Judul">
+                  <div class="font-semibold text-slate-900">{{ booking.title }}</div>
+                  <div class="mt-1 text-xs text-slate-500">
                     {{ booking.description || 'Tidak ada deskripsi tambahan.' }}
                   </div>
                 </td>
-                <td class="px-4 py-3 text-gray-700">
-                  <div class="font-medium">{{ booking.room?.name ?? '-' }}</div>
-                  <div class="text-xs text-gray-500">
-                    {{ booking.room?.building?.name ?? '-' }} • {{ booking.room?.building?.campus?.name ?? '-' }}
+                <td class="px-4 py-3" data-title="Ruangan">
+                  <div class="font-medium text-slate-900">{{ booking.room?.name ?? '-' }}</div>
+                  <div class="text-xs text-slate-500">
+                    {{ booking.room?.building?.name ?? '-' }} - {{ booking.room?.building?.campus?.name ?? '-' }}
                   </div>
                 </td>
-                <td class="px-4 py-3 text-gray-700">{{ formatDateTime(booking.start_time) }}</td>
-                <td class="px-4 py-3 text-gray-700">{{ formatDateTime(booking.end_time) }}</td>
-                <td class="px-4 py-3">
+                <td class="px-4 py-3 text-slate-700" data-title="Mulai">{{ formatDateTime(booking.start_time) }}</td>
+                <td class="px-4 py-3 text-slate-700" data-title="Selesai">{{ formatDateTime(booking.end_time) }}</td>
+                <td class="px-4 py-3" data-title="Status">
                   <span
                     class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold"
-                    :class="statusClasses[normalizeStatus(booking.status)] ?? 'bg-gray-100 text-gray-600 border-gray-200'"
+                    :class="statusClasses[normalizeStatus(booking.status)] ?? 'bg-slate-100 text-slate-600 border-slate-200'"
                   >
                     {{ statusLabels[normalizeStatus(booking.status)] ?? booking.status }}
                   </span>
                 </td>
-                <td class="px-4 py-3">
+                <td class="px-4 py-3" data-title="Aksi">
                   <div class="flex flex-col gap-2">
                     <Link
                       :href="route('bookings.show', booking.id)"
-                      class="inline-flex items-center justify-center rounded-md border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:border-blue-300 hover:text-blue-800"
+                      class="inline-flex items-center justify-center rounded-xl border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:border-blue-300 hover:text-blue-800"
                     >
                       Lihat Detail
                     </Link>
@@ -216,17 +231,17 @@ const formatDateTime = (value) => {
                         :href="route('bookings.letter', booking.id)"
                         target="_blank"
                         rel="noopener"
-                        class="inline-flex items-center justify-center rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+                        class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700"
                       >
                         Download Surat
                       </a>
                     </template>
-                    <span v-else class="text-xs text-gray-400">Menunggu Persetujuan</span>
+                    <span v-else class="text-xs text-slate-400">Menunggu Persetujuan</span>
                   </div>
                 </td>
               </tr>
               <tr v-if="!paginatedBookings.length">
-                <td colspan="7" class="px-4 py-10 text-center text-sm text-gray-500">
+                <td colspan="7" class="px-4 py-10 text-center text-sm text-slate-500" data-title="Info">
                   Tidak ada data booking yang cocok dengan filter saat ini.
                 </td>
               </tr>
@@ -235,7 +250,7 @@ const formatDateTime = (value) => {
         </div>
 
         <div
-          class="flex flex-col gap-3 border-t border-gray-100 px-4 py-4 text-sm text-gray-600 md:flex-row md:items-center md:justify-between"
+          class="flex flex-col gap-3 border-t border-slate-100 px-5 py-4 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between"
         >
           <div>
             <span v-if="pageMeta.of">Menampilkan {{ pageMeta.from }}-{{ pageMeta.to }} dari {{ pageMeta.of }} data</span>
@@ -243,14 +258,14 @@ const formatDateTime = (value) => {
           </div>
           <div class="flex items-center gap-1">
             <button
-              class="inline-flex items-center rounded border border-gray-300 px-2 py-1 text-gray-600 hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+              class="inline-flex items-center rounded-xl border border-slate-300 px-2 py-1 text-slate-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
               @click="changePage(1)"
               :disabled="currentPage === 1 || !pageMeta.of"
             >
               «
             </button>
             <button
-              class="inline-flex items-center rounded border border-gray-300 px-2 py-1 text-gray-600 hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+              class="inline-flex items-center rounded-xl border border-slate-300 px-2 py-1 text-slate-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
               @click="changePage(currentPage - 1)"
               :disabled="currentPage === 1 || !pageMeta.of"
             >
@@ -260,22 +275,22 @@ const formatDateTime = (value) => {
               <button
                 v-for="page in pages"
                 :key="`bookings-page-${page}`"
-                class="inline-flex items-center rounded border px-3 py-1 text-sm"
-                :class="currentPage === page ? 'border-blue-500 bg-blue-500 text-white' : 'border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600'"
+                class="inline-flex items-center rounded-xl border px-3 py-1 text-sm transition"
+                :class="currentPage === page ? 'border-blue-500 bg-blue-500 text-white' : 'border-slate-300 text-slate-600 hover:border-blue-400 hover:text-blue-600'"
                 @click="changePage(page)"
               >
                 {{ page }}
               </button>
             </template>
             <button
-              class="inline-flex items-center rounded border border-gray-300 px-2 py-1 text-gray-600 hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+              class="inline-flex items-center rounded-xl border border-slate-300 px-2 py-1 text-slate-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
               @click="changePage(currentPage + 1)"
               :disabled="currentPage === pages.length || !pageMeta.of"
             >
               ›
             </button>
             <button
-              class="inline-flex items-center rounded border border-gray-300 px-2 py-1 text-gray-600 hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+              class="inline-flex items-center rounded-xl border border-slate-300 px-2 py-1 text-slate-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
               @click="changePage(pages.length)"
               :disabled="currentPage === pages.length || !pageMeta.of"
             >
