@@ -476,6 +476,40 @@ class BookingController extends Controller
         return response()->download(Storage::disk('public')->path($booking->attachment), basename($booking->attachment));
     }
 
+    public function cancel(Booking $booking)
+    {
+        $user = Auth::user();
+
+        if ($booking->user_id !== $user->id) {
+            abort(403);
+        }
+
+        $cancellableStatuses = ['waiting', 'pending', 'requested'];
+
+        if (! in_array($booking->status, $cancellableStatuses, true)) {
+            $message = $booking->status === 'cancelled'
+                ? 'Booking sudah dibatalkan sebelumnya.'
+                : 'Booking tidak dapat dibatalkan karena sudah diproses oleh admin.';
+
+            return redirect()->back()->with('error', $message);
+        }
+
+        DB::transaction(function () use ($booking, $user): void {
+            $booking->update([
+                'status' => 'cancelled',
+            ]);
+
+            LogHistory::create([
+                'booking_id' => $booking->id,
+                'user_id' => $user->id,
+                'action' => 'cancelled',
+                'description' => 'Booking dibatalkan oleh pemohon.',
+            ]);
+        });
+
+        return redirect()->back()->with('success', 'Booking berhasil dibatalkan.');
+    }
+
     public function downloadLetter(Booking $booking)
     {
         $user = Auth::user();

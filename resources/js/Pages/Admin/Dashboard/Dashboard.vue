@@ -32,14 +32,14 @@ const statusLabels = {
   approved: 'Disetujui',
   waiting: 'Menunggu Persetujuan',
   rejected: 'Ditolak',
-  cancelled: 'Dibatalkan Admin',
+  cancelled: 'Dibatalkan',
 }
 
 const statusBadgeClasses = {
   approved: 'bg-emerald-100 text-emerald-700 border border-emerald-200',
   waiting: 'bg-amber-100 text-amber-700 border border-amber-200',
   rejected: 'bg-rose-100 text-rose-700 border border-rose-200',
-  cancelled: 'bg-slate-100 text-slate-700 border border-slate-200',
+  cancelled: 'bg-violet-100 text-violet-700 border border-violet-200',
 }
 
 const isUser = computed(() => page.props.auth.user.role === 'user')
@@ -236,7 +236,7 @@ const formatDateTime = (value) => {
             <div class="mt-2 text-3xl font-semibold">{{ summary.rejected }}</div>
           </div>
           <div class="rounded-xl border border-slate-100 bg-slate-50 p-4 text-slate-700">
-            <div class="text-sm font-medium">Dibatalkan Admin</div>
+            <div class="text-sm font-medium">Dibatalkan</div>
             <div class="mt-2 text-3xl font-semibold">{{ summary.cancelled }}</div>
           </div>
         </div>
@@ -296,7 +296,7 @@ const formatDateTime = (value) => {
                     <option value="approved">Disetujui</option>
                     <option value="waiting">Menunggu</option>
                     <option value="rejected">Ditolak</option>
-                    <option value="cancelled">Dibatalkan Admin</option>
+                    <option value="cancelled">Dibatalkan</option>
                   </select>
                   <span class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-gray-400">
                     <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">

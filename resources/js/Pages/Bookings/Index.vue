@@ -1,6 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
-import { Head, Link } from '@inertiajs/vue3'
+import { Head, Link, useForm } from '@inertiajs/vue3'
 import { computed, ref } from 'vue'
 import { usePagination } from '@/Composables/usePagination'
 
@@ -15,7 +15,7 @@ const statusLabels = {
   waiting: 'Menunggu Persetujuan',
   approved: 'Disetujui',
   rejected: 'Ditolak',
-  cancelled: 'Dibatalkan Admin',
+  cancelled: 'Dibatalkan',
 }
 
 const statusClasses = {
@@ -77,6 +77,30 @@ const formatDateTime = (value) => {
     minute: '2-digit',
   })
 }
+
+const cancelForm = useForm({})
+const cancellingId = ref(null)
+
+const canCancelBooking = (booking) => normalizeStatus(booking.status) === 'waiting'
+
+const cancelBooking = (booking) => {
+  if (!canCancelBooking(booking)) {
+    return
+  }
+
+  if (!window.confirm('Yakin ingin membatalkan permintaan booking ini?')) {
+    return
+  }
+
+  cancellingId.value = booking.id
+
+  cancelForm.post(route('bookings.cancel', booking.id), {
+    preserveScroll: true,
+    onFinish: () => {
+      cancellingId.value = null
+    },
+  })
+}
 </script>
 
 <template>
@@ -132,7 +156,7 @@ const formatDateTime = (value) => {
                     <option value="waiting">Menunggu Persetujuan</option>
                     <option value="approved">Disetujui</option>
                     <option value="rejected">Ditolak</option>
-                    <option value="cancelled">Dibatalkan Admin</option>
+                    <option value="cancelled">Dibatalkan</option>
                   </select>
                   <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-400">
                     <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
@@ -236,7 +260,30 @@ const formatDateTime = (value) => {
                         Download Surat
                       </a>
                     </template>
-                    <span v-else class="text-xs text-slate-400">Menunggu Persetujuan</span>
+                    <template v-else-if="normalizeStatus(booking.status) === 'waiting'">
+                      <button
+                        type="button"
+                        class="inline-flex items-center justify-center rounded-xl border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        :disabled="cancelForm.processing && cancellingId === booking.id"
+                        @click="cancelBooking(booking)"
+                      >
+                        {{
+                          cancelForm.processing && cancellingId === booking.id ? 'Membatalkan...' : 'Batalkan Permintaan'
+                        }}
+                      </button>
+                      <span class="text-xs text-slate-400">Menunggu persetujuan admin</span>
+                    </template>
+                    <template v-else-if="normalizeStatus(booking.status) === 'rejected'">
+                      <span class="text-xs font-semibold text-rose-500">Permintaan ditolak</span>
+                    </template>
+                    <template v-else-if="normalizeStatus(booking.status) === 'cancelled'">
+                      <span class="text-xs text-slate-400">Booking telah dibatalkan</span>
+                    </template>
+                    <template v-else>
+                      <span class="text-xs text-slate-400">
+                        {{ statusLabels[normalizeStatus(booking.status)] ?? booking.status }}
+                      </span>
+                    </template>
                   </div>
                 </td>
               </tr>

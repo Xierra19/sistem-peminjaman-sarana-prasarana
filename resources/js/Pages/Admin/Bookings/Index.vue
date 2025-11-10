@@ -16,7 +16,7 @@ const statusLabels = {
   waiting: 'Menunggu Persetujuan',
   approved: 'Disetujui',
   rejected: 'Ditolak',
-  cancelled: 'Dibatalkan Admin',
+  cancelled: 'Dibatalkan',
 }
 
 const badgeClasses = {

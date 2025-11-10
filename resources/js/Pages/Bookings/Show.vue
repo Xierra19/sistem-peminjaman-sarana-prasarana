@@ -1,6 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
-import { Head, Link } from '@inertiajs/vue3'
+import { Head, Link, useForm } from '@inertiajs/vue3'
 import { computed } from 'vue'
 
 const props = defineProps({
@@ -18,7 +18,7 @@ const statusLabels = {
   waiting: 'Menunggu Persetujuan',
   approved: 'Disetujui',
   rejected: 'Ditolak',
-  cancelled: 'Dibatalkan Admin',
+  cancelled: 'Dibatalkan',
 }
 
 const statusColors = {
@@ -62,6 +62,23 @@ const decisionNote = computed(() => {
 })
 
 const decisionTimestamp = computed(() => formatDateTime(props.latestDecisionLog?.created_at))
+
+const cancelForm = useForm({})
+const canCancelBooking = computed(() => normalizedStatus.value === 'waiting')
+
+const cancelBooking = () => {
+  if (!canCancelBooking.value) {
+    return
+  }
+
+  if (!window.confirm('Yakin ingin membatalkan permintaan booking ini?')) {
+    return
+  }
+
+  cancelForm.post(route('bookings.cancel', props.booking.id), {
+    preserveScroll: true,
+  })
+}
 </script>
 
 <template>
@@ -81,6 +98,15 @@ const decisionTimestamp = computed(() => formatDateTime(props.latestDecisionLog?
           >
             {{ statusLabels[normalizedStatus] ?? booking.status }}
           </span>
+          <button
+            v-if="canCancelBooking"
+            type="button"
+            class="inline-flex items-center rounded-md border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-600 transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+            :disabled="cancelForm.processing"
+            @click="cancelBooking"
+          >
+            {{ cancelForm.processing ? 'Membatalkan...' : 'Batalkan Permintaan' }}
+          </button>
           <Link
             :href="route('bookings.index')"
             class="inline-flex items-center rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
@@ -162,7 +188,7 @@ const decisionTimestamp = computed(() => formatDateTime(props.latestDecisionLog?
                 </a>
               </template>
               <p v-else-if="normalizedStatus === 'cancelled'" class="text-gray-500">
-                Booking ini telah dibatalkan oleh admin sehingga surat peminjaman tidak tersedia.
+                Booking ini telah dibatalkan sehingga surat peminjaman tidak tersedia.
               </p>
               <p v-else class="text-gray-400">
                 Surat peminjaman tersedia setelah permintaan disetujui oleh admin.

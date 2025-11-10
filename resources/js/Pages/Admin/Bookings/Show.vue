@@ -19,7 +19,7 @@ const statusLabels = {
   waiting: 'Menunggu Persetujuan',
   approved: 'Disetujui',
   rejected: 'Ditolak',
-  cancelled: 'Dibatalkan Admin',
+  cancelled: 'Dibatalkan',
 }
 
 const statusColors = {
@@ -167,7 +167,7 @@ const submitApproval = (status) => {
                 </a>
               </template>
               <p v-else-if="normalizedStatus === 'cancelled'" class="text-gray-500">
-                Booking dibatalkan oleh admin. Surat peminjaman tidak tersedia.
+                Booking telah dibatalkan. Surat peminjaman tidak tersedia.
               </p>
               <p v-else class="text-gray-400">Surat peminjaman tersedia setelah booking disetujui.</p>
             </div>

@@ -39,7 +39,7 @@ const statusLabels = {
   approved: 'Disetujui',
   waiting: 'Menunggu Persetujuan',
   rejected: 'Ditolak',
-  cancelled: 'Dibatalkan Admin',
+  cancelled: 'Dibatalkan',
 }
 
 const statusBadgeClasses = {
@@ -437,7 +437,7 @@ const recentBookingsList = computed(() =>
             <p class="mt-2 text-3xl font-semibold">{{ bookingSummaryData.rejected }}</p>
           </article>
           <article class="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-slate-800">
-            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Dibatalkan Admin</p>
+            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Dibatalkan</p>
             <p class="mt-2 text-3xl font-semibold">{{ bookingSummaryData.cancelled }}</p>
           </article>
         </section>
