@@ -18,7 +18,7 @@ class UserController extends Controller
     public function index(): Response
     {
         $users = User::query()
-            ->select(['id', 'name', 'email', 'role', 'created_at', 'updated_at'])
+            ->select(['id', 'name', 'email', 'phone', 'role', 'created_at', 'updated_at'])
             ->orderBy('name')
             ->get();
 
@@ -33,6 +33,7 @@ class UserController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'phone' => $user->phone,
                 'role' => $user->role,
                 'created_at' => optional($user->created_at)?->toIso8601String(),
                 'updated_at' => optional($user->updated_at)?->toIso8601String(),
@@ -52,6 +53,7 @@ class UserController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'phone' => $user->phone,
                 'role' => $user->role,
                 'created_at' => optional($user->created_at)?->toIso8601String(),
                 'updated_at' => optional($user->updated_at)?->toIso8601String(),

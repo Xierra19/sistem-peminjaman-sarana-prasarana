@@ -15,12 +15,14 @@ const statusLabels = {
   waiting: 'Menunggu Persetujuan',
   approved: 'Disetujui',
   rejected: 'Ditolak',
+  cancelled: 'Dibatalkan Admin',
 }
 
 const statusClasses = {
   waiting: 'bg-amber-100 text-amber-700 border-amber-200',
   approved: 'bg-emerald-100 text-emerald-700 border-emerald-200',
   rejected: 'bg-rose-100 text-rose-700 border-rose-200',
+  cancelled: 'bg-slate-100 text-slate-700 border-slate-200',
 }
 
 const normalizeStatus = (status) => {
@@ -120,6 +122,7 @@ const formatDateTime = (value) => {
                   <option value="waiting">Menunggu Persetujuan</option>
                   <option value="approved">Disetujui</option>
                   <option value="rejected">Ditolak</option>
+                  <option value="cancelled">Dibatalkan Admin</option>
                 </select>
                 <span class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-gray-400">
                   <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">

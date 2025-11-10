@@ -17,6 +17,7 @@ const props = defineProps({
 const form = useForm({
   name: props.user?.name ?? '',
   email: props.user?.email ?? '',
+  phone: props.user?.phone ?? '',
   role: props.user?.role ?? 'user',
   password: '',
   password_confirmation: '',
@@ -35,6 +36,7 @@ const resetForm = () => {
   form.reset()
   form.name = props.user?.name ?? ''
   form.email = props.user?.email ?? ''
+  form.phone = props.user?.phone ?? ''
   form.role = props.user?.role ?? 'user'
 }
 
@@ -110,6 +112,20 @@ const metadata = computed(() => ({
               placeholder="email@kampus.ac.id"
             />
             <div v-if="form.errors.email" class="text-xs text-rose-500">{{ form.errors.email }}</div>
+          </div>
+
+          <div class="space-y-2">
+            <label for="phone" class="block text-sm font-medium text-gray-700">Nomor Telepon</label>
+            <input
+              id="phone"
+              v-model="form.phone"
+              type="tel"
+              inputmode="tel"
+              class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+              placeholder="Contoh: 081234567890"
+              required
+            />
+            <div v-if="form.errors.phone" class="text-xs text-rose-500">{{ form.errors.phone }}</div>
           </div>
 
           <div class="space-y-2">
@@ -217,4 +233,3 @@ const metadata = computed(() => ({
     </div>
   </AuthenticatedLayout>
 </template>
-

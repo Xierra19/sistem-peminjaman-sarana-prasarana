@@ -11,6 +11,8 @@ use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class BookingApprovalController extends Controller
@@ -21,7 +23,15 @@ class BookingApprovalController extends Controller
     public function index()
     {
         $bookings = Booking::with(['user', 'room.building.campus'])
-            ->orderByRaw("CASE WHEN status IN ('waiting','pending') THEN 1 WHEN status = 'approved' THEN 2 WHEN status = 'rejected' THEN 3 ELSE 4 END")
+            ->orderByRaw("
+                CASE
+                    WHEN status IN ('waiting','pending') THEN 1
+                    WHEN status = 'approved' THEN 2
+                    WHEN status = 'cancelled' THEN 3
+                    WHEN status = 'rejected' THEN 4
+                    ELSE 5
+                END
+            ")
             ->orderBy('start_time')
             ->get();
 
@@ -53,10 +63,28 @@ class BookingApprovalController extends Controller
      */
     public function updateStatus(Request $request, Booking $booking)
     {
-        $data = $request->validate([
-            'status' => 'required|in:approved,rejected',
-            'notes'  => 'nullable|string|max:500',
-        ]);
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'status' => ['required', Rule::in(['approved', 'rejected', 'cancelled'])],
+                'notes'  => ['nullable', 'string', 'max:500'],
+            ],
+            [
+                'notes.required' => 'Catatan wajib diisi ketika membatalkan booking.',
+            ]
+        );
+
+        $validator->sometimes('notes', ['required', 'string', 'max:500'], function ($input) {
+            return $input->status === 'cancelled';
+        });
+
+        $data = $validator->validate();
+
+        if ($data['status'] === 'cancelled' && $booking->status !== 'approved') {
+            return back()
+                ->withErrors(['status' => 'Hanya booking yang sudah disetujui yang dapat dibatalkan.'])
+                ->with('error', 'Hanya booking yang sudah disetujui yang dapat dibatalkan.');
+        }
 
         $statusChanged = $booking->status !== $data['status'];
 
@@ -66,9 +94,12 @@ class BookingApprovalController extends Controller
             ]);
         }
 
-        $description = $data['status'] === 'approved'
-            ? 'Booking disetujui'
-            : 'Booking ditolak';
+        $description = match ($data['status']) {
+            'approved' => 'Booking disetujui',
+            'rejected' => 'Booking ditolak',
+            'cancelled' => 'Booking dibatalkan oleh admin',
+            default => 'Status booking diperbarui',
+        };
 
         if (!empty($data['notes'])) {
             $description .= ' - ' . $data['notes'];

@@ -33,6 +33,12 @@ class UpdateUserRequest extends FormRequest
                 'max:255',
                 Rule::unique('users', 'email')->ignore($userId),
             ],
+            'phone' => [
+                'required',
+                'string',
+                'max:20',
+                'regex:/^(?:\+62\d{8,13}|0\d{8,13})$/',
+            ],
             'role' => ['required', 'string', 'in:admin,user'],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
         ];
@@ -48,9 +54,9 @@ class UpdateUserRequest extends FormRequest
         return [
             'name' => 'nama',
             'email' => 'email',
+            'phone' => 'nomor telepon',
             'role' => 'role',
             'password' => 'password',
         ];
     }
 }
-

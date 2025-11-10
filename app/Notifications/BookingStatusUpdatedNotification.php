@@ -41,8 +41,13 @@ class BookingStatusUpdatedNotification extends Notification
 
         $mail = (new MailMessage())
             ->subject($status.' Booking: '.$booking->title)
-            ->greeting('Hello '.$booking->user?->name.',')
-            ->line('Your room booking request has been '.$status.'.');
+            ->greeting('Hello '.$booking->user?->name.',');
+
+        if ($this->status === 'cancelled') {
+            $mail->line('We regret to inform you that your previously approved booking has been cancelled by the admin due to a higher-priority event.');
+        } else {
+            $mail->line('Your room booking request has been '.$status.'.');
+        }
 
         if ($room?->name) {
             $location = $room->name;

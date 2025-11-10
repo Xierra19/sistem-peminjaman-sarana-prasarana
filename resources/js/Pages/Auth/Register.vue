@@ -4,6 +4,7 @@ import { Head, Link, useForm } from '@inertiajs/vue3';
 import {
     User,
     Mail,
+    Phone,
     Lock,
     Eye,
     EyeOff,
@@ -17,6 +18,7 @@ const showConfirmPassword = ref(false);
 const form = useForm({
     name: '',
     email: '',
+    phone: '',
     password: '',
     password_confirmation: '',
 });
@@ -146,6 +148,26 @@ const submit = () => {
                                 </div>
                                 <p class="mt-2 text-xs font-medium text-indigo-600">Hanya alamat @student.esaunggul.ac.id yang dapat melakukan registrasi.</p>
                                 <p v-if="form.errors.email" class="mt-2 text-sm text-rose-500">{{ form.errors.email }}</p>
+                            </div>
+
+                            <div>
+                                <label for="phone" class="text-sm font-medium text-slate-700">Nomor telepon aktif</label>
+                                <div class="relative mt-2">
+                                    <Phone class="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                                    <input
+                                        id="phone"
+                                        v-model="form.phone"
+                                        type="tel"
+                                        inputmode="tel"
+                                        pattern="^(?:\\+62\\d{8,13}|0\\d{8,13})$"
+                                        title="Gunakan nomor Indonesia diawali 0 atau +62"
+                                        placeholder="Contoh: 081234567890"
+                                        class="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/60 pl-12 pr-4 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100"
+                                        required
+                                    />
+                                </div>
+                                <p class="mt-2 text-xs text-slate-500">Pastikan nomor dapat dihubungi saat admin memverifikasi.</p>
+                                <p v-if="form.errors.phone" class="mt-2 text-sm text-rose-500">{{ form.errors.phone }}</p>
                             </div>
 
                             <div>

@@ -19,12 +19,14 @@ const statusLabels = {
   waiting: 'Menunggu Persetujuan',
   approved: 'Disetujui',
   rejected: 'Ditolak',
+  cancelled: 'Dibatalkan Admin',
 }
 
 const statusColors = {
   waiting: 'bg-amber-100 text-amber-700 border-amber-200',
   approved: 'bg-emerald-100 text-emerald-700 border-emerald-200',
   rejected: 'bg-rose-100 text-rose-700 border-rose-200',
+  cancelled: 'bg-slate-100 text-slate-700 border-slate-200',
 }
 
 const normalizeStatus = (status) => {
@@ -45,6 +47,8 @@ const formatDateTime = (value) => {
 
 const normalizedStatus = computed(() => normalizeStatus(props.booking.status))
 const isWaiting = computed(() => normalizedStatus.value === 'waiting')
+const canCancel = computed(() => normalizedStatus.value === 'approved')
+const actionsLocked = computed(() => !isWaiting.value && !canCancel.value)
 
 const submitApproval = (status) => {
   approvalForm.status = status
@@ -87,7 +91,7 @@ const submitApproval = (status) => {
                 class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold"
                 :class="statusColors[normalizedStatus] ?? 'bg-gray-100 text-gray-600 border-gray-200'"
               >
-                {{ statusLabels[booking.normalizedStatus] ?? (booking.normalizedStatus || booking.status) }}
+                {{ statusLabels[normalizedStatus] ?? (normalizedStatus || booking.status) }}
               </span>
             </header>
             <div class="grid gap-6 px-6 py-5 sm:grid-cols-2">
@@ -96,6 +100,7 @@ const submitApproval = (status) => {
                   <div class="text-xs font-semibold uppercase text-gray-500">Pemohon</div>
                   <div class="text-sm font-medium text-gray-800">{{ booking.user?.name ?? '-' }}</div>
                   <div class="text-xs text-gray-500">{{ booking.user?.email ?? '-' }}</div>
+                  <div class="text-xs text-gray-500">Telp: {{ booking.user?.phone ?? '-' }}</div>
                 </div>
                 <div>
                   <div class="text-xs font-semibold uppercase text-gray-500">Deskripsi</div>
@@ -161,6 +166,9 @@ const submitApproval = (status) => {
                   Download Surat Peminjaman Ruangan
                 </a>
               </template>
+              <p v-else-if="normalizedStatus === 'cancelled'" class="text-gray-500">
+                Booking dibatalkan oleh admin. Surat peminjaman tidak tersedia.
+              </p>
               <p v-else class="text-gray-400">Surat peminjaman tersedia setelah booking disetujui.</p>
             </div>
           </section>
@@ -177,8 +185,14 @@ const submitApproval = (status) => {
                 v-model="approvalForm.notes"
                 class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
                 rows="3"
-                placeholder="Catatan (opsional) untuk pemohon"
+                :placeholder="canCancel ? 'Catatan (wajib) ketika membatalkan booking' : 'Catatan (opsional) untuk pemohon'"
               />
+              <p v-if="canCancel" class="text-xs text-slate-500">
+                Cantumkan alasan pembatalan agar pengguna memahami perubahan mendadak.
+              </p>
+              <p v-if="approvalForm.errors.notes" class="text-xs text-rose-500">
+                {{ approvalForm.errors.notes }}
+              </p>
 
               <div class="flex flex-col gap-2">
                 <button
@@ -197,8 +211,17 @@ const submitApproval = (status) => {
                 >
                   Tolak Booking
                 </button>
+                <button
+                  v-if="canCancel"
+                  type="button"
+                  class="inline-flex items-center justify-center rounded-md bg-slate-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                  :disabled="approvalForm.processing"
+                  @click="submitApproval('cancelled')"
+                >
+                  Batalkan Booking (Darurat)
+                </button>
               </div>
-              <p v-if="!isWaiting" class="text-xs text-gray-400">
+              <p v-if="actionsLocked" class="text-xs text-gray-400">
                 Status booking sudah final. Tidak dapat melakukan tindakan lanjutan.
               </p>
             </div>

@@ -33,6 +33,12 @@ class RegisteredUserController extends Controller
         $request->validate(
             [
                 'name' => 'required|string|max:255',
+                'phone' => [
+                    'required',
+                    'string',
+                    'max:20',
+                    'regex:/^(?:\+62\d{8,13}|0\d{8,13})$/',
+                ],
                 'email' => [
                     'required',
                     'string',
@@ -46,12 +52,14 @@ class RegisteredUserController extends Controller
             ],
             [
                 'email.regex' => 'Registrasi hanya tersedia untuk email student.esaunggul.ac.id.',
+                'phone.regex' => 'Nomor telepon harus menggunakan format Indonesia yang valid.',
             ]
         );
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
+            'phone' => $request->phone,
             'role' => 'user',
             'password' => Hash::make($request->password),
         ]);

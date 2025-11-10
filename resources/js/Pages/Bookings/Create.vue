@@ -18,13 +18,15 @@ const form = useForm({
   room_id: '',
   title: '',
   description: '',
-  date: '',
+  start_date: '',
+  end_date: '',
   start_time: '',
   end_time: '',
   attachment: null,
 })
 
 const bookedIntervals = ref([])
+const availabilityDate = ref('')
 const availabilityMessage = ref('')
 const isAvailabilityLoading = ref(false)
 
@@ -41,6 +43,8 @@ const minBookingDate = computed(() => {
   date.setDate(date.getDate() + 3)
   return formatDateForInput(date)
 })
+
+const minEndDate = computed(() => form.start_date || minBookingDate.value)
 
 const generateTimeSlots = (startHour = 7, endHour = 21, stepMinutes = 30) => {
   const slots = []
@@ -144,6 +148,8 @@ watch(
   () => {
     form.building_id = ''
     form.room_id = ''
+    form.start_time = ''
+    form.end_time = ''
     resetAvailability()
   },
 )
@@ -152,29 +158,100 @@ watch(
   () => form.building_id,
   () => {
     form.room_id = ''
+    form.start_time = ''
+    form.end_time = ''
     resetAvailability()
   },
 )
 
 watch(
-  () => form.date,
+  () => form.start_date,
   (value) => {
-    if (value && value < minBookingDate.value) {
-      form.date = ''
+    if (!value) {
+      form.end_date = ''
+      availabilityDate.value = ''
+      form.start_time = ''
+      form.end_time = ''
+      resetAvailability()
+      return
+    }
+
+    if (value < minBookingDate.value) {
+      form.start_date = ''
+      return
+    }
+
+    if (!form.end_date || form.end_date < value) {
+      form.end_date = value
+    }
+
+    if (!availabilityDate.value || availabilityDate.value < value) {
+      availabilityDate.value = value
+    }
+
+    form.start_time = ''
+    form.end_time = ''
+  },
+)
+
+watch(
+  () => form.end_date,
+  (value) => {
+    if (!value) {
+      if (form.start_date) {
+        form.end_date = form.start_date
+      }
+      return
+    }
+
+    if (form.start_date && value < form.start_date) {
+      form.end_date = form.start_date
+      return
+    }
+
+    if (availabilityDate.value && availabilityDate.value > value) {
+      availabilityDate.value = value
+    }
+  },
+)
+
+watch(
+  () => form.room_id,
+  () => {
+    form.start_time = ''
+    form.end_time = ''
+    if (form.room_id && availabilityDate.value) {
+      loadAvailability()
+    } else {
       resetAvailability()
     }
   },
 )
 
 watch(
-  () => [form.room_id, form.date],
-  ([roomId, date]) => {
-    form.start_time = ''
-    form.end_time = ''
-    if (roomId && date) {
-      loadAvailability()
-    } else {
+  availabilityDate,
+  (value) => {
+    if (!value) {
       resetAvailability()
+      return
+    }
+
+    const minDate = form.start_date || minBookingDate.value
+
+    if (value < minDate) {
+      if (availabilityDate.value !== minDate) {
+        availabilityDate.value = minDate
+      }
+      return
+    }
+
+    if (form.end_date && value > form.end_date) {
+      availabilityDate.value = form.end_date
+      return
+    }
+
+    if (form.room_id) {
+      loadAvailability()
     }
   },
 )
@@ -187,7 +264,9 @@ function resetAvailability() {
 
 const loadAvailability = async () => {
   const room = selectedRoom.value
-  if (!room || !form.date) {
+  const dateToCheck = availabilityDate.value
+
+  if (!room || !dateToCheck) {
     resetAvailability()
     return
   }
@@ -204,14 +283,11 @@ const loadAvailability = async () => {
   bookedIntervals.value = []
 
   try {
-    const response = await fetch(
-      route('rooms.availability', { room: room.id, date: form.date }),
-      {
-        headers: {
-          Accept: 'application/json',
-        },
+    const response = await fetch(route('rooms.availability', { room: room.id, date: dateToCheck }), {
+      headers: {
+        Accept: 'application/json',
       },
-    )
+    })
 
     if (!response.ok) {
       throw new Error('Gagal memuat ketersediaan')
@@ -246,15 +322,19 @@ const formatInterval = (interval) => `${interval.start} - ${interval.end}`
 
 const submit = () => {
   form
-    .transform((data) => ({
-      room_id: data.room_id,
-      title: data.title,
-      description: data.description,
-      attachment: data.attachment,
-      start_time:
-        data.date && data.start_time ? `${data.date}T${data.start_time}` : '',
-      end_time: data.date && data.end_time ? `${data.date}T${data.end_time}` : '',
-    }))
+    .transform((data) => {
+      const endDate = data.end_date || data.start_date
+
+      return {
+        room_id: data.room_id,
+        title: data.title,
+        description: data.description,
+        attachment: data.attachment,
+        start_time:
+          data.start_date && data.start_time ? `${data.start_date}T${data.start_time}` : '',
+        end_time: endDate && data.end_time ? `${endDate}T${data.end_time}` : '',
+      }
+    })
     .post(route('bookings.store'), {
       onFinish: () => {
         form.transform((data) => data)
@@ -369,11 +449,11 @@ const submit = () => {
             </div>
           </div>
 
-          <div class="grid gap-6 md:grid-cols-3">
-            <div class="space-y-2 md:col-span-1">
-              <label class="block text-sm font-medium text-gray-700">Tanggal Penggunaan</label>
+          <div class="grid gap-6 md:grid-cols-2">
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-gray-700">Tanggal Mulai</label>
               <input
-                v-model="form.date"
+                v-model="form.start_date"
                 type="date"
                 :min="minBookingDate"
                 class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -381,10 +461,37 @@ const submit = () => {
               <p class="text-xs text-gray-500">Tanggal minimal peminjaman: {{ minBookingDate }} (H+3)</p>
             </div>
             <div class="space-y-2">
+              <label class="block text-sm font-medium text-gray-700">Tanggal Selesai</label>
+              <input
+                v-model="form.end_date"
+                type="date"
+                :min="minEndDate"
+                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+              <p class="text-xs text-gray-500">Samakan dengan tanggal mulai bila booking hanya satu hari.</p>
+            </div>
+          </div>
+
+          <div class="grid gap-6 md:grid-cols-3">
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-gray-700">Tanggal Cek Ketersediaan</label>
+              <input
+                v-model="availabilityDate"
+                type="date"
+                :min="form.start_date || minBookingDate"
+                :max="form.end_date || undefined"
+                :disabled="!form.start_date"
+                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100"
+              />
+              <p class="text-xs text-gray-500">
+                Gunakan untuk mengecek setiap hari dalam rentang booking apabila perlu.
+              </p>
+            </div>
+            <div class="space-y-2">
               <label class="block text-sm font-medium text-gray-700">Waktu Mulai</label>
               <select
                 v-model="form.start_time"
-                :disabled="!selectedRoom || !selectedRoom.is_available || !form.date || isAvailabilityLoading"
+                :disabled="!selectedRoom || !selectedRoom.is_available || !form.start_date || isAvailabilityLoading"
                 class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100"
               >
                 <option value="" disabled>
@@ -454,11 +561,11 @@ const submit = () => {
                 <span class="text-xs font-semibold uppercase text-gray-400">{{ interval.status }}</span>
               </li>
             </ul>
-            <p v-else-if="form.room_id && form.date" class="text-sm text-gray-500">
-              Belum ada jadwal lain di tanggal ini.
+            <p v-else-if="form.room_id && availabilityDate" class="text-sm text-gray-500">
+              Belum ada jadwal lain di tanggal yang dipilih.
             </p>
             <p v-else class="text-sm text-gray-500">
-              Pilih ruangan dan tanggal untuk melihat ketersediaan waktunya.
+              Pilih ruangan serta tanggal pengecekan untuk melihat ketersediaan waktunya.
             </p>
           </div>
 

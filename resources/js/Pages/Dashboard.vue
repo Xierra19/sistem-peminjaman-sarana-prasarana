@@ -25,6 +25,7 @@ const props = defineProps({
       approved: 0,
       waiting: 0,
       rejected: 0,
+      cancelled: 0,
     }),
   },
 })
@@ -38,12 +39,14 @@ const statusLabels = {
   approved: 'Disetujui',
   waiting: 'Menunggu Persetujuan',
   rejected: 'Ditolak',
+  cancelled: 'Dibatalkan Admin',
 }
 
 const statusBadgeClasses = {
   approved: 'bg-emerald-100 text-emerald-700 border border-emerald-200',
   waiting: 'bg-amber-100 text-amber-700 border border-amber-200',
   rejected: 'bg-rose-100 text-rose-700 border border-rose-200',
+  cancelled: 'bg-slate-100 text-slate-700 border border-slate-200',
 }
 
 const formatDateTime = (value) => {
@@ -99,6 +102,7 @@ const bookingSummaryData = computed(() => ({
   approved: props.bookingSummary?.approved ?? 0,
   waiting: props.bookingSummary?.waiting ?? 0,
   rejected: props.bookingSummary?.rejected ?? 0,
+  cancelled: props.bookingSummary?.cancelled ?? 0,
 }))
 
 const rooms = computed(() => props.rooms ?? [])
@@ -313,7 +317,7 @@ const recentBookingsList = computed(() =>
           </div>
         </section>
 
-        <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
           <div class="rounded-xl border border-blue-100 bg-blue-50 p-4 text-blue-800">
             <div class="text-sm font-medium">Total Pengajuan</div>
             <div class="mt-2 text-3xl font-semibold">{{ bookingSummaryData.total }}</div>
@@ -329,6 +333,10 @@ const recentBookingsList = computed(() =>
           <div class="rounded-xl border border-rose-100 bg-rose-50 p-4 text-rose-700">
             <div class="text-sm font-medium">Ditolak</div>
             <div class="mt-2 text-3xl font-semibold">{{ bookingSummaryData.rejected }}</div>
+          </div>
+          <div class="rounded-xl border border-slate-100 bg-slate-50 p-4 text-slate-700">
+            <div class="text-sm font-medium">Dibatalkan Admin</div>
+            <div class="mt-2 text-3xl font-semibold">{{ bookingSummaryData.cancelled }}</div>
           </div>
         </section>
 

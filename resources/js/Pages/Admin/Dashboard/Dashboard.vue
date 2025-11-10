@@ -18,6 +18,7 @@ const props = defineProps({
       approved: 0,
       waiting: 0,
       rejected: 0,
+      cancelled: 0,
     }),
   },
 })
@@ -31,12 +32,14 @@ const statusLabels = {
   approved: 'Disetujui',
   waiting: 'Menunggu Persetujuan',
   rejected: 'Ditolak',
+  cancelled: 'Dibatalkan Admin',
 }
 
 const statusBadgeClasses = {
   approved: 'bg-emerald-100 text-emerald-700 border border-emerald-200',
   waiting: 'bg-amber-100 text-amber-700 border border-amber-200',
   rejected: 'bg-rose-100 text-rose-700 border border-rose-200',
+  cancelled: 'bg-slate-100 text-slate-700 border border-slate-200',
 }
 
 const isUser = computed(() => page.props.auth.user.role === 'user')
@@ -78,6 +81,10 @@ const matchesStatusFilter = (booking, status) => {
 
   if (status === 'rejected') {
     return normalizedStatus === 'rejected' || rawStatus === 'rejected'
+  }
+
+  if (status === 'cancelled') {
+    return normalizedStatus === 'cancelled' || rawStatus === 'cancelled'
   }
 
   return normalizedStatus === status || rawStatus === status
@@ -169,6 +176,7 @@ const summary = computed(() => ({
   approved: props.statusSummary?.approved ?? 0,
   waiting: props.statusSummary?.waiting ?? 0,
   rejected: props.statusSummary?.rejected ?? 0,
+  cancelled: props.statusSummary?.cancelled ?? 0,
 }))
 
 const formatDateTime = (value) => {
@@ -210,7 +218,7 @@ const formatDateTime = (value) => {
           </Link>
         </div>
 
-        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
           <div class="rounded-xl border border-blue-100 bg-blue-50 p-4 text-blue-800">
             <div class="text-sm font-medium">Total Pengajuan</div>
             <div class="mt-2 text-3xl font-semibold">{{ summary.total }}</div>
@@ -226,6 +234,10 @@ const formatDateTime = (value) => {
           <div class="rounded-xl border border-rose-100 bg-rose-50 p-4 text-rose-700">
             <div class="text-sm font-medium">Ditolak</div>
             <div class="mt-2 text-3xl font-semibold">{{ summary.rejected }}</div>
+          </div>
+          <div class="rounded-xl border border-slate-100 bg-slate-50 p-4 text-slate-700">
+            <div class="text-sm font-medium">Dibatalkan Admin</div>
+            <div class="mt-2 text-3xl font-semibold">{{ summary.cancelled }}</div>
           </div>
         </div>
 
@@ -284,6 +296,7 @@ const formatDateTime = (value) => {
                     <option value="approved">Disetujui</option>
                     <option value="waiting">Menunggu</option>
                     <option value="rejected">Ditolak</option>
+                    <option value="cancelled">Dibatalkan Admin</option>
                   </select>
                   <span class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-gray-400">
                     <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">

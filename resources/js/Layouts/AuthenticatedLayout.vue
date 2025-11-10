@@ -201,6 +201,13 @@ watch(
           </div>
 
           <div v-if="$page.props.auth.user.role === 'admin'">
+            <Link :href="route('admin.reports.index')" :class="[navLinkClasses(isRouteActive('admin.reports.*'))]">
+              <span class="text-lg">📑</span>
+              <span>Report Booking</span>
+            </Link>
+          </div>
+
+          <div v-if="$page.props.auth.user.role === 'admin'">
             <Link
               :href="route('admin.users.index')"
               :class="[navLinkClasses(isRouteActive('admin.users.index', 'admin.users.edit'))]"

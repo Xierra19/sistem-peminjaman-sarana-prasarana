@@ -61,7 +61,7 @@ class BookingController extends Controller
         ]);
 
         $latestDecisionLog = $booking->logs
-            ->filter(fn (LogHistory $log) => in_array($log->action, ['approved', 'rejected']))
+            ->filter(fn (LogHistory $log) => in_array($log->action, ['approved', 'rejected', 'cancelled']))
             ->last();
 
         return Inertia::render('Bookings/Show', [
@@ -138,7 +138,7 @@ class BookingController extends Controller
         $end   = Carbon::parse($validated['end_time']);
 
         $hasConflict = $room->bookings()
-            ->where('status', '!=', 'rejected')
+            ->whereNotIn('status', ['rejected', 'cancelled'])
             ->where('start_time', '<', $end)
             ->where('end_time', '>', $start)
             ->exists();
@@ -253,6 +253,8 @@ class BookingController extends Controller
             }
         }
 
+        $validated['date'] = $start->toDateString();
+
         $booking = Booking::create($validated);
 
 
@@ -315,7 +317,7 @@ class BookingController extends Controller
         $endOfDay = $day->copy()->endOfDay();
 
         $bookings = $room->bookings()
-            ->where('status', '!=', 'rejected')
+            ->whereNotIn('status', ['rejected', 'cancelled'])
             ->where(function ($query) use ($startOfDay, $endOfDay) {
                 $query->whereBetween('start_time', [$startOfDay, $endOfDay])
                     ->orWhereBetween('end_time', [$startOfDay, $endOfDay])

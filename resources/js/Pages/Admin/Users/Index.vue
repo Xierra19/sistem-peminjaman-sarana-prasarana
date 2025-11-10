@@ -174,6 +174,7 @@ const formatDate = (value) => {
             <tr>
               <th class="px-5 py-3 text-left">Nama</th>
               <th class="px-5 py-3 text-left">Email</th>
+              <th class="px-5 py-3 text-left">No. Telp</th>
               <th class="px-5 py-3 text-left">Role</th>
               <th class="px-5 py-3 text-left">Dibuat</th>
               <th class="px-5 py-3 text-right">Aksi</th>
@@ -192,6 +193,9 @@ const formatDate = (value) => {
               </td>
               <td class="px-5 py-4">
                 <div class="text-sm text-gray-700">{{ user.email }}</div>
+              </td>
+              <td class="px-5 py-4">
+                <div class="text-sm text-gray-700">{{ user.phone || '-' }}</div>
               </td>
               <td class="px-5 py-4">
                 <span
@@ -225,7 +229,7 @@ const formatDate = (value) => {
               </td>
             </tr>
             <tr v-if="!usersList.length">
-              <td colspan="5" class="px-5 py-10 text-center text-sm text-gray-400">
+              <td colspan="6" class="px-5 py-10 text-center text-sm text-gray-400">
                 Belum ada user terdaftar.
               </td>
             </tr>

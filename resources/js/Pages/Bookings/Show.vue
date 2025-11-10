@@ -18,12 +18,14 @@ const statusLabels = {
   waiting: 'Menunggu Persetujuan',
   approved: 'Disetujui',
   rejected: 'Ditolak',
+  cancelled: 'Dibatalkan Admin',
 }
 
 const statusColors = {
   waiting: 'bg-amber-100 text-amber-700 border-amber-200',
   approved: 'bg-emerald-100 text-emerald-700 border-emerald-200',
   rejected: 'bg-rose-100 text-rose-700 border-rose-200',
+  cancelled: 'bg-slate-100 text-slate-700 border-slate-200',
 }
 
 const normalizeStatus = (status) => {
@@ -45,7 +47,7 @@ const formatDateTime = (value) => {
 const normalizedStatus = computed(() => normalizeStatus(props.booking?.status))
 
 const decisionStatus = computed(() => normalizeStatus(props.latestDecisionLog?.action))
-const hasDecision = computed(() => ['approved', 'rejected'].includes(decisionStatus.value))
+const hasDecision = computed(() => ['approved', 'rejected', 'cancelled'].includes(decisionStatus.value))
 
 const decisionNote = computed(() => {
   const raw = props.latestDecisionLog?.description ?? ''
@@ -159,6 +161,9 @@ const decisionTimestamp = computed(() => formatDateTime(props.latestDecisionLog?
                   Download Surat Peminjaman
                 </a>
               </template>
+              <p v-else-if="normalizedStatus === 'cancelled'" class="text-gray-500">
+                Booking ini telah dibatalkan oleh admin sehingga surat peminjaman tidak tersedia.
+              </p>
               <p v-else class="text-gray-400">
                 Surat peminjaman tersedia setelah permintaan disetujui oleh admin.
               </p>

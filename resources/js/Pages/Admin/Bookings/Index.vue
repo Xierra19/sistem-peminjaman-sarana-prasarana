@@ -16,12 +16,14 @@ const statusLabels = {
   waiting: 'Menunggu Persetujuan',
   approved: 'Disetujui',
   rejected: 'Ditolak',
+  cancelled: 'Dibatalkan Admin',
 }
 
 const badgeClasses = {
   waiting: 'bg-amber-100 text-amber-700',
   approved: 'bg-emerald-100 text-emerald-700',
   rejected: 'bg-rose-100 text-rose-700',
+  cancelled: 'bg-slate-100 text-slate-700',
 }
 
 const normalizeStatus = (status) => {

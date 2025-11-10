@@ -33,6 +33,7 @@ class DashboardController extends Controller
                 'approved' => $bookings->where('status', 'approved')->count(),
                 'waiting' => $bookings->whereIn('status', $waitingStatuses)->count(),
                 'rejected' => $bookings->where('status', 'rejected')->count(),
+                'cancelled' => $bookings->where('status', 'cancelled')->count(),
             ];
 
             return Inertia::render('Admin/Dashboard/Dashboard', [
@@ -50,6 +51,7 @@ class DashboardController extends Controller
             'approved' => $bookings->where('status', 'approved')->count(),
             'waiting' => $bookings->whereIn('status', $waitingStatuses)->count(),
             'rejected' => $bookings->where('status', 'rejected')->count(),
+            'cancelled' => $bookings->where('status', 'cancelled')->count(),
         ];
 
         $rooms = Room::query()
