@@ -6,7 +6,7 @@ use App\Models\OtpCode;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\CarbonInterface;
+use Carbon\CarbonInterface;
 
 class OtpMail extends Mailable
 {

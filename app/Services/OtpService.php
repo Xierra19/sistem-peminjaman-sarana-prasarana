@@ -16,6 +16,10 @@ final class OtpService
 {
     public const TTL_MINUTES = 10;
     public const MAX_ATTEMPTS = 5;
+    public const REGISTRATION_COOLDOWN_MINUTES = 5;
+    public const REGISTRATION_DAILY_LIMIT = 2;
+    public const RESET_COOLDOWN_MINUTES = 15;
+    public const RESET_DAILY_LIMIT = 3;
 
     /**
      * @throws OtpRateLimitException
@@ -56,7 +60,7 @@ final class OtpService
             'expires_at' => $expiresAt->toIso8601String(),
         ], JSON_THROW_ON_ERROR));
 
-        SendOtpJob::dispatch($email, $context, $payload);
+        SendOtpJob::dispatchSync($email, $context, $payload);
     }
 
     public function verifyCode(string $email, string $context, string $candidate): OtpVerificationResult
@@ -151,8 +155,12 @@ final class OtpService
      */
     private function ensureRequestLimit(string $email, string $context): void
     {
-        $cooldownMinutes = $context === OtpCode::CONTEXT_REGISTRATION ? 5 : 15;
-        $limitPerDay = $context === OtpCode::CONTEXT_REGISTRATION ? 2 : 3;
+        $cooldownMinutes = $context === OtpCode::CONTEXT_REGISTRATION
+            ? self::REGISTRATION_COOLDOWN_MINUTES
+            : self::RESET_COOLDOWN_MINUTES;
+        $limitPerDay = $context === OtpCode::CONTEXT_REGISTRATION
+            ? self::REGISTRATION_DAILY_LIMIT
+            : self::RESET_DAILY_LIMIT;
 
         $recent = OtpCode::query()
             ->where('identifier', $email)
