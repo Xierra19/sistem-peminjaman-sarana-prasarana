@@ -1,6 +1,7 @@
 // file: resources/js/Pages/Admin/Offerings/Index.vue
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
+import SortableTh from '@/Components/SortableTh.vue'
 import { useTableSort } from '@/Composables/useTableSort'
 import { Head, Link, useForm } from '@inertiajs/vue3'
 import { computed } from 'vue'
@@ -36,7 +37,7 @@ const offeringsList = computed(() => props.offerings ?? [])
 const {
   sortedItems: sortedOfferings,
   toggleSort: toggleOfferingSort,
-  sortIconClass: offeringSortIconClass,
+  sortDirection: offeringSortDirection,
   ariaSortValue: offeringAriaSortValue,
 } = useTableSort(offeringsList, {
   accessors: {
@@ -105,26 +106,24 @@ const {
         <table class="min-w-full divide-y divide-gray-200 text-sm">
           <thead class="bg-gray-50 text-left font-semibold uppercase tracking-wide text-gray-600">
             <tr>
-              <th class="px-4 py-3" :aria-sort="offeringAriaSortValue('course_code')">
-                <button
-                  type="button"
-                  class="flex w-full items-center gap-2 text-left focus:outline-none"
-                  @click="toggleOfferingSort('course_code')"
-                >
-                  <span>Code</span>
-                  <i :class="[offeringSortIconClass('course_code'), 'ml-1']" aria-hidden="true"></i>
-                </button>
-              </th>
-              <th class="px-4 py-3" :aria-sort="offeringAriaSortValue('course_name')">
-                <button
-                  type="button"
-                  class="flex w-full items-center gap-2 text-left focus:outline-none"
-                  @click="toggleOfferingSort('course_name')"
-                >
-                  <span>Name</span>
-                  <i :class="[offeringSortIconClass('course_name'), 'ml-1']" aria-hidden="true"></i>
-                </button>
-              </th>
+              <SortableTh
+                class="px-4 py-3"
+                column="course_code"
+                :direction="offeringSortDirection('course_code')"
+                :aria-sort="offeringAriaSortValue('course_code')"
+                @toggle="toggleOfferingSort"
+              >
+                Code
+              </SortableTh>
+              <SortableTh
+                class="px-4 py-3"
+                column="course_name"
+                :direction="offeringSortDirection('course_name')"
+                :aria-sort="offeringAriaSortValue('course_name')"
+                @toggle="toggleOfferingSort"
+              >
+                Name
+              </SortableTh>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-100">
