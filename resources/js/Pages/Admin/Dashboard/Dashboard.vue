@@ -1,6 +1,8 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
+import SortableTh from '@/Components/SortableTh.vue'
 import { usePagination } from '@/Composables/usePagination'
+import { useTableSort } from '@/Composables/useTableSort'
 import { Head, Link, usePage } from '@inertiajs/vue3'
 import { computed, ref } from 'vue'
 
@@ -151,13 +153,29 @@ const filteredBookings = computed(() => {
 const perPageOptions = [5, 10, 25, 50]
 
 const {
+  sortedItems: sortedBookings,
+  toggleSort: toggleDashboardSort,
+  sortDirection: dashboardSortDirection,
+  ariaSortValue: dashboardAriaSortValue,
+} = useTableSort(filteredBookings, {
+  accessors: {
+    title: (booking) => booking.title ?? '',
+    applicant: (booking) => booking.user?.name ?? '',
+    room: (booking) => booking.room?.name ?? '',
+    start_time: (booking) => (booking.start_time ? new Date(booking.start_time) : null),
+    end_time: (booking) => (booking.end_time ? new Date(booking.end_time) : null),
+    status: (booking) => booking.normalizedStatus ?? '',
+  },
+})
+
+const {
   paginatedItems: paginatedBookings,
   currentPage,
   rowsPerPage,
   pageMeta,
   pages,
   changePage,
-} = usePagination(filteredBookings)
+} = usePagination(sortedBookings)
 
 const applyFilters = () => {
   activeFilters.value = { ...filterDrafts.value }
@@ -357,12 +375,55 @@ const formatDateTime = (value) => {
             <table class="min-w-full divide-y divide-gray-200 text-sm text-gray-700">
               <thead class="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
                 <tr>
-                  <th class="px-5 py-3 text-left">Judul</th>
-                  <th v-if="isAdmin" class="px-5 py-3 text-left">Pemohon</th>
-                  <th class="px-5 py-3 text-left">Ruangan</th>
-                  <th class="px-5 py-3 text-left">Mulai</th>
-                  <th class="px-5 py-3 text-left">Selesai</th>
-                  <th class="px-5 py-3 text-left">Status</th>
+                  <SortableTh
+                    class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
+                    column="title"
+                    label="Judul"
+                    :direction="dashboardSortDirection('title')"
+                    :aria-sort="dashboardAriaSortValue('title')"
+                    @toggle="toggleDashboardSort"
+                  />
+                  <SortableTh
+                    v-if="isAdmin"
+                    class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
+                    column="applicant"
+                    label="Pemohon"
+                    :direction="dashboardSortDirection('applicant')"
+                    :aria-sort="dashboardAriaSortValue('applicant')"
+                    @toggle="toggleDashboardSort"
+                  />
+                  <SortableTh
+                    class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
+                    column="room"
+                    label="Ruangan"
+                    :direction="dashboardSortDirection('room')"
+                    :aria-sort="dashboardAriaSortValue('room')"
+                    @toggle="toggleDashboardSort"
+                  />
+                  <SortableTh
+                    class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
+                    column="start_time"
+                    label="Mulai"
+                    :direction="dashboardSortDirection('start_time')"
+                    :aria-sort="dashboardAriaSortValue('start_time')"
+                    @toggle="toggleDashboardSort"
+                  />
+                  <SortableTh
+                    class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
+                    column="end_time"
+                    label="Selesai"
+                    :direction="dashboardSortDirection('end_time')"
+                    :aria-sort="dashboardAriaSortValue('end_time')"
+                    @toggle="toggleDashboardSort"
+                  />
+                  <SortableTh
+                    class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
+                    column="status"
+                    label="Status"
+                    :direction="dashboardSortDirection('status')"
+                    :aria-sort="dashboardAriaSortValue('status')"
+                    @toggle="toggleDashboardSort"
+                  />
                   <th v-if="isAdmin" class="px-5 py-3 text-left">Aksi</th>
                 </tr>
               </thead>

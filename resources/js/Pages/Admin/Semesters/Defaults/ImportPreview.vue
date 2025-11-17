@@ -1,5 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
+import SortableTh from '@/Components/SortableTh.vue'
+import { useTableSort } from '@/Composables/useTableSort'
 import { Head, Link, useForm } from '@inertiajs/vue3'
 
 const props = defineProps({
@@ -19,6 +21,24 @@ const form = useForm({
 const commit = () => {
   form.post(route('admin.semesters.defaults.import.commit', [props.semester.id]))
 }
+
+const {
+  sortedItems: sortedRows,
+  toggleSort: togglePreviewSort,
+  sortDirection: previewSortDirection,
+  ariaSortValue: previewAriaSortValue,
+} = useTableSort(rows, {
+  accessors: {
+    line: (row) => row.raw?.lineNumber ?? 0,
+    course_name: (row) => row.raw?.courseName ?? '',
+    course_code: (row) => row.raw?.courseCode ?? '',
+    day: (row) => row.normalizedData?.day_of_week ?? row.raw?.dayOfWeek ?? '',
+    theory: (row) => row.normalizedData?.theory_start_time ?? '',
+    practicum1: (row) => row.normalizedData?.practicum1_start_time ?? '',
+    practicum2: (row) => row.normalizedData?.practicum2_start_time ?? '',
+    status: (row) => (row.errors?.length ? 'error' : 'ok'),
+  },
+})
 </script>
 
 <template>
@@ -43,18 +63,74 @@ const commit = () => {
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
               <tr>
-                <th class="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Baris</th>
-                <th class="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Mata Kuliah</th>
-                <th class="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Kode</th>
-                <th class="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Hari</th>
-                <th class="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Teori</th>
-                <th class="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Praktikum 1</th>
-                <th class="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Praktikum 2</th>
-                <th class="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
+                <SortableTh
+                  class="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase"
+                  column="line"
+                  label="Baris"
+                  :direction="previewSortDirection('line')"
+                  :aria-sort="previewAriaSortValue('line')"
+                  @toggle="togglePreviewSort"
+                />
+                <SortableTh
+                  class="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase"
+                  column="course_name"
+                  label="Mata Kuliah"
+                  :direction="previewSortDirection('course_name')"
+                  :aria-sort="previewAriaSortValue('course_name')"
+                  @toggle="togglePreviewSort"
+                />
+                <SortableTh
+                  class="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase"
+                  column="course_code"
+                  label="Kode"
+                  :direction="previewSortDirection('course_code')"
+                  :aria-sort="previewAriaSortValue('course_code')"
+                  @toggle="togglePreviewSort"
+                />
+                <SortableTh
+                  class="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase"
+                  column="day"
+                  label="Hari"
+                  :direction="previewSortDirection('day')"
+                  :aria-sort="previewAriaSortValue('day')"
+                  @toggle="togglePreviewSort"
+                />
+                <SortableTh
+                  class="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase"
+                  column="theory"
+                  label="Teori"
+                  :direction="previewSortDirection('theory')"
+                  :aria-sort="previewAriaSortValue('theory')"
+                  @toggle="togglePreviewSort"
+                />
+                <SortableTh
+                  class="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase"
+                  column="practicum1"
+                  label="Praktikum 1"
+                  :direction="previewSortDirection('practicum1')"
+                  :aria-sort="previewAriaSortValue('practicum1')"
+                  @toggle="togglePreviewSort"
+                />
+                <SortableTh
+                  class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600"
+                  column="practicum2"
+                  label="Praktikum 2"
+                  :direction="previewSortDirection('practicum2')"
+                  :aria-sort="previewAriaSortValue('practicum2')"
+                  @toggle="togglePreviewSort"
+                />
+                <SortableTh
+                  class="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase"
+                  column="status"
+                  label="Status"
+                  :direction="previewSortDirection('status')"
+                  :aria-sort="previewAriaSortValue('status')"
+                  @toggle="togglePreviewSort"
+                />
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200">
-              <tr v-for="row in rows" :key="row.raw?.lineNumber" class="align-top">
+              <tr v-for="row in sortedRows" :key="row.raw?.lineNumber" class="align-top">
                 <td class="px-3 py-3 text-sm text-gray-700">#{{ row.raw?.lineNumber }}</td>
                 <td class="px-3 py-3 text-sm text-gray-900">
                   <div>{{ row.raw?.courseName }}</div>

@@ -1,7 +1,9 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import Dropdown from '@/Components/Dropdown.vue'
+import SortableTh from '@/Components/SortableTh.vue'
 import { usePagination } from '@/Composables/usePagination'
+import { useTableSort } from '@/Composables/useTableSort'
 import { Head, Link } from '@inertiajs/vue3'
 import { computed } from 'vue'
 
@@ -50,13 +52,28 @@ const bookingsList = computed(() =>
 )
 
 const {
+  sortedItems: sortedBookings,
+  toggleSort: toggleAdminBookingSort,
+  sortDirection: adminBookingSortDirection,
+  ariaSortValue: adminBookingAriaSortValue,
+} = useTableSort(bookingsList, {
+  accessors: {
+    title: (booking) => booking.title ?? '',
+    applicant: (booking) => booking.user?.name ?? '',
+    room: (booking) => booking.room?.name ?? '',
+    schedule: (booking) => (booking.start_time ? new Date(booking.start_time) : null),
+    status: (booking) => booking.normalizedStatus ?? '',
+  },
+})
+
+const {
   paginatedItems: paginatedBookings,
   currentPage,
   rowsPerPage,
   pageMeta,
   pages,
   changePage,
-} = usePagination(bookingsList)
+} = usePagination(sortedBookings)
 
 const perPageOptions = [5, 10, 25, 50]
 
@@ -151,11 +168,47 @@ const exportPdf = () => {
         <table class="min-w-full divide-y divide-gray-200 text-sm">
           <thead class="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
             <tr>
-              <th class="px-5 py-3 text-left">Judul</th>
-              <th class="px-5 py-3 text-left">Pemohon</th>
-              <th class="px-5 py-3 text-left">Ruangan</th>
-              <th class="px-5 py-3 text-left">Jadwal</th>
-              <th class="px-5 py-3 text-center">Status</th>
+              <SortableTh
+                class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
+                column="title"
+                label="Judul"
+                :direction="adminBookingSortDirection('title')"
+                :aria-sort="adminBookingAriaSortValue('title')"
+                @toggle="toggleAdminBookingSort"
+              />
+              <SortableTh
+                class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
+                column="applicant"
+                label="Pemohon"
+                :direction="adminBookingSortDirection('applicant')"
+                :aria-sort="adminBookingAriaSortValue('applicant')"
+                @toggle="toggleAdminBookingSort"
+              />
+              <SortableTh
+                class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
+                column="room"
+                label="Ruangan"
+                :direction="adminBookingSortDirection('room')"
+                :aria-sort="adminBookingAriaSortValue('room')"
+                @toggle="toggleAdminBookingSort"
+              />
+              <SortableTh
+                class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
+                column="schedule"
+                label="Jadwal"
+                :direction="adminBookingSortDirection('schedule')"
+                :aria-sort="adminBookingAriaSortValue('schedule')"
+                @toggle="toggleAdminBookingSort"
+              />
+              <SortableTh
+                class="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500"
+                column="status"
+                label="Status"
+                :direction="adminBookingSortDirection('status')"
+                :aria-sort="adminBookingAriaSortValue('status')"
+                align="center"
+                @toggle="toggleAdminBookingSort"
+              />
               <th class="px-5 py-3"></th>
             </tr>
           </thead>

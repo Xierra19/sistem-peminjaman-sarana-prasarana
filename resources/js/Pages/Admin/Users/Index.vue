@@ -1,6 +1,8 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
+import SortableTh from '@/Components/SortableTh.vue'
 import { usePagination } from '@/Composables/usePagination'
+import { useTableSort } from '@/Composables/useTableSort'
 import { Head, Link, useForm } from '@inertiajs/vue3'
 import { computed } from 'vue'
 
@@ -43,13 +45,28 @@ const usersList = computed(() =>
 )
 
 const {
+  sortedItems: sortedUsers,
+  toggleSort: toggleUserSort,
+  sortDirection: userSortDirection,
+  ariaSortValue: userAriaSortValue,
+} = useTableSort(usersList, {
+  accessors: {
+    name: (user) => user.name ?? '',
+    email: (user) => user.email ?? '',
+    phone: (user) => user.phone ?? '',
+    role: (user) => user.roleLabel ?? user.role ?? '',
+    created_at: (user) => (user.created_at ? new Date(user.created_at) : null),
+  },
+})
+
+const {
   paginatedItems: paginatedUsers,
   currentPage,
   rowsPerPage,
   pageMeta,
   pages,
   changePage,
-} = usePagination(usersList)
+} = usePagination(sortedUsers)
 
 const perPageOptions = [5, 10, 25, 50]
 
@@ -172,11 +189,46 @@ const formatDate = (value) => {
         <table class="min-w-full divide-y divide-gray-200 text-sm">
           <thead class="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
             <tr>
-              <th class="px-5 py-3 text-left">Nama</th>
-              <th class="px-5 py-3 text-left">Email</th>
-              <th class="px-5 py-3 text-left">No. Telp</th>
-              <th class="px-5 py-3 text-left">Role</th>
-              <th class="px-5 py-3 text-left">Dibuat</th>
+              <SortableTh
+                class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
+                column="name"
+                label="Nama"
+                :direction="userSortDirection('name')"
+                :aria-sort="userAriaSortValue('name')"
+                @toggle="toggleUserSort"
+              />
+              <SortableTh
+                class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
+                column="email"
+                label="Email"
+                :direction="userSortDirection('email')"
+                :aria-sort="userAriaSortValue('email')"
+                @toggle="toggleUserSort"
+              />
+              <SortableTh
+                class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
+                column="phone"
+                label="No. Telp"
+                :direction="userSortDirection('phone')"
+                :aria-sort="userAriaSortValue('phone')"
+                @toggle="toggleUserSort"
+              />
+              <SortableTh
+                class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
+                column="role"
+                label="Role"
+                :direction="userSortDirection('role')"
+                :aria-sort="userAriaSortValue('role')"
+                @toggle="toggleUserSort"
+              />
+              <SortableTh
+                class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
+                column="created_at"
+                label="Dibuat"
+                :direction="userSortDirection('created_at')"
+                :aria-sort="userAriaSortValue('created_at')"
+                @toggle="toggleUserSort"
+              />
               <th class="px-5 py-3 text-right">Aksi</th>
             </tr>
           </thead>

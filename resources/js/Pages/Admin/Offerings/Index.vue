@@ -1,7 +1,9 @@
 // file: resources/js/Pages/Admin/Offerings/Index.vue
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
+import { useTableSort } from '@/Composables/useTableSort'
 import { Head, Link, useForm } from '@inertiajs/vue3'
+import { computed } from 'vue'
 
 const props = defineProps({
   semesterId: {
@@ -28,6 +30,20 @@ const submit = () => {
     },
   })
 }
+
+const offeringsList = computed(() => props.offerings ?? [])
+
+const {
+  sortedItems: sortedOfferings,
+  toggleSort: toggleOfferingSort,
+  sortIconClass: offeringSortIconClass,
+  ariaSortValue: offeringAriaSortValue,
+} = useTableSort(offeringsList, {
+  accessors: {
+    course_code: (row) => row.course_code ?? '',
+    course_name: (row) => row.course_name ?? '',
+  },
+})
 </script>
 
 <template>
@@ -89,15 +105,33 @@ const submit = () => {
         <table class="min-w-full divide-y divide-gray-200 text-sm">
           <thead class="bg-gray-50 text-left font-semibold uppercase tracking-wide text-gray-600">
             <tr>
-              <th class="px-4 py-3">Code</th>
-              <th class="px-4 py-3">Name</th>
+              <th class="px-4 py-3" :aria-sort="offeringAriaSortValue('course_code')">
+                <button
+                  type="button"
+                  class="flex w-full items-center gap-2 text-left focus:outline-none"
+                  @click="toggleOfferingSort('course_code')"
+                >
+                  <span>Code</span>
+                  <i :class="[offeringSortIconClass('course_code'), 'ml-1']" aria-hidden="true"></i>
+                </button>
+              </th>
+              <th class="px-4 py-3" :aria-sort="offeringAriaSortValue('course_name')">
+                <button
+                  type="button"
+                  class="flex w-full items-center gap-2 text-left focus:outline-none"
+                  @click="toggleOfferingSort('course_name')"
+                >
+                  <span>Name</span>
+                  <i :class="[offeringSortIconClass('course_name'), 'ml-1']" aria-hidden="true"></i>
+                </button>
+              </th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-100">
             <tr v-if="!offerings.length">
               <td colspan="2" class="px-4 py-6 text-center text-sm text-gray-500">No offerings yet.</td>
             </tr>
-            <tr v-for="offering in offerings" :key="offering.id" class="text-gray-800">
+            <tr v-for="offering in sortedOfferings" :key="offering.id" class="text-gray-800">
               <td class="px-4 py-3 font-medium">{{ offering.course_code }}</td>
               <td class="px-4 py-3">{{ offering.course_name }}</td>
             </tr>

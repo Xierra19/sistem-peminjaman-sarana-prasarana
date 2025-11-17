@@ -1,7 +1,9 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import Modal from '@/Components/Modal.vue'
+import SortableTh from '@/Components/SortableTh.vue'
 import { usePagination } from '@/Composables/usePagination'
+import { useTableSort } from '@/Composables/useTableSort'
 import { Head, Link, useForm } from '@inertiajs/vue3'
 import { computed, ref } from 'vue'
 
@@ -74,13 +76,27 @@ const submitEdit = () => {
 const campusesList = computed(() => props.campuses ?? [])
 
 const {
+  sortedItems: sortedCampuses,
+  toggleSort: toggleCampusSort,
+  sortDirection: campusSortDirection,
+  ariaSortValue: campusAriaSortValue,
+} = useTableSort(campusesList, {
+  accessors: {
+    number: (campus) => campus.id ?? 0,
+    name: (campus) => campus.name ?? '',
+    address: (campus) => campus.address ?? '',
+    phone: (campus) => campus.phone ?? '',
+  },
+})
+
+const {
   paginatedItems: paginatedCampuses,
   rowsPerPage,
   currentPage,
   pageMeta,
   pages,
   changePage,
-} = usePagination(campusesList)
+} = usePagination(sortedCampuses)
 
 const perPageOptions = [5, 10, 25, 50]
 </script>
@@ -133,10 +149,38 @@ const perPageOptions = [5, 10, 25, 50]
         <table class="min-w-full border border-gray-200 divide-y divide-gray-200">
           <thead class="bg-gray-100">
             <tr>
-              <th class="px-4 py-2 text-left text-sm font-semibold text-gray-600">#</th>
-              <th class="px-4 py-2 text-left text-sm font-semibold text-gray-600">Nama Campus</th>
-              <th class="px-4 py-2 text-left text-sm font-semibold text-gray-600">Alamat</th>
-              <th class="px-4 py-2 text-left text-sm font-semibold text-gray-600">Telepon</th>
+              <SortableTh
+                class="px-4 py-2 text-left text-sm font-semibold text-gray-600"
+                column="number"
+                label="#"
+                :direction="campusSortDirection('number')"
+                :aria-sort="campusAriaSortValue('number')"
+                @toggle="toggleCampusSort"
+              />
+              <SortableTh
+                class="px-4 py-2 text-left text-sm font-semibold text-gray-600"
+                column="name"
+                label="Nama Campus"
+                :direction="campusSortDirection('name')"
+                :aria-sort="campusAriaSortValue('name')"
+                @toggle="toggleCampusSort"
+              />
+              <SortableTh
+                class="px-4 py-2 text-left text-sm font-semibold text-gray-600"
+                column="address"
+                label="Alamat"
+                :direction="campusSortDirection('address')"
+                :aria-sort="campusAriaSortValue('address')"
+                @toggle="toggleCampusSort"
+              />
+              <SortableTh
+                class="px-4 py-2 text-left text-sm font-semibold text-gray-600"
+                column="phone"
+                label="Telepon"
+                :direction="campusSortDirection('phone')"
+                :aria-sort="campusAriaSortValue('phone')"
+                @toggle="toggleCampusSort"
+              />
               <th class="px-4 py-2 text-left text-sm font-semibold text-gray-600">Aksi</th>
             </tr>
           </thead>

@@ -2,7 +2,9 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import Modal from '@/Components/Modal.vue'
 import TimePicker24 from '@/Components/TimePicker24.vue'
+import SortableTh from '@/Components/SortableTh.vue'
 import { usePagination } from '@/Composables/usePagination'
+import { useTableSort } from '@/Composables/useTableSort'
 import { Head, Link, router, useForm } from '@inertiajs/vue3'
 import { computed, ref, watch } from 'vue'
 
@@ -67,6 +69,24 @@ watch(
 )
 
 const {
+  sortedItems: sortedDefaults,
+  toggleSort: toggleDefaultsSort,
+  sortDirection: defaultsSortDirection,
+  ariaSortValue: defaultsAriaSortValue,
+} = useTableSort(defaultsList, {
+  accessors: {
+    course_name: (row) => row.course_name ?? '',
+    course_code: (row) => row.course_code ?? '',
+    day_of_week: (row) => row.day_of_week ?? '',
+    theory: (row) => row.theory_start_time ?? '',
+    practicum1: (row) => row.practicum1_start_time ?? '',
+    practicum2: (row) => row.practicum2_start_time ?? '',
+    uts: (row) => (row.uts_exam_date ? new Date(`${row.uts_exam_date}T${row.uts_start_time ?? '00:00'}`) : null),
+    uas: (row) => (row.uas_exam_date ? new Date(`${row.uas_exam_date}T${row.uas_start_time ?? '00:00'}`) : null),
+  },
+})
+
+const {
   paginatedItems: paginatedDefaults,
   rowsPerPage,
   currentPage,
@@ -74,7 +94,7 @@ const {
   pageMeta,
   pages,
   changePage,
-} = usePagination(defaultsList)
+} = usePagination(sortedDefaults)
 
 const perPageOptions = [5, 10, 25, 50]
 
@@ -273,14 +293,70 @@ const destroyDefault = (row) => {
         <table class="min-w-full divide-y divide-gray-200 text-sm">
           <thead class="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
             <tr>
-              <th class="px-5 py-3 text-left">Nama Matkul</th>
-              <th class="px-5 py-3 text-left">Kode</th>
-              <th class="px-5 py-3 text-left">Hari</th>
-              <th class="px-5 py-3 text-left">Teori</th>
-              <th class="px-5 py-3 text-left">Praktikum 1</th>
-              <th class="px-5 py-3 text-left">Praktikum 2</th>
-              <th class="px-5 py-3 text-left">UTS</th>
-              <th class="px-5 py-3 text-left">UAS</th>
+              <SortableTh
+                class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
+                column="course_name"
+                label="Nama Matkul"
+                :direction="defaultsSortDirection('course_name')"
+                :aria-sort="defaultsAriaSortValue('course_name')"
+                @toggle="toggleDefaultsSort"
+              />
+              <SortableTh
+                class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
+                column="course_code"
+                label="Kode"
+                :direction="defaultsSortDirection('course_code')"
+                :aria-sort="defaultsAriaSortValue('course_code')"
+                @toggle="toggleDefaultsSort"
+              />
+              <SortableTh
+                class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
+                column="day_of_week"
+                label="Hari"
+                :direction="defaultsSortDirection('day_of_week')"
+                :aria-sort="defaultsAriaSortValue('day_of_week')"
+                @toggle="toggleDefaultsSort"
+              />
+              <SortableTh
+                class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
+                column="theory"
+                label="Teori"
+                :direction="defaultsSortDirection('theory')"
+                :aria-sort="defaultsAriaSortValue('theory')"
+                @toggle="toggleDefaultsSort"
+              />
+              <SortableTh
+                class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
+                column="practicum1"
+                label="Praktikum 1"
+                :direction="defaultsSortDirection('practicum1')"
+                :aria-sort="defaultsAriaSortValue('practicum1')"
+                @toggle="toggleDefaultsSort"
+              />
+              <SortableTh
+                class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
+                column="practicum2"
+                label="Praktikum 2"
+                :direction="defaultsSortDirection('practicum2')"
+                :aria-sort="defaultsAriaSortValue('practicum2')"
+                @toggle="toggleDefaultsSort"
+              />
+              <SortableTh
+                class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
+                column="uts"
+                label="UTS"
+                :direction="defaultsSortDirection('uts')"
+                :aria-sort="defaultsAriaSortValue('uts')"
+                @toggle="toggleDefaultsSort"
+              />
+              <SortableTh
+                class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
+                column="uas"
+                label="UAS"
+                :direction="defaultsSortDirection('uas')"
+                :aria-sort="defaultsAriaSortValue('uas')"
+                @toggle="toggleDefaultsSort"
+              />
               <th class="px-5 py-3 text-left">Aksi</th>
             </tr>
           </thead>

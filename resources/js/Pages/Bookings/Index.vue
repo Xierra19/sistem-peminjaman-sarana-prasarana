@@ -1,8 +1,10 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
+import SortableTh from '@/Components/SortableTh.vue'
 import { Head, Link, useForm } from '@inertiajs/vue3'
 import { computed, ref } from 'vue'
 import { usePagination } from '@/Composables/usePagination'
+import { useTableSort } from '@/Composables/useTableSort'
 
 const props = defineProps({
   bookings: {
@@ -59,13 +61,29 @@ const filteredBookings = computed(() => {
 })
 
 const {
+  sortedItems: sortedBookings,
+  toggleSort: toggleBookingSort,
+  sortDirection: bookingSortDirection,
+  ariaSortValue: bookingAriaSortValue,
+} = useTableSort(filteredBookings, {
+  accessors: {
+    number: (booking) => booking.id ?? 0,
+    title: (booking) => booking.title ?? '',
+    room: (booking) => booking.room?.name ?? '',
+    start_time: (booking) => (booking.start_time ? new Date(booking.start_time) : null),
+    end_time: (booking) => (booking.end_time ? new Date(booking.end_time) : null),
+    status: (booking) => normalizeStatus(booking.status) ?? '',
+  },
+})
+
+const {
   paginatedItems: paginatedBookings,
   rowsPerPage,
   currentPage,
   pageMeta,
   pages,
   changePage,
-} = usePagination(filteredBookings)
+} = usePagination(sortedBookings)
 
 const formatDateTime = (value) => {
   if (!value) return '-'
@@ -206,12 +224,54 @@ const cancelBooking = (booking) => {
           <table class="mobile-friendly-table min-w-full divide-y divide-slate-200 text-sm text-slate-700">
             <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
               <tr>
-                <th class="px-4 py-3 text-left">#</th>
-                <th class="px-4 py-3 text-left">Judul</th>
-                <th class="px-4 py-3 text-left">Ruangan</th>
-                <th class="px-4 py-3 text-left">Mulai</th>
-                <th class="px-4 py-3 text-left">Selesai</th>
-                <th class="px-4 py-3 text-left">Status</th>
+                <SortableTh
+                  class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  column="number"
+                  label="#"
+                  :direction="bookingSortDirection('number')"
+                  :aria-sort="bookingAriaSortValue('number')"
+                  @toggle="toggleBookingSort"
+                />
+                <SortableTh
+                  class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  column="title"
+                  label="Judul"
+                  :direction="bookingSortDirection('title')"
+                  :aria-sort="bookingAriaSortValue('title')"
+                  @toggle="toggleBookingSort"
+                />
+                <SortableTh
+                  class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  column="room"
+                  label="Ruangan"
+                  :direction="bookingSortDirection('room')"
+                  :aria-sort="bookingAriaSortValue('room')"
+                  @toggle="toggleBookingSort"
+                />
+                <SortableTh
+                  class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  column="start_time"
+                  label="Mulai"
+                  :direction="bookingSortDirection('start_time')"
+                  :aria-sort="bookingAriaSortValue('start_time')"
+                  @toggle="toggleBookingSort"
+                />
+                <SortableTh
+                  class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  column="end_time"
+                  label="Selesai"
+                  :direction="bookingSortDirection('end_time')"
+                  :aria-sort="bookingAriaSortValue('end_time')"
+                  @toggle="toggleBookingSort"
+                />
+                <SortableTh
+                  class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  column="status"
+                  label="Status"
+                  :direction="bookingSortDirection('status')"
+                  :aria-sort="bookingAriaSortValue('status')"
+                  @toggle="toggleBookingSort"
+                />
                 <th class="px-4 py-3 text-left">Aksi</th>
               </tr>
             </thead>

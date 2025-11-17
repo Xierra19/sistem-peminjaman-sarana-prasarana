@@ -1,7 +1,9 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
+import SortableTh from '@/Components/SortableTh.vue'
 import { Head, Link, usePage } from '@inertiajs/vue3'
 import { computed, ref, watch } from 'vue'
+import { useTableSort } from '@/Composables/useTableSort'
 
 const page = usePage()
 
@@ -377,6 +379,20 @@ const recentBookingsList = computed(() =>
     normalizedStatus: normalizeStatus(booking.status),
   })),
 )
+
+const {
+  sortedItems: sortedRecentBookings,
+  toggleSort: toggleRecentBookingSort,
+  sortDirection: recentBookingSortDirection,
+  ariaSortValue: recentBookingAriaSortValue,
+} = useTableSort(recentBookingsList, {
+  accessors: {
+    title: (booking) => booking.title ?? '',
+    room: (booking) => booking.room?.name ?? '',
+    start_time: (booking) => (booking.start_time ? new Date(booking.start_time) : null),
+    status: (booking) => booking.normalizedStatus ?? '',
+  },
+})
 </script>
 
 <template>
@@ -747,14 +763,42 @@ const recentBookingsList = computed(() =>
             <table class="mobile-friendly-table min-w-full divide-y divide-slate-200 text-sm text-slate-700">
               <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
                 <tr>
-                  <th class="px-4 py-3 text-left">Judul</th>
-                  <th class="px-4 py-3 text-left">Ruangan</th>
-                  <th class="px-4 py-3 text-left">Mulai</th>
-                  <th class="px-4 py-3 text-left">Status</th>
+                  <SortableTh
+                    class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
+                    column="title"
+                    label="Judul"
+                    :direction="recentBookingSortDirection('title')"
+                    :aria-sort="recentBookingAriaSortValue('title')"
+                    @toggle="toggleRecentBookingSort"
+                  />
+                  <SortableTh
+                    class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
+                    column="room"
+                    label="Ruangan"
+                    :direction="recentBookingSortDirection('room')"
+                    :aria-sort="recentBookingAriaSortValue('room')"
+                    @toggle="toggleRecentBookingSort"
+                  />
+                  <SortableTh
+                    class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
+                    column="start_time"
+                    label="Mulai"
+                    :direction="recentBookingSortDirection('start_time')"
+                    :aria-sort="recentBookingAriaSortValue('start_time')"
+                    @toggle="toggleRecentBookingSort"
+                  />
+                  <SortableTh
+                    class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
+                    column="status"
+                    label="Status"
+                    :direction="recentBookingSortDirection('status')"
+                    :aria-sort="recentBookingAriaSortValue('status')"
+                    @toggle="toggleRecentBookingSort"
+                  />
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100">
-                <tr v-for="booking in recentBookingsList" :key="booking.id" class="hover:bg-slate-50">
+                <tr v-for="booking in sortedRecentBookings" :key="booking.id" class="hover:bg-slate-50">
                   <td class="px-4 py-3" data-title="Judul">
                     <div class="font-semibold text-slate-900">{{ booking.title }}</div>
                     <div class="text-xs text-slate-500">{{ booking.description || 'Tidak ada deskripsi.' }}</div>

@@ -1,7 +1,9 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import Modal from '@/Components/Modal.vue'
+import SortableTh from '@/Components/SortableTh.vue'
 import { usePagination } from '@/Composables/usePagination'
+import { useTableSort } from '@/Composables/useTableSort'
 import { Head, Link, useForm, router } from '@inertiajs/vue3'
 import { computed, ref } from 'vue'
 
@@ -97,13 +99,27 @@ const submitEdit = () => {
 const buildingsList = computed(() => props.buildings ?? [])
 
 const {
+  sortedItems: sortedBuildings,
+  toggleSort: toggleBuildingSort,
+  sortDirection: buildingSortDirection,
+  ariaSortValue: buildingAriaSortValue,
+} = useTableSort(buildingsList, {
+  accessors: {
+    number: (building) => building.id ?? 0,
+    name: (building) => building.name ?? '',
+    campus: (building) => building.campus?.name ?? '',
+    created_at: (building) => (building.created_at ? new Date(building.created_at) : null),
+  },
+})
+
+const {
   paginatedItems: paginatedBuildings,
   rowsPerPage,
   currentPage,
   pageMeta,
   pages,
   changePage,
-} = usePagination(buildingsList)
+} = usePagination(sortedBuildings)
 
 const perPageOptions = [5, 10, 25, 50]
 </script>
@@ -157,10 +173,38 @@ const perPageOptions = [5, 10, 25, 50]
         <table class="min-w-full border border-gray-200 divide-y divide-gray-200">
           <thead class="bg-gray-100">
             <tr>
-              <th class="px-4 py-2 text-left text-sm font-semibold text-gray-600">#</th>
-              <th class="px-4 py-2 text-left text-sm font-semibold text-gray-600">Nama Gedung</th>
-              <th class="px-4 py-2 text-left text-sm font-semibold text-gray-600">Campus</th>
-              <th class="px-4 py-2 text-left text-sm font-semibold text-gray-600">Dibuat</th>
+              <SortableTh
+                class="px-4 py-2 text-left text-sm font-semibold text-gray-600"
+                column="number"
+                label="#"
+                :direction="buildingSortDirection('number')"
+                :aria-sort="buildingAriaSortValue('number')"
+                @toggle="toggleBuildingSort"
+              />
+              <SortableTh
+                class="px-4 py-2 text-left text-sm font-semibold text-gray-600"
+                column="name"
+                label="Nama Gedung"
+                :direction="buildingSortDirection('name')"
+                :aria-sort="buildingAriaSortValue('name')"
+                @toggle="toggleBuildingSort"
+              />
+              <SortableTh
+                class="px-4 py-2 text-left text-sm font-semibold text-gray-600"
+                column="campus"
+                label="Campus"
+                :direction="buildingSortDirection('campus')"
+                :aria-sort="buildingAriaSortValue('campus')"
+                @toggle="toggleBuildingSort"
+              />
+              <SortableTh
+                class="px-4 py-2 text-left text-sm font-semibold text-gray-600"
+                column="created_at"
+                label="Dibuat"
+                :direction="buildingSortDirection('created_at')"
+                :aria-sort="buildingAriaSortValue('created_at')"
+                @toggle="toggleBuildingSort"
+              />
               <th class="px-4 py-2 text-left text-sm font-semibold text-gray-600">Aksi</th>
             </tr>
           </thead>

@@ -1,7 +1,9 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import Modal from '@/Components/Modal.vue'
+import SortableTh from '@/Components/SortableTh.vue'
 import { usePagination } from '@/Composables/usePagination'
+import { useTableSort } from '@/Composables/useTableSort'
 import { Head, Link, useForm, router } from '@inertiajs/vue3'
 import { computed, ref } from 'vue'
 import Swal from 'sweetalert2'                           // ⬅️ panggil Swal di halaman
@@ -109,13 +111,29 @@ const buildingOptions = computed(() => {
 const roomsList = computed(() => props.rooms ?? [])
 
 const {
+  sortedItems: sortedRooms,
+  toggleSort: toggleRoomSort,
+  sortDirection: roomSortDirection,
+  ariaSortValue: roomAriaSortValue,
+} = useTableSort(roomsList, {
+  accessors: {
+    number: (room) => room.id ?? 0,
+    name: (room) => room.name ?? '',
+    building: (room) => room.building?.name ?? '',
+    campus: (room) => room.building?.campus?.name ?? '',
+    capacity: (room) => Number(room.capacity) || 0,
+    availability: (room) => (room.is_available ? 1 : 0),
+  },
+})
+
+const {
   paginatedItems: paginatedRooms,
   rowsPerPage,
   currentPage,
   pageMeta,
   pages,
   changePage,
-} = usePagination(roomsList)
+} = usePagination(sortedRooms)
 
 const perPageOptions = [5, 10, 25, 50]
 </script>
@@ -171,12 +189,54 @@ const perPageOptions = [5, 10, 25, 50]
         <table class="min-w-full border border-gray-200 divide-y divide-gray-200">
           <thead class="bg-gray-100">
             <tr>
-              <th class="px-4 py-2 text-left text-sm font-semibold text-gray-600">#</th>
-              <th class="px-4 py-2 text-left text-sm font-semibold text-gray-600">Nama Ruangan</th>
-              <th class="px-4 py-2 text-left text-sm font-semibold text-gray-600">Gedung</th>
-              <th class="px-4 py-2 text-left text-sm font-semibold text-gray-600">Campus</th>
-              <th class="px-4 py-2 text-left text-sm font-semibold text-gray-600">Kapasitas</th>
-              <th class="px-4 py-2 text-left text-sm font-semibold text-gray-600">Ketersediaan</th>              
+              <SortableTh
+                class="px-4 py-2 text-sm font-semibold text-gray-600"
+                column="number"
+                label="#"
+                :direction="roomSortDirection('number')"
+                :aria-sort="roomAriaSortValue('number')"
+                @toggle="toggleRoomSort"
+              />
+              <SortableTh
+                class="px-4 py-2 text-sm font-semibold text-gray-600"
+                column="name"
+                label="Nama Ruangan"
+                :direction="roomSortDirection('name')"
+                :aria-sort="roomAriaSortValue('name')"
+                @toggle="toggleRoomSort"
+              />
+              <SortableTh
+                class="px-4 py-2 text-sm font-semibold text-gray-600"
+                column="building"
+                label="Gedung"
+                :direction="roomSortDirection('building')"
+                :aria-sort="roomAriaSortValue('building')"
+                @toggle="toggleRoomSort"
+              />
+              <SortableTh
+                class="px-4 py-2 text-sm font-semibold text-gray-600"
+                column="campus"
+                label="Campus"
+                :direction="roomSortDirection('campus')"
+                :aria-sort="roomAriaSortValue('campus')"
+                @toggle="toggleRoomSort"
+              />
+              <SortableTh
+                class="px-4 py-2 text-sm font-semibold text-gray-600"
+                column="capacity"
+                label="Kapasitas"
+                :direction="roomSortDirection('capacity')"
+                :aria-sort="roomAriaSortValue('capacity')"
+                @toggle="toggleRoomSort"
+              />
+              <SortableTh
+                class="px-4 py-2 text-sm font-semibold text-gray-600"
+                column="availability"
+                label="Ketersediaan"
+                :direction="roomSortDirection('availability')"
+                :aria-sort="roomAriaSortValue('availability')"
+                @toggle="toggleRoomSort"
+              />
               <th class="px-4 py-2 text-left text-sm font-semibold text-gray-600">Aksi</th>
             </tr>
           </thead>

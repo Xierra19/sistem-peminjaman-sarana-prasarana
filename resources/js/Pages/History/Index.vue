@@ -1,7 +1,9 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import Dropdown from '@/Components/Dropdown.vue'
+import SortableTh from '@/Components/SortableTh.vue'
 import { usePagination } from '@/Composables/usePagination'
+import { useTableSort } from '@/Composables/useTableSort'
 import { Head } from '@inertiajs/vue3'
 import { computed, ref } from 'vue'
 
@@ -45,13 +47,29 @@ const filteredHistories = computed(() => {
 })
 
 const {
+  sortedItems: sortedHistories,
+  toggleSort: toggleHistorySort,
+  sortDirection: historySortDirection,
+  ariaSortValue: historyAriaSortValue,
+} = useTableSort(filteredHistories, {
+  accessors: {
+    id: (history) => history.id ?? 0,
+    user: (history) => history.user?.name ?? '',
+    room: (history) => history.booking?.room?.name ?? '',
+    action: (history) => history.action ?? '',
+    created_at: (history) => (history.created_at ? new Date(history.created_at) : null),
+    description: (history) => history.description ?? '',
+  },
+})
+
+const {
   paginatedItems: paginatedHistories,
   rowsPerPage,
   currentPage,
   pageMeta,
   pages,
   changePage,
-} = usePagination(filteredHistories)
+} = usePagination(sortedHistories)
 
 const perPageOptions = [5, 10, 25, 50]
 
@@ -184,12 +202,54 @@ const exportExcel = () => {
           <table class="mobile-friendly-table min-w-full divide-y divide-slate-200 text-sm text-slate-700">
             <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
               <tr>
-                <th class="px-5 py-3 text-left">ID</th>
-                <th class="px-5 py-3 text-left">Pengguna</th>
-                <th class="px-5 py-3 text-left">Ruangan</th>
-                <th class="px-5 py-3 text-left">Aksi</th>
-                <th class="px-5 py-3 text-left">Waktu</th>
-                <th class="px-5 py-3 text-left">Deskripsi</th>
+                <SortableTh
+                  class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  column="id"
+                  label="ID"
+                  :direction="historySortDirection('id')"
+                  :aria-sort="historyAriaSortValue('id')"
+                  @toggle="toggleHistorySort"
+                />
+                <SortableTh
+                  class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  column="user"
+                  label="Pengguna"
+                  :direction="historySortDirection('user')"
+                  :aria-sort="historyAriaSortValue('user')"
+                  @toggle="toggleHistorySort"
+                />
+                <SortableTh
+                  class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  column="room"
+                  label="Ruangan"
+                  :direction="historySortDirection('room')"
+                  :aria-sort="historyAriaSortValue('room')"
+                  @toggle="toggleHistorySort"
+                />
+                <SortableTh
+                  class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  column="action"
+                  label="Aksi"
+                  :direction="historySortDirection('action')"
+                  :aria-sort="historyAriaSortValue('action')"
+                  @toggle="toggleHistorySort"
+                />
+                <SortableTh
+                  class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  column="created_at"
+                  label="Waktu"
+                  :direction="historySortDirection('created_at')"
+                  :aria-sort="historyAriaSortValue('created_at')"
+                  @toggle="toggleHistorySort"
+                />
+                <SortableTh
+                  class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  column="description"
+                  label="Deskripsi"
+                  :direction="historySortDirection('description')"
+                  :aria-sort="historyAriaSortValue('description')"
+                  @toggle="toggleHistorySort"
+                />
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 text-slate-700">

@@ -1,6 +1,8 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
+import SortableTh from '@/Components/SortableTh.vue'
 import { usePagination } from '@/Composables/usePagination'
+import { useTableSort } from '@/Composables/useTableSort'
 import { Head, router } from '@inertiajs/vue3'
 import { computed, reactive, watch } from 'vue'
 
@@ -44,13 +46,31 @@ watch(
 const bookings = computed(() => props.bookings ?? [])
 
 const {
+  sortedItems: sortedBookings,
+  toggleSort: toggleReportSort,
+  sortDirection: reportSortDirection,
+  ariaSortValue: reportAriaSortValue,
+} = useTableSort(bookings, {
+  accessors: {
+    id: (booking) => booking.id ?? 0,
+    created_at: (booking) => (booking.created_at ? new Date(booking.created_at) : null),
+    applicant: (booking) => booking.user?.name ?? '',
+    status: (booking) => booking.status ?? '',
+    letter_number: (booking) => booking.letter_number ?? '',
+    schedule: (booking) => (booking.start_time ? new Date(booking.start_time) : null),
+    location: (booking) => booking.room?.name ?? '',
+    details: (booking) => booking.title ?? '',
+  },
+})
+
+const {
   paginatedItems: paginatedBookings,
   rowsPerPage,
   currentPage,
   pageMeta,
   pages,
   changePage,
-} = usePagination(bookings, { perPage: 10 })
+} = usePagination(sortedBookings, { perPage: 10 })
 
 const perPageOptions = [10, 25, 50, 100]
 
@@ -270,14 +290,86 @@ const exportExcel = () => {
           <table class="min-w-full divide-y divide-gray-200 text-sm">
             <thead class="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
               <tr>
-                <th class="px-5 py-3 text-left">ID</th>
-                <th class="px-5 py-3 text-left">Tanggal Pengajuan</th>
-                <th class="px-5 py-3 text-left">Pemohon</th>
-                <th class="px-5 py-3 text-left">Status</th>
-                <th class="px-5 py-3 text-left">No. Surat</th>
-                <th class="px-5 py-3 text-left">Jadwal</th>
-                <th class="px-5 py-3 text-left">Lokasi</th>
-                <th class="px-5 py-3 text-left">Detail Peminjaman</th>
+                <th class="px-5 py-3 text-left" :aria-sort="reportAriaSortValue('id')">
+                  <button
+                    type="button"
+                    class="flex w-full items-center gap-2 text-left focus:outline-none"
+                    @click="toggleReportSort('id')"
+                  >
+                    <span>ID</span>
+                    <i :class="[reportSortIconClass('id'), 'ml-1']" aria-hidden="true"></i>
+                  </button>
+                </th>
+                <th class="px-5 py-3 text-left" :aria-sort="reportAriaSortValue('created_at')">
+                  <button
+                    type="button"
+                    class="flex w-full items-center gap-2 text-left focus:outline-none"
+                    @click="toggleReportSort('created_at')"
+                  >
+                    <span>Tanggal Pengajuan</span>
+                    <i :class="[reportSortIconClass('created_at'), 'ml-1']" aria-hidden="true"></i>
+                  </button>
+                </th>
+                <th class="px-5 py-3 text-left" :aria-sort="reportAriaSortValue('applicant')">
+                  <button
+                    type="button"
+                    class="flex w-full items-center gap-2 text-left focus:outline-none"
+                    @click="toggleReportSort('applicant')"
+                  >
+                    <span>Pemohon</span>
+                    <i :class="[reportSortIconClass('applicant'), 'ml-1']" aria-hidden="true"></i>
+                  </button>
+                </th>
+                <th class="px-5 py-3 text-left" :aria-sort="reportAriaSortValue('status')">
+                  <button
+                    type="button"
+                    class="flex w-full items-center gap-2 text-left focus:outline-none"
+                    @click="toggleReportSort('status')"
+                  >
+                    <span>Status</span>
+                    <i :class="[reportSortIconClass('status'), 'ml-1']" aria-hidden="true"></i>
+                  </button>
+                </th>
+                <th class="px-5 py-3 text-left" :aria-sort="reportAriaSortValue('letter_number')">
+                  <button
+                    type="button"
+                    class="flex w-full items-center gap-2 text-left focus:outline-none"
+                    @click="toggleReportSort('letter_number')"
+                  >
+                    <span>No. Surat</span>
+                    <i :class="[reportSortIconClass('letter_number'), 'ml-1']" aria-hidden="true"></i>
+                  </button>
+                </th>
+                <th class="px-5 py-3 text-left" :aria-sort="reportAriaSortValue('schedule')">
+                  <button
+                    type="button"
+                    class="flex w-full items-center gap-2 text-left focus:outline-none"
+                    @click="toggleReportSort('schedule')"
+                  >
+                    <span>Jadwal</span>
+                    <i :class="[reportSortIconClass('schedule'), 'ml-1']" aria-hidden="true"></i>
+                  </button>
+                </th>
+                <th class="px-5 py-3 text-left" :aria-sort="reportAriaSortValue('location')">
+                  <button
+                    type="button"
+                    class="flex w-full items-center gap-2 text-left focus:outline-none"
+                    @click="toggleReportSort('location')"
+                  >
+                    <span>Lokasi</span>
+                    <i :class="[reportSortIconClass('location'), 'ml-1']" aria-hidden="true"></i>
+                  </button>
+                </th>
+                <th class="px-5 py-3 text-left" :aria-sort="reportAriaSortValue('details')">
+                  <button
+                    type="button"
+                    class="flex w-full items-center gap-2 text-left focus:outline-none"
+                    @click="toggleReportSort('details')"
+                  >
+                    <span>Detail Peminjaman</span>
+                    <i :class="[reportSortIconClass('details'), 'ml-1']" aria-hidden="true"></i>
+                  </button>
+                </th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100 text-gray-700">
@@ -325,7 +417,7 @@ const exportExcel = () => {
                 </td>
               </tr>
               <tr v-if="!paginatedBookings.length">
-                <td colspan="7" class="px-5 py-10 text-center text-sm text-gray-400">
+                <td colspan="8" class="px-5 py-10 text-center text-sm text-gray-400">
                   Belum ada data sesuai filter yang dipilih.
                 </td>
               </tr>
