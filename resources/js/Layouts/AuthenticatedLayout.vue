@@ -155,7 +155,7 @@ watch(
 </script>
 
 <template>
-  <div class="relative min-h-screen bg-slate-50 lg:flex">
+  <div class="relative min-h-screen bg-slate-100 lg:flex">
     <transition name="fade">
       <div
         v-if="isMobileMenuOpen"
@@ -291,8 +291,8 @@ watch(
     </aside>
 
     <div class="flex min-h-screen flex-1 flex-col lg:ml-64">
-      <nav class="sticky top-0 z-20 border-b border-slate-200 bg-white">
-        <div class="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-10">
+      <nav class="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
+        <div class="page-shell flex h-16 items-center justify-between">
           <div class="flex flex-1 items-center gap-3">
             <button
               type="button"
@@ -357,14 +357,16 @@ watch(
         </div>
       </nav>
 
-      <main class="flex-1 space-y-6 px-4 py-6 sm:px-6 lg:px-10">
-        <header v-if="$slots.header">
-          <slot name="header" />
-        </header>
+      <main class="flex-1 bg-slate-100/60 py-6">
+        <div class="page-shell space-y-6">
+          <header v-if="$slots.header">
+            <slot name="header" />
+          </header>
 
-        <section>
-          <slot />
-        </section>
+          <section>
+            <slot />
+          </section>
+        </div>
       </main>
     </div>
   </div>

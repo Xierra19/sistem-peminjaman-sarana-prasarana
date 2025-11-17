@@ -130,7 +130,7 @@ const submit = () => {
                                 class="flex h-12 w-full items-center justify-center rounded-2xl bg-indigo-600 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition hover:bg-indigo-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-200 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 <span v-if="form.processing">Mengirim tautan…</span>
-                                <span v-else>Kirim tautan reset</span>
+                                <span v-else>Kirim Tautan Reset Password </span>
                             </button>
                         </form>
 
