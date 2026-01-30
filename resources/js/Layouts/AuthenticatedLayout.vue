@@ -43,6 +43,7 @@ const masterDataActive = computed(() =>
     'admin.campus.*',
     'admin.buildings.*',
     'admin.rooms.*',
+    'admin.items.*',
   )
 )
 
@@ -242,6 +243,9 @@ watch(
               </Link>
               <Link :href="route('admin.rooms.index')" :class="subLinkClasses(isRouteActive('admin.rooms.*'))">
                 🚪 Master Rooms
+              </Link>
+              <Link :href="route('admin.items.index')" :class="subLinkClasses(isRouteActive('admin.items.*'))">
+                📦 Master Barang
               </Link>
             </div>
           </div>

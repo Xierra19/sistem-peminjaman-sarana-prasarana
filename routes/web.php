@@ -77,6 +77,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::resource('campus', CampusController::class)->except(['show']);
     Route::resource('buildings', BuildingController::class)->except(['show']);
     Route::resource('rooms', RoomController::class)->except(['show']);
+    Route::resource('items', \App\Http\Controllers\Admin\ItemController::class)->except(['show']);
     Route::resource('users', AdminUserController::class)->only(['index', 'edit', 'update', 'destroy']);
 
     Route::post('semesters/{semester}/toggle-active', [SemesterController::class, 'toggleActive'])->name('semesters.toggle-active');
