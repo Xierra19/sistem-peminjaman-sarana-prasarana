@@ -17,12 +17,14 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExportController;
+use App\Http\Controllers\ItemBorrowingController;
 use App\Http\Controllers\SemesterController;
 use App\Http\Controllers\SemesterDefaultController;
 use App\Http\Controllers\SemesterDefaultImportController;
 use App\Http\Controllers\Admin\SemesterController as AdminSemesterController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\Admin\ItemBorrowingApprovalController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -49,6 +51,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/bookings/{booking}/attachment', [BookingController::class, 'downloadAttachment'])->name('bookings.attachment');
     Route::post('/bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
     Route::get('/bookings/{booking}/letter', [BookingController::class, 'downloadLetter'])->name('bookings.letter');
+
+    Route::get('/item-borrowings', [ItemBorrowingController::class, 'index'])->name('item-borrowings.index');
+    Route::get('/item-borrowings/create', [ItemBorrowingController::class, 'create'])->name('item-borrowings.create');
+    Route::post('/item-borrowings', [ItemBorrowingController::class, 'store'])->name('item-borrowings.store');
+    Route::get('/items/{item}/availability', [ItemBorrowingController::class, 'availability'])->name('items.availability');
+    Route::get('/item-borrowings/{itemBorrowing}', [ItemBorrowingController::class, 'show'])->name('item-borrowings.show');
+    Route::get('/item-borrowings/{itemBorrowing}/attachment', [ItemBorrowingController::class, 'downloadAttachment'])->name('item-borrowings.attachment');
+    Route::post('/item-borrowings/{itemBorrowing}/cancel', [ItemBorrowingController::class, 'cancel'])->name('item-borrowings.cancel');
 
     // ✅ History (admin only)
     Route::middleware('role:admin')->group(function () {
@@ -99,6 +109,10 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('bookings/{booking}/status', [BookingApprovalController::class, 'updateStatus'])->name('bookings.update-status');
     Route::get('bookings/export/excel', [BookingApprovalController::class, 'exportExcel'])->name('bookings.export.excel');
     Route::get('bookings/export/pdf', [BookingApprovalController::class, 'exportPdf'])->name('bookings.export.pdf');
+
+    Route::get('item-borrowings', [ItemBorrowingApprovalController::class, 'index'])->name('item-borrowings.index');
+    Route::get('item-borrowings/{itemBorrowing}', [ItemBorrowingApprovalController::class, 'show'])->name('item-borrowings.show');
+    Route::post('item-borrowings/{itemBorrowing}/status', [ItemBorrowingApprovalController::class, 'updateStatus'])->name('item-borrowings.update-status');
 
     Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('reports/export', [ReportController::class, 'export'])->name('reports.export');

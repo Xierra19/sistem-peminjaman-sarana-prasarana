@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Item extends Model
 {
@@ -24,7 +25,7 @@ class Item extends Model
     /**
      * @return \Illuminate\Database\Eloquent\Relations\HasMany<ItemBorrowing>
      */
-    public function itemBorrowings(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function itemBorrowings(): HasMany
     {
         return $this->hasMany(ItemBorrowing::class);
     }

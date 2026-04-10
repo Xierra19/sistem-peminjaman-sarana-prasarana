@@ -253,17 +253,34 @@ watch(
           <div>
             <Link
               :href="route('bookings.index')"
-              :class="navLinkClasses(isRouteActive('bookings.index', 'bookings.create'))"
+              :class="navLinkClasses(isRouteActive('bookings.index', 'bookings.create', 'bookings.show'))"
             >
               <span class="text-lg">📝</span>
-              <span>Request Booking</span>
+              <span>Peminjaman Ruangan</span>
+            </Link>
+          </div>
+
+          <div>
+            <Link
+              :href="route('item-borrowings.index')"
+              :class="navLinkClasses(isRouteActive('item-borrowings.index', 'item-borrowings.create', 'item-borrowings.show'))"
+            >
+              <span class="text-lg">📦</span>
+              <span>Peminjaman Barang</span>
             </Link>
           </div>
 
           <div v-if="isAdmin">
             <Link :href="route('admin.bookings.index')" :class="navLinkClasses(isRouteActive('admin.bookings.*'))">
               <span class="text-lg">🛡️</span>
-              <span>Approval Booking</span>
+              <span>Approval Ruangan</span>
+            </Link>
+          </div>
+
+          <div v-if="isAdmin">
+            <Link :href="route('admin.item-borrowings.index')" :class="navLinkClasses(isRouteActive('admin.item-borrowings.*'))">
+              <span class="text-lg">📋</span>
+              <span>Approval Barang</span>
             </Link>
           </div>
 
