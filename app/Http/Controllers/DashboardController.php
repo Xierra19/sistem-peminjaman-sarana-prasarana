@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Booking;
 use App\Models\Campus;
+use App\Models\ItemBorrowing;
 use App\Models\Room;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -25,20 +26,37 @@ class DashboardController extends Controller
 
         $waitingStatuses = ['waiting', 'pending'];
 
-        if ($user?->role === 'admin') {
-            $bookings = $baseQuery->get();
+        if ($user?->isAdmin()) {
+            $roomSummary = null;
+            $itemSummary = null;
 
-            $statusSummary = [
-                'total' => $bookings->count(),
-                'approved' => $bookings->where('status', 'approved')->count(),
-                'waiting' => $bookings->whereIn('status', $waitingStatuses)->count(),
-                'rejected' => $bookings->where('status', 'rejected')->count(),
-                'cancelled' => $bookings->where('status', 'cancelled')->count(),
-            ];
+            if ($user->canManageRoomModule()) {
+                $bookings = $baseQuery->get();
 
-            return Inertia::render('Admin/Dashboard/Dashboard', [
-                'bookings' => $bookings,
-                'statusSummary' => $statusSummary,
+                $roomSummary = [
+                    'total' => $bookings->count(),
+                    'approved' => $bookings->where('status', 'approved')->count(),
+                    'waiting' => $bookings->whereIn('status', $waitingStatuses)->count(),
+                    'rejected' => $bookings->where('status', 'rejected')->count(),
+                    'cancelled' => $bookings->where('status', 'cancelled')->count(),
+                ];
+            }
+
+            if ($user->canManageItemModule()) {
+                $itemBorrowings = ItemBorrowing::query()->get();
+                $itemSummary = [
+                    'total' => $itemBorrowings->count(),
+                    'approved' => $itemBorrowings->where('status', 'approved')->count(),
+                    'waiting' => $itemBorrowings->whereIn('status', ['waiting', 'requested'])->count(),
+                    'rejected' => $itemBorrowings->where('status', 'rejected')->count(),
+                    'cancelled' => $itemBorrowings->where('status', 'cancelled')->count(),
+                    'returned' => $itemBorrowings->where('status', 'returned')->count(),
+                ];
+            }
+
+            return Inertia::render('Admin/Home', [
+                'roomSummary' => $roomSummary,
+                'itemSummary' => $itemSummary,
             ]);
         }
 

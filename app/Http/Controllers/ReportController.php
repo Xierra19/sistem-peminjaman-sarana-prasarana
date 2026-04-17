@@ -64,7 +64,7 @@ class ReportController extends Controller
 
     private function ensureAdmin(Request $request): void
     {
-        if ($request->user()?->role !== 'admin') {
+        if (! $request->user()?->canManageRoomModule()) {
             abort(403);
         }
     }

@@ -9,7 +9,12 @@ import Swal from 'sweetalert2'
 const page = usePage()
 
 const user = computed(() => page?.props?.auth?.user ?? {})
-const isAdmin = computed(() => (user.value?.role ?? '').toLowerCase() === 'admin')
+const permissions = computed(() => page?.props?.auth?.permissions ?? {})
+const isAdmin = computed(() => Boolean(permissions.value?.is_admin))
+const canManageUsers = computed(() => Boolean(permissions.value?.can_manage_users))
+const canManageHistory = computed(() => Boolean(permissions.value?.can_manage_history))
+const canManageRoomModule = computed(() => Boolean(permissions.value?.can_manage_room_module))
+const canManageItemModule = computed(() => Boolean(permissions.value?.can_manage_item_module))
 
 const userInitials = computed(() => {
   const name = (user.value?.name ?? '').trim()
@@ -47,11 +52,42 @@ const masterDataActive = computed(() =>
   )
 )
 
+const borrowingActive = computed(() =>
+  isRouteActive(
+    'bookings.*',
+    'item-borrowings.*',
+  ),
+)
+
+const approvalActive = computed(() =>
+  isRouteActive(
+    'admin.bookings.*',
+    'admin.item-borrowings.*',
+  ),
+)
+
+const reportActive = computed(() =>
+  isRouteActive(
+    'admin.reports.*',
+    'admin.item-borrowing-reports.*',
+  ),
+)
+
 const showMasterData = ref(masterDataActive.value)
+const showBorrowingMenu = ref(borrowingActive.value)
+const showApprovalMenu = ref(approvalActive.value)
 const isMobileMenuOpen = ref(false)
 
 watch(masterDataActive, (value) => {
   showMasterData.value = value
+})
+
+watch(borrowingActive, (value) => {
+  showBorrowingMenu.value = value
+})
+
+watch(approvalActive, (value) => {
+  showApprovalMenu.value = value
 })
 
 const toggleMobileMenu = () => {
@@ -212,7 +248,7 @@ watch(
             </Link>
           </div>
 
-          <div v-if="isAdmin">
+          <div v-if="isAdmin && (canManageRoomModule || canManageItemModule)">
             <button
               type="button"
               @click="showMasterData = !showMasterData"
@@ -235,70 +271,137 @@ watch(
             </button>
 
             <div v-if="showMasterData" class="ml-6 mt-2 space-y-1 border-l border-dashed border-slate-100 pl-4">
-              <Link :href="route('admin.campus.index')" :class="subLinkClasses(isRouteActive('admin.campus.*'))">
+              <Link
+                v-if="canManageRoomModule"
+                :href="route('admin.campus.index')"
+                :class="subLinkClasses(isRouteActive('admin.campus.*'))"
+              >
                 🏫 Master Campus
               </Link>
-              <Link :href="route('admin.buildings.index')" :class="subLinkClasses(isRouteActive('admin.buildings.*'))">
+              <Link
+                v-if="canManageRoomModule"
+                :href="route('admin.buildings.index')"
+                :class="subLinkClasses(isRouteActive('admin.buildings.*'))"
+              >
                 🏢 Master Building
               </Link>
-              <Link :href="route('admin.rooms.index')" :class="subLinkClasses(isRouteActive('admin.rooms.*'))">
+              <Link
+                v-if="canManageRoomModule"
+                :href="route('admin.rooms.index')"
+                :class="subLinkClasses(isRouteActive('admin.rooms.*'))"
+              >
                 🚪 Master Rooms
               </Link>
-              <Link :href="route('admin.items.index')" :class="subLinkClasses(isRouteActive('admin.items.*'))">
+              <Link
+                v-if="canManageItemModule"
+                :href="route('admin.items.index')"
+                :class="subLinkClasses(isRouteActive('admin.items.*'))"
+              >
                 📦 Master Barang
               </Link>
             </div>
           </div>
 
           <div>
-            <Link
-              :href="route('bookings.index')"
-              :class="navLinkClasses(isRouteActive('bookings.index', 'bookings.create', 'bookings.show'))"
+            <button
+              type="button"
+              @click="showBorrowingMenu = !showBorrowingMenu"
+              :class="[navLinkClasses(borrowingActive), 'justify-between']"
             >
-              <span class="text-lg">📝</span>
-              <span>Peminjaman Ruangan</span>
-            </Link>
+              <span class="flex items-center gap-2">
+                <span class="text-lg">📝</span>
+                <span>Peminjaman</span>
+              </span>
+              <svg
+                class="h-4 w-4 transform transition-transform"
+                :class="{ 'rotate-180': showBorrowingMenu }"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            <div v-if="showBorrowingMenu" class="ml-6 mt-2 space-y-1 border-l border-dashed border-slate-100 pl-4">
+              <Link
+                :href="route('bookings.index')"
+                :class="subLinkClasses(isRouteActive('bookings.index', 'bookings.create', 'bookings.show'))"
+              >
+                🏫 Peminjaman Ruangan
+              </Link>
+              <Link
+                :href="route('item-borrowings.index')"
+                :class="subLinkClasses(isRouteActive('item-borrowings.index', 'item-borrowings.create', 'item-borrowings.show'))"
+              >
+                📦 Peminjaman Barang
+              </Link>
+            </div>
           </div>
 
-          <div>
-            <Link
-              :href="route('item-borrowings.index')"
-              :class="navLinkClasses(isRouteActive('item-borrowings.index', 'item-borrowings.create', 'item-borrowings.show'))"
+          <div v-if="isAdmin && (canManageRoomModule || canManageItemModule)">
+            <button
+              type="button"
+              @click="showApprovalMenu = !showApprovalMenu"
+              :class="[navLinkClasses(approvalActive), 'justify-between']"
             >
-              <span class="text-lg">📦</span>
-              <span>Peminjaman Barang</span>
-            </Link>
+              <span class="flex items-center gap-2">
+                <span class="text-lg">🛡️</span>
+                <span>Approval</span>
+              </span>
+              <svg
+                class="h-4 w-4 transform transition-transform"
+                :class="{ 'rotate-180': showApprovalMenu }"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            <div v-if="showApprovalMenu" class="ml-6 mt-2 space-y-1 border-l border-dashed border-slate-100 pl-4">
+              <Link
+                v-if="canManageRoomModule"
+                :href="route('admin.bookings.index')"
+                :class="subLinkClasses(isRouteActive('admin.bookings.*'))"
+              >
+                🏫 Approval Ruangan
+              </Link>
+              <Link
+                v-if="canManageItemModule"
+                :href="route('admin.item-borrowings.index')"
+                :class="subLinkClasses(isRouteActive('admin.item-borrowings.*'))"
+              >
+                📦 Approval Barang
+              </Link>
+            </div>
           </div>
 
-          <div v-if="isAdmin">
-            <Link :href="route('admin.bookings.index')" :class="navLinkClasses(isRouteActive('admin.bookings.*'))">
-              <span class="text-lg">🛡️</span>
-              <span>Approval Ruangan</span>
-            </Link>
-          </div>
-
-          <div v-if="isAdmin">
-            <Link :href="route('admin.item-borrowings.index')" :class="navLinkClasses(isRouteActive('admin.item-borrowings.*'))">
-              <span class="text-lg">📋</span>
-              <span>Approval Barang</span>
-            </Link>
-          </div>
-
-          <div v-if="isAdmin">
+          <div v-if="canManageHistory">
             <Link :href="route('history.index')" :class="navLinkClasses(isRouteActive('history.*'))">
               <span class="text-lg">🕑</span>
               <span>History</span>
             </Link>
           </div>
 
-          <div v-if="isAdmin">
+          <div v-if="canManageRoomModule">
             <Link :href="route('admin.reports.index')" :class="navLinkClasses(isRouteActive('admin.reports.*'))">
               <span class="text-lg">📑</span>
-              <span>Report Booking</span>
+              <span>Report Ruangan</span>
             </Link>
           </div>
 
-          <div v-if="isAdmin">
+          <div v-if="canManageItemModule">
+            <Link :href="route('admin.item-borrowing-reports.index')" :class="navLinkClasses(isRouteActive('admin.item-borrowing-reports.*'))">
+              <span class="text-lg">🧾</span>
+              <span>Report Barang</span>
+            </Link>
+          </div>
+
+          <div v-if="canManageUsers">
             <Link
               :href="route('admin.users.index')"
               :class="navLinkClasses(isRouteActive('admin.users.index', 'admin.users.edit'))"

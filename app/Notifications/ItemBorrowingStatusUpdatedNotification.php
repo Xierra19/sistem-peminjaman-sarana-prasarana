@@ -33,25 +33,25 @@ class ItemBorrowingStatusUpdatedNotification extends Notification
         $status = Str::headline($this->status);
 
         $mail = (new MailMessage())
-            ->subject($status.' Item Borrowing: '.$borrowing->title)
-            ->greeting('Hello '.$borrowing->user?->name.',');
+            ->subject($status.' Peminjaman Barang: '.$borrowing->title)
+            ->greeting('Halo '.$borrowing->user?->name.',');
 
-        $mail->line('Your item borrowing request has been '.$status.'.');
+        $mail->line('Pengajuan peminjaman barang Anda telah '.$status.' oleh tim Sarpras.');
 
         if ($item?->name) {
-            $mail->line('Item: '.$item->name.' ('.$item->code.')');
+            $mail->line('Barang: '.$item->name.' ('.$item->code.')');
         }
 
         $mail
-            ->line('Quantity: '.$borrowing->quantity)
-            ->line('Period: '.$borrowing->borrow_date?->format('d M Y').' - '.$borrowing->return_date?->format('d M Y'));
+            ->line('Jumlah: '.$borrowing->quantity)
+            ->line('Periode: '.$borrowing->borrow_date?->format('d M Y').' - '.$borrowing->return_date?->format('d M Y'));
 
         if ($this->moderatorName) {
-            $mail->line('Reviewed by: '.$this->moderatorName);
+            $mail->line('Diproses oleh: '.$this->moderatorName);
         }
 
         if ($this->notes) {
-            $mail->line('Notes: '.$this->notes);
+            $mail->line('Catatan: '.$this->notes);
         }
 
         $fromAddress = config('mail.from.address');
@@ -62,8 +62,8 @@ class ItemBorrowingStatusUpdatedNotification extends Notification
         }
 
         return $mail
-            ->salutation("Regards,\n".$fromName)
-            ->action('View your requests', route('item-borrowings.index'))
-            ->line('Thank you for using '.$fromName.'.');
+            ->salutation("Hormat kami,\n".$fromName)
+            ->action('Lihat Pengajuan', route('item-borrowings.index'))
+            ->line('Terima kasih telah menggunakan '.$fromName.'.');
     }
 }

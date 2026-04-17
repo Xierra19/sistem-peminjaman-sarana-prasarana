@@ -40,24 +40,55 @@
             <nav class="space-y-1">
                 <a href="{{ route('dashboard') }}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium {{ request()->routeIs('dashboard') ? 'bg-blue-50 text-blue-700 border border-blue-100 shadow-sm' : 'text-gray-700 hover:bg-gray-100' }}">Dashboard</a>
 
-                @if (auth()->user()?->role === 'admin')
+                @if (auth()->user()?->isAdmin())
                     <div class="mt-2">
                         <div class="px-3 py-2 text-xs font-semibold text-gray-500 uppercase">Master Data</div>
                         <div class="ml-2 space-y-1">
-                            <a href="{{ route('admin.campus.index') }}" class="block rounded-md px-3 py-1.5 text-sm {{ request()->routeIs('admin.campus.*') ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-600 hover:bg-gray-100' }}">Master Campus</a>
-                            <a href="{{ route('admin.buildings.index') }}" class="block rounded-md px-3 py-1.5 text-sm {{ request()->routeIs('admin.buildings.*') ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-600 hover:bg-gray-100' }}">Master Building</a>
-                            <a href="{{ route('admin.rooms.index') }}" class="block rounded-md px-3 py-1.5 text-sm {{ request()->routeIs('admin.rooms.*') ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-600 hover:bg-gray-100' }}">Master Rooms</a>
+                            @if (auth()->user()?->canManageRoomModule())
+                                <a href="{{ route('admin.campus.index') }}" class="block rounded-md px-3 py-1.5 text-sm {{ request()->routeIs('admin.campus.*') ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-600 hover:bg-gray-100' }}">Master Campus</a>
+                                <a href="{{ route('admin.buildings.index') }}" class="block rounded-md px-3 py-1.5 text-sm {{ request()->routeIs('admin.buildings.*') ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-600 hover:bg-gray-100' }}">Master Building</a>
+                                <a href="{{ route('admin.rooms.index') }}" class="block rounded-md px-3 py-1.5 text-sm {{ request()->routeIs('admin.rooms.*') ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-600 hover:bg-gray-100' }}">Master Rooms</a>
+                            @endif
+                            @if (auth()->user()?->canManageItemModule())
+                                <a href="{{ route('admin.items.index') }}" class="block rounded-md px-3 py-1.5 text-sm {{ request()->routeIs('admin.items.*') ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-600 hover:bg-gray-100' }}">Master Barang</a>
+                            @endif
                         </div>
                     </div>
                 @endif
 
-                <a href="{{ route('bookings.index') }}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium {{ request()->routeIs('bookings.index') || request()->routeIs('bookings.create') ? 'bg-blue-50 text-blue-700 border border-blue-100 shadow-sm' : 'text-gray-700 hover:bg-gray-100' }}">Request Booking</a>
+                <div class="mt-2">
+                    <div class="px-3 py-2 text-xs font-semibold text-gray-500 uppercase">Peminjaman</div>
+                    <div class="ml-2 space-y-1">
+                        <a href="{{ route('bookings.index') }}" class="block rounded-md px-3 py-1.5 text-sm {{ request()->routeIs('bookings.*') ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-600 hover:bg-gray-100' }}">Peminjaman Ruangan</a>
+                        <a href="{{ route('item-borrowings.index') }}" class="block rounded-md px-3 py-1.5 text-sm {{ request()->routeIs('item-borrowings.*') ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-600 hover:bg-gray-100' }}">Peminjaman Barang</a>
+                    </div>
+                </div>
 
-                @if (auth()->user()?->role === 'admin')
-                    <a href="{{ route('admin.bookings.index') }}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium {{ request()->routeIs('admin.bookings.*') ? 'bg-blue-50 text-blue-700 border border-blue-100 shadow-sm' : 'text-gray-700 hover:bg-gray-100' }}">Approval Booking</a>
+                @if (auth()->user()?->isAdmin())
+                    <div class="mt-2">
+                        <div class="px-3 py-2 text-xs font-semibold text-gray-500 uppercase">Approval</div>
+                        <div class="ml-2 space-y-1">
+                            @if (auth()->user()?->canManageRoomModule())
+                                <a href="{{ route('admin.bookings.index') }}" class="block rounded-md px-3 py-1.5 text-sm {{ request()->routeIs('admin.bookings.*') ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-600 hover:bg-gray-100' }}">Approval Ruangan</a>
+                            @endif
+                            @if (auth()->user()?->canManageItemModule())
+                                <a href="{{ route('admin.item-borrowings.index') }}" class="block rounded-md px-3 py-1.5 text-sm {{ request()->routeIs('admin.item-borrowings.*') ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-600 hover:bg-gray-100' }}">Approval Barang</a>
+                            @endif
+                        </div>
+                    </div>
                 @endif
 
-                <a href="{{ route('history.index') }}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium {{ request()->routeIs('history.*') ? 'bg-blue-50 text-blue-700 border border-blue-100 shadow-sm' : 'text-gray-700 hover:bg-gray-100' }}">History</a>
+                @if (auth()->user()?->canManageHistory())
+                    <a href="{{ route('history.index') }}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium {{ request()->routeIs('history.*') ? 'bg-blue-50 text-blue-700 border border-blue-100 shadow-sm' : 'text-gray-700 hover:bg-gray-100' }}">History</a>
+                @endif
+
+                @if (auth()->user()?->canManageRoomModule())
+                    <a href="{{ route('admin.reports.index') }}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium {{ request()->routeIs('admin.reports.*') ? 'bg-blue-50 text-blue-700 border border-blue-100 shadow-sm' : 'text-gray-700 hover:bg-gray-100' }}">Report Ruangan</a>
+                @endif
+
+                @if (auth()->user()?->canManageItemModule())
+                    <a href="{{ route('admin.item-borrowing-reports.index') }}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium {{ request()->routeIs('admin.item-borrowing-reports.*') ? 'bg-blue-50 text-blue-700 border border-blue-100 shadow-sm' : 'text-gray-700 hover:bg-gray-100' }}">Report Barang</a>
+                @endif
             </nav>
         </aside>
 

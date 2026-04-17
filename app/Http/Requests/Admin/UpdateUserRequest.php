@@ -4,6 +4,7 @@ namespace App\Http\Requests\Admin;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use App\Models\User;
 
 class UpdateUserRequest extends FormRequest
 {
@@ -39,7 +40,12 @@ class UpdateUserRequest extends FormRequest
                 'max:20',
                 'regex:/^(?:\+62\d{8,13}|0\d{8,13})$/',
             ],
-            'role' => ['required', 'string', 'in:admin,user'],
+            'role' => ['required', 'string', Rule::in([
+                User::ROLE_SUPER_ADMIN,
+                User::ROLE_ADMIN_BAP,
+                User::ROLE_ADMIN_SARPRAS,
+                User::ROLE_USER,
+            ])],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
         ];
     }

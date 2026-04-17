@@ -21,7 +21,7 @@ class HistoryExport implements FromCollection, WithHeadings, WithMapping, Should
         $query = LogHistory::with(['booking.room.building.campus', 'user'])
             ->orderByDesc('created_at');
 
-        if ($this->user->role !== 'admin') {
+        if (! $this->user->canManageHistory()) {
             $query->where('user_id', $this->user->id);
         }
 

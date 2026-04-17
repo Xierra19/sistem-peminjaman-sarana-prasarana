@@ -59,7 +59,7 @@ class RegisteredUserController extends Controller
             'name' => $validated['name'],
             'email' => strtolower($validated['email']),
             'phone' => $validated['phone'],
-            'role' => 'user',
+            'role' => User::ROLE_USER,
             'password' => $validated['password'],
         ]);
 

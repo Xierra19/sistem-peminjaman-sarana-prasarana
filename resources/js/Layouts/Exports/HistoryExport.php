@@ -3,7 +3,7 @@
 namespace App\Exports;
 
 use App\Models\LogHistory;
-use App\Models\User; // ← Tambahkan ini
+use App\Models\User;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -23,10 +23,8 @@ class HistoryExport implements FromCollection, WithHeadings, WithMapping
         $query = LogHistory::with(['booking.room.building.campus', 'user'])
             ->orderByDesc('created_at');
 
-        if ($this->user->role !== 'admin') {
-            $query->whereHas('booking', function ($builder) {
-                $builder->where('user_id', $this->user->id);
-            });
+        if (! $this->user->canManageHistory()) {
+            $query->where('user_id', $this->user->id);
         }
 
         return $query->get();

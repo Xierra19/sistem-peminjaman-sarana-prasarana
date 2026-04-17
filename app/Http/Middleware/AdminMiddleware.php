@@ -16,14 +16,27 @@ class AdminMiddleware
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      * @return \Symfony\Component\HttpFoundation\Response
      */
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, Closure $next, string ...$roles): Response
     {
-        // Pastikan user sudah login dan memiliki role 'admin'
-        if (Auth::check() && Auth::user()->role === 'admin') {
+        $user = Auth::user();
+
+        if (! $user) {
+            return redirect()->route('login');
+        }
+
+        $allowedRoles = collect($roles)
+            ->flatMap(fn (string $role) => array_filter(array_map('trim', explode(',', $role))))
+            ->values()
+            ->all();
+
+        if ($allowedRoles === [] && $user->isAdmin()) {
             return $next($request);
         }
 
-        // Jika tidak, alihkan ke halaman utama atau berikan pesan error
-        return redirect()->route('dashboard');
+        if ($user->hasAnyRole($allowedRoles)) {
+            return $next($request);
+        }
+
+        abort(403, 'Anda tidak memiliki akses ke modul ini.');
     }
 }

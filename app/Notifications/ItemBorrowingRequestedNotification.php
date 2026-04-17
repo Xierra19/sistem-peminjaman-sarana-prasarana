@@ -28,21 +28,21 @@ class ItemBorrowingRequestedNotification extends Notification
         $item = $borrowing->item;
 
         $mail = (new MailMessage())
-            ->subject('New Item Borrowing Request: '.$borrowing->title)
-            ->greeting('Hello Admin,')
-            ->line('A new item borrowing request was submitted and needs your review.')
-            ->line('Requester: '.$borrowing->user?->name.' ('.$borrowing->user?->email.')');
+            ->subject('Pengajuan Peminjaman Barang Baru: '.$borrowing->title)
+            ->greeting('Halo Tim Sarpras,')
+            ->line('Ada pengajuan peminjaman barang baru yang menunggu tindak lanjut Sarpras.')
+            ->line('Pemohon: '.$borrowing->user?->name.' ('.$borrowing->user?->email.')');
 
         if ($item?->name) {
-            $mail->line('Item: '.$item->name.' ('.$item->code.')');
+            $mail->line('Barang: '.$item->name.' ('.$item->code.')');
         }
 
         $mail
-            ->line('Quantity: '.$borrowing->quantity)
-            ->line('Period: '.$borrowing->borrow_date?->format('d M Y').' - '.$borrowing->return_date?->format('d M Y'));
+            ->line('Jumlah: '.$borrowing->quantity)
+            ->line('Periode: '.$borrowing->borrow_date?->format('d M Y').' - '.$borrowing->return_date?->format('d M Y'));
 
         if ($borrowing->description) {
-            $mail->line('Purpose: '.Str::limit($borrowing->description, 200));
+            $mail->line('Keperluan: '.Str::limit($borrowing->description, 200));
         }
 
         $fromAddress = config('mail.from.address');
@@ -53,8 +53,8 @@ class ItemBorrowingRequestedNotification extends Notification
         }
 
         return $mail
-            ->salutation("Regards,\n".$fromName)
-            ->action('Review Request', route('admin.item-borrowings.show', $borrowing))
-            ->line('Thank you for reviewing the borrowing queue.');
+            ->salutation("Hormat kami,\n".$fromName)
+            ->action('Tinjau Pengajuan', route('admin.item-borrowings.show', $borrowing))
+            ->line('Terima kasih telah mengelola permintaan inventaris barang dengan tertib.');
     }
 }

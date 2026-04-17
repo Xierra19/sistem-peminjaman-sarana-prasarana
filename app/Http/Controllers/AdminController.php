@@ -2,13 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Inertia\Inertia;
+use Illuminate\Http\RedirectResponse;
 
 class AdminController extends Controller
 {
-    public function index()
+    public function index(): RedirectResponse
     {
-        return Inertia::render('Admin/Home');
+        return redirect()->route('dashboard');
     }
 }

@@ -45,7 +45,7 @@ const statusBadgeClasses = {
 }
 
 const isUser = computed(() => page.props.auth.user.role === 'user')
-const isAdmin = computed(() => page.props.auth.user.role === 'admin')
+const isAdmin = computed(() => Boolean(page.props.auth?.permissions?.is_admin))
 
 const createEmptyFilters = () => ({
   title: '',

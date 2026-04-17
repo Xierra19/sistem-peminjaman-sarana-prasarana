@@ -25,6 +25,7 @@ use App\Http\Controllers\Admin\SemesterController as AdminSemesterController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\Admin\ItemBorrowingApprovalController;
+use App\Http\Controllers\Admin\ItemBorrowingReportController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -61,7 +62,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/item-borrowings/{itemBorrowing}/cancel', [ItemBorrowingController::class, 'cancel'])->name('item-borrowings.cancel');
 
     // ✅ History (admin only)
-    Route::middleware('role:admin')->group(function () {
+    Route::middleware('role:super_admin')->group(function () {
         Route::get('/history', [HistoryController::class, 'index'])->name('history.index');
         Route::get('/history/export/excel', [HistoryController::class, 'exportExcel'])->name('history.export.excel');
     });
@@ -69,7 +70,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/export-users', [ExportController::class, 'exportUsers']);
 });
 
-Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'verified', 'role:super_admin,admin_bap'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('semester/edit', [AdminSemesterController::class, 'edit'])->name('semester.edit');
     Route::put('semester', [AdminSemesterController::class, 'update'])->name('semester.update');
 
@@ -81,41 +82,55 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::post('courses/import', [CourseImportController::class, 'store'])->name('courses.import.store');
 });
 
-// Route khusus untuk admin, diproteksi oleh middleware 'role:admin'
-Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/home', [AdminController::class, 'index'])->name('home');
-    Route::resource('campus', CampusController::class)->except(['show']);
-    Route::resource('buildings', BuildingController::class)->except(['show']);
-    Route::resource('rooms', RoomController::class)->except(['show']);
-    Route::resource('items', \App\Http\Controllers\Admin\ItemController::class)->except(['show']);
-    Route::resource('users', AdminUserController::class)->only(['index', 'edit', 'update', 'destroy']);
-
-    Route::post('semesters/{semester}/toggle-active', [SemesterController::class, 'toggleActive'])->name('semesters.toggle-active');
-    Route::resource('semesters', SemesterController::class)->except(['show']);
-
-    Route::prefix('semesters/{semester}')->scopeBindings()->group(function () {
-        Route::resource('defaults', SemesterDefaultController::class)
-            ->except(['show'])
-            ->parameters(['defaults' => 'default'])
-            ->names('semesters.defaults');
-
-        Route::get('defaults/import', [SemesterDefaultImportController::class, 'form'])->name('semesters.defaults.import.form');
-        Route::post('defaults/import/preview', [SemesterDefaultImportController::class, 'preview'])->name('semesters.defaults.import.preview');
-        Route::post('defaults/import/commit', [SemesterDefaultImportController::class, 'commit'])->name('semesters.defaults.import.commit');
+// Route khusus untuk admin, diproteksi oleh middleware role.
+Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
+    Route::middleware('role:super_admin,admin_bap,admin_sarpras')->group(function () {
+        Route::get('/home', [AdminController::class, 'index'])->name('home');
     });
 
-    Route::get('bookings', [BookingApprovalController::class, 'index'])->name('bookings.index');
-    Route::get('bookings/{booking}', action: [BookingApprovalController::class, 'show'])->name('bookings.show');
-    Route::post('bookings/{booking}/status', [BookingApprovalController::class, 'updateStatus'])->name('bookings.update-status');
-    Route::get('bookings/export/excel', [BookingApprovalController::class, 'exportExcel'])->name('bookings.export.excel');
-    Route::get('bookings/export/pdf', [BookingApprovalController::class, 'exportPdf'])->name('bookings.export.pdf');
+    Route::middleware('role:super_admin')->group(function () {
+        Route::resource('users', AdminUserController::class)->only(['index', 'edit', 'update', 'destroy']);
+    });
 
-    Route::get('item-borrowings', [ItemBorrowingApprovalController::class, 'index'])->name('item-borrowings.index');
-    Route::get('item-borrowings/{itemBorrowing}', [ItemBorrowingApprovalController::class, 'show'])->name('item-borrowings.show');
-    Route::post('item-borrowings/{itemBorrowing}/status', [ItemBorrowingApprovalController::class, 'updateStatus'])->name('item-borrowings.update-status');
+    Route::middleware('role:super_admin,admin_bap')->group(function () {
+        Route::resource('campus', CampusController::class)->except(['show']);
+        Route::resource('buildings', BuildingController::class)->except(['show']);
+        Route::resource('rooms', RoomController::class)->except(['show']);
 
-    Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
-    Route::get('reports/export', [ReportController::class, 'export'])->name('reports.export');
+        Route::post('semesters/{semester}/toggle-active', [SemesterController::class, 'toggleActive'])->name('semesters.toggle-active');
+        Route::resource('semesters', SemesterController::class)->except(['show']);
+
+        Route::prefix('semesters/{semester}')->scopeBindings()->group(function () {
+            Route::resource('defaults', SemesterDefaultController::class)
+                ->except(['show'])
+                ->parameters(['defaults' => 'default'])
+                ->names('semesters.defaults');
+
+            Route::get('defaults/import', [SemesterDefaultImportController::class, 'form'])->name('semesters.defaults.import.form');
+            Route::post('defaults/import/preview', [SemesterDefaultImportController::class, 'preview'])->name('semesters.defaults.import.preview');
+            Route::post('defaults/import/commit', [SemesterDefaultImportController::class, 'commit'])->name('semesters.defaults.import.commit');
+        });
+
+        Route::get('bookings', [BookingApprovalController::class, 'index'])->name('bookings.index');
+        Route::get('bookings/{booking}', action: [BookingApprovalController::class, 'show'])->name('bookings.show');
+        Route::post('bookings/{booking}/status', [BookingApprovalController::class, 'updateStatus'])->name('bookings.update-status');
+        Route::get('bookings/export/excel', [BookingApprovalController::class, 'exportExcel'])->name('bookings.export.excel');
+        Route::get('bookings/export/pdf', [BookingApprovalController::class, 'exportPdf'])->name('bookings.export.pdf');
+
+        Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
+        Route::get('reports/export', [ReportController::class, 'export'])->name('reports.export');
+    });
+
+    Route::middleware('role:super_admin,admin_sarpras')->group(function () {
+        Route::resource('items', \App\Http\Controllers\Admin\ItemController::class)->except(['show']);
+
+        Route::get('item-borrowings', [ItemBorrowingApprovalController::class, 'index'])->name('item-borrowings.index');
+        Route::get('item-borrowings/{itemBorrowing}', [ItemBorrowingApprovalController::class, 'show'])->name('item-borrowings.show');
+        Route::post('item-borrowings/{itemBorrowing}/status', [ItemBorrowingApprovalController::class, 'updateStatus'])->name('item-borrowings.update-status');
+
+        Route::get('item-borrowing-reports', [ItemBorrowingReportController::class, 'index'])->name('item-borrowing-reports.index');
+        Route::get('item-borrowing-reports/export', [ItemBorrowingReportController::class, 'export'])->name('item-borrowing-reports.export');
+    });
 });
 
 require __DIR__.'/auth.php';

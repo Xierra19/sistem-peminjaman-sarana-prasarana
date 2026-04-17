@@ -14,7 +14,7 @@ class HistoryController extends Controller
     {
         $user = Auth::user();
 
-        if ($user?->role !== 'admin') {
+        if (! $user?->canManageHistory()) {
             abort(403);
         }
 
@@ -31,7 +31,7 @@ class HistoryController extends Controller
     {
         $user = Auth::user();
 
-        if ($user?->role !== 'admin') {
+        if (! $user?->canManageHistory()) {
             abort(403);
         }
 

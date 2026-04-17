@@ -71,7 +71,7 @@ const metadata = computed(() => ({
         <div>
           <h1 class="text-2xl font-semibold text-gray-800">Edit Data User</h1>
           <p class="text-sm text-gray-500">
-            Perbarui identitas, email, dan akses role untuk pengguna terpilih.
+            Perbarui identitas, email, dan hak akses untuk pengguna terpilih.
           </p>
         </div>
         <div class="flex flex-wrap items-center gap-3">
@@ -224,7 +224,7 @@ const metadata = computed(() => ({
             <h3 class="font-semibold text-amber-800">Catatan Keamanan</h3>
             <ul class="mt-3 space-y-2 list-disc pl-5">
               <li>Pastikan email yang digunakan aktif dan terverifikasi.</li>
-              <li>Role <strong>Admin</strong> memiliki akses penuh terhadap data.</li>
+              <li>Super Admin memiliki akses penuh, sedangkan Admin BAP dan Admin Sarpras hanya mengelola modul masing-masing.</li>
               <li>Untuk mengatur ulang password, isi kolom password baru dan konfirmasi.</li>
             </ul>
           </div>

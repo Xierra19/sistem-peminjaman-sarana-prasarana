@@ -49,7 +49,7 @@ class BookingController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->role !== 'admin' && $booking->user_id !== $user->id) {
+        if (! $user->isAdmin() && $booking->user_id !== $user->id) {
             abort(403);
         }
 
@@ -268,7 +268,7 @@ class BookingController extends Controller
         $booking->load(['user', 'room.building.campus']);
 
         $admins = User::query()
-            ->where('role', 'admin')
+            ->whereIn('role', User::roomAdminRoles())
             ->whereNotNull('email')
             ->get();
 
@@ -465,7 +465,7 @@ class BookingController extends Controller
             abort(404, 'Lampiran tidak ditemukan.');
         }
 
-        if ($user->role !== 'admin' && $booking->user_id !== $user->id) {
+        if (! $user->isAdmin() && $booking->user_id !== $user->id) {
             abort(403);
         }
 
@@ -514,7 +514,7 @@ class BookingController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->role !== 'admin' && $booking->user_id !== $user->id) {
+        if (! $user->isAdmin() && $booking->user_id !== $user->id) {
             abort(403);
         }
 

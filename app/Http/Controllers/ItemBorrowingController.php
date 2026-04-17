@@ -105,7 +105,7 @@ class ItemBorrowingController extends Controller
         $itemBorrowing->load(['user', 'item']);
 
         $admins = User::query()
-            ->where('role', 'admin')
+            ->whereIn('role', User::itemAdminRoles())
             ->whereNotNull('email')
             ->get();
 
@@ -126,7 +126,7 @@ class ItemBorrowingController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->role !== 'admin' && $itemBorrowing->user_id !== $user->id) {
+        if (! $user->isAdmin() && $itemBorrowing->user_id !== $user->id) {
             abort(403);
         }
 
@@ -201,7 +201,7 @@ class ItemBorrowingController extends Controller
             abort(404, 'Lampiran tidak ditemukan.');
         }
 
-        if ($user->role !== 'admin' && $itemBorrowing->user_id !== $user->id) {
+        if (! $user->isAdmin() && $itemBorrowing->user_id !== $user->id) {
             abort(403);
         }
 

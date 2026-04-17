@@ -24,8 +24,10 @@ class UserController extends Controller
 
         $stats = [
             'total' => $users->count(),
-            'admins' => $users->where('role', 'admin')->count(),
-            'members' => $users->where('role', 'user')->count(),
+            'super_admins' => $users->filter(fn (User $user) => $user->isSuperAdmin())->count(),
+            'admin_bap' => $users->filter(fn (User $user) => $user->isAdminBap())->count(),
+            'admin_sarpras' => $users->filter(fn (User $user) => $user->isAdminSarpras())->count(),
+            'members' => $users->where('role', User::ROLE_USER)->count(),
         ];
 
         return Inertia::render('Admin/Users/Index', [
@@ -59,8 +61,10 @@ class UserController extends Controller
                 'updated_at' => optional($user->updated_at)?->toIso8601String(),
             ],
             'roles' => [
-                ['label' => 'Admin', 'value' => 'admin'],
-                ['label' => 'User', 'value' => 'user'],
+                ['label' => 'Super Admin', 'value' => User::ROLE_SUPER_ADMIN],
+                ['label' => 'Admin BAP', 'value' => User::ROLE_ADMIN_BAP],
+                ['label' => 'Admin Sarpras', 'value' => User::ROLE_ADMIN_SARPRAS],
+                ['label' => 'User (Mahasiswa)', 'value' => User::ROLE_USER],
             ],
         ]);
     }
@@ -73,13 +77,13 @@ class UserController extends Controller
         $validated = $request->validated();
 
         if (
-            $user->role === 'admin'
-            && ($validated['role'] ?? $user->role) !== 'admin'
+            $user->isSuperAdmin()
+            && ($validated['role'] ?? $user->role) !== User::ROLE_SUPER_ADMIN
             && $this->isLastAdmin($user->id)
         ) {
             return back()
-                ->withErrors(['role' => 'Tidak dapat mengubah role admin terakhir menjadi user.'])
-                ->with('error', 'Tidak dapat mengubah role admin terakhir menjadi user.');
+                ->withErrors(['role' => 'Tidak dapat mengubah role super admin terakhir.'])
+                ->with('error', 'Tidak dapat mengubah role super admin terakhir.');
         }
 
         if (empty($validated['password'])) {
@@ -105,9 +109,9 @@ class UserController extends Controller
                 ->with('error', 'Anda tidak dapat menghapus akun sendiri.');
         }
 
-        if ($user->role === 'admin' && $this->isLastAdmin($user->id)) {
+        if ($user->isSuperAdmin() && $this->isLastAdmin($user->id)) {
             return back()
-                ->with('error', 'Tidak dapat menghapus admin terakhir.');
+                ->with('error', 'Tidak dapat menghapus super admin terakhir.');
         }
 
         $user->delete();
@@ -118,12 +122,12 @@ class UserController extends Controller
     }
 
     /**
-     * Determine whether the given user is the last admin.
+     * Determine whether the given user is the last super admin.
      */
     protected function isLastAdmin(int $userId): bool
     {
         return User::query()
-            ->where('role', 'admin')
+            ->whereIn('role', [User::ROLE_SUPER_ADMIN, User::ROLE_LEGACY_ADMIN])
             ->where('id', '!=', $userId)
             ->doesntExist();
     }

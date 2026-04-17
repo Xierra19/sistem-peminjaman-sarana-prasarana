@@ -22,18 +22,26 @@ const props = defineProps({
 })
 
 const roleLabels = {
-  admin: 'Admin',
+  super_admin: 'Super Admin',
+  admin_bap: 'Admin BAP',
+  admin_sarpras: 'Admin Sarpras',
+  admin: 'Super Admin',
   user: 'User',
 }
 
 const roleBadgeClasses = {
+  super_admin: 'bg-indigo-100 text-indigo-700 ring-1 ring-indigo-200',
+  admin_bap: 'bg-blue-100 text-blue-700 ring-1 ring-blue-200',
+  admin_sarpras: 'bg-amber-100 text-amber-700 ring-1 ring-amber-200',
   admin: 'bg-indigo-100 text-indigo-700 ring-1 ring-indigo-200',
   user: 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200',
 }
 
 const stats = computed(() => ({
   total: props.stats?.total ?? 0,
-  admins: props.stats?.admins ?? 0,
+  super_admins: props.stats?.super_admins ?? 0,
+  admin_bap: props.stats?.admin_bap ?? 0,
+  admin_sarpras: props.stats?.admin_sarpras ?? 0,
   members: props.stats?.members ?? 0,
 }))
 
@@ -79,7 +87,7 @@ const canDeleteUser = (user) => {
     return false
   }
 
-  if (user.role === 'admin' && stats.value.admins <= 1) {
+  if ((user.role === 'super_admin' || user.role === 'admin') && stats.value.super_admins <= 1) {
     return false
   }
 
@@ -138,16 +146,26 @@ const formatDate = (value) => {
         </div>
       </div>
 
-      <div class="grid gap-4 sm:grid-cols-3">
+      <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Total User</p>
           <p class="mt-2 text-2xl font-semibold text-slate-900">{{ stats.total }}</p>
           <p class="text-xs text-slate-500">Seluruh pengguna terdaftar</p>
         </div>
         <div class="rounded-xl border border-indigo-200 bg-white p-5 shadow-sm">
-          <p class="text-xs font-medium uppercase tracking-wide text-indigo-500">Admin</p>
-          <p class="mt-2 text-2xl font-semibold text-indigo-600">{{ stats.admins }}</p>
-          <p class="text-xs text-indigo-500">Pengguna dengan akses penuh</p>
+          <p class="text-xs font-medium uppercase tracking-wide text-indigo-500">Super Admin</p>
+          <p class="mt-2 text-2xl font-semibold text-indigo-600">{{ stats.super_admins }}</p>
+          <p class="text-xs text-indigo-500">Akses penuh seluruh modul</p>
+        </div>
+        <div class="rounded-xl border border-blue-200 bg-white p-5 shadow-sm">
+          <p class="text-xs font-medium uppercase tracking-wide text-blue-500">Admin BAP</p>
+          <p class="mt-2 text-2xl font-semibold text-blue-600">{{ stats.admin_bap }}</p>
+          <p class="text-xs text-blue-500">Kelola ruangan dan akademik</p>
+        </div>
+        <div class="rounded-xl border border-amber-200 bg-white p-5 shadow-sm">
+          <p class="text-xs font-medium uppercase tracking-wide text-amber-500">Admin Sarpras</p>
+          <p class="mt-2 text-2xl font-semibold text-amber-600">{{ stats.admin_sarpras }}</p>
+          <p class="text-xs text-amber-500">Kelola barang dan inventaris</p>
         </div>
         <div class="rounded-xl border border-emerald-200 bg-white p-5 shadow-sm">
           <p class="text-xs font-medium uppercase tracking-wide text-emerald-500">User Biasa</p>
@@ -272,7 +290,7 @@ const formatDate = (value) => {
                     type="button"
                     class="inline-flex items-center rounded-md border border-rose-200 px-3 py-1.5 text-xs font-medium text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
                     :disabled="!canDeleteUser(user) || deleteForm.processing"
-                    :title="isCurrentUser(user.id) ? 'Tidak dapat menghapus akun sendiri.' : user.role === 'admin' && stats.admins <= 1 ? 'Minimal harus ada satu admin.' : ''"
+                    :title="isCurrentUser(user.id) ? 'Tidak dapat menghapus akun sendiri.' : (user.role === 'super_admin' || user.role === 'admin') && stats.super_admins <= 1 ? 'Minimal harus ada satu super admin.' : ''"
                     @click="handleDelete(user)"
                   >
                     Hapus
