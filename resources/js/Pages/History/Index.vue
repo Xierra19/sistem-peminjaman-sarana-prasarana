@@ -302,7 +302,7 @@ const exportExcel = () => {
               @click="changePage(1)"
               :disabled="currentPage === 1 || !pageMeta.of"
             >
-              Awal
+              «
             </button>
             <button
               type="button"
@@ -310,7 +310,7 @@ const exportExcel = () => {
               @click="changePage(currentPage - 1)"
               :disabled="currentPage === 1 || !pageMeta.of"
             >
-              Sebelumnya
+              ‹
             </button>
             <template v-if="pageMeta.of">
               <button
@@ -334,7 +334,7 @@ const exportExcel = () => {
               @click="changePage(currentPage + 1)"
               :disabled="currentPage === pages.length || !pageMeta.of"
             >
-              Berikutnya
+              ›
             </button>
             <button
               type="button"
@@ -342,7 +342,7 @@ const exportExcel = () => {
               @click="changePage(pages.length)"
               :disabled="currentPage === pages.length || !pageMeta.of"
             >
-              Akhir
+              »
             </button>
           </div>
         </div>

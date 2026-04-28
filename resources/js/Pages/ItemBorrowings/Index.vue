@@ -35,17 +35,73 @@ const perPageOptions = [5, 10, 25, 50]
 const searchQuery = ref('')
 const statusFilter = ref('')
 
+/**
+ * Mengambil nama barang untuk ditampilkan di tabel.
+ * Mendukung multi-item (dari relasi items) dan single-item legacy (dari singleItem).
+ */
+const getItemNames = (borrowing) => {
+  // Cek dulu apakah ada data multi-item
+  if (borrowing.items && borrowing.items.length > 0) {
+    return borrowing.items
+      .map((pivot) => pivot.item?.name)
+      .filter(Boolean)
+      .join(', ')
+  }
+  // Fallback ke legacy singleItem
+  return borrowing.item?.name ?? '-'
+}
+
+/**
+ * Mengambil total kuantitas dari semua item.
+ */
+const getTotalQuantity = (borrowing) => {
+  if (borrowing.items && borrowing.items.length > 0) {
+    return borrowing.items.reduce((sum, pivot) => sum + (pivot.quantity || 0), 0)
+  }
+  // Fallback ke legacy quantity
+  return borrowing.quantity ?? 0
+}
+
+/**
+ * Mengambil rentang tanggal pinjam dari semua item.
+ */
+const getBorrowDates = (borrowing) => {
+  if (borrowing.items && borrowing.items.length > 0) {
+    const dates = borrowing.items
+      .map((pivot) => pivot.borrow_date)
+      .filter(Boolean)
+    if (dates.length === 0) return null
+    return dates.sort()[0] // Tanggal terkecil
+  }
+  // Fallback ke legacy borrow_date
+  return borrowing.borrow_date
+}
+
+/**
+ * Mengambil rentang tanggal kembali dari semua item.
+ */
+const getReturnDates = (borrowing) => {
+  if (borrowing.items && borrowing.items.length > 0) {
+    const dates = borrowing.items
+      .map((pivot) => pivot.return_date)
+      .filter(Boolean)
+    if (dates.length === 0) return null
+    return dates.sort()[dates.length - 1] // Tanggal terbesar
+  }
+  // Fallback ke legacy return_date
+  return borrowing.return_date
+}
+
 const filteredBorrowings = computed(() => {
   const q = searchQuery.value.trim().toLowerCase()
   const status = statusFilter.value
 
   return (props.itemBorrowings ?? []).filter((borrowing) => {
+    const itemNames = getItemNames(borrowing)
     const searchable = [
       borrowing.title,
       borrowing.description,
-      borrowing.item?.name,
-      borrowing.item?.code,
-      borrowing.item?.category,
+      itemNames,
     ]
       .filter(Boolean)
       .join(' ')
@@ -263,14 +319,14 @@ const cancelBorrowing = (borrowing) => {
                   <div class="mt-1 text-xs text-slate-500">{{ borrowing.description || 'Tidak ada deskripsi tambahan.' }}</div>
                 </td>
                 <td class="px-4 py-3" data-title="Barang">
-                  <div class="font-medium text-slate-900">{{ borrowing.item?.name ?? '-' }}</div>
-                  <div class="text-xs text-slate-500">
-                    {{ borrowing.item?.code ?? '-' }} • {{ borrowing.item?.category ?? '-' }}
+                  <div class="font-medium text-slate-900">{{ getItemNames(borrowing) }}</div>
+                  <div v-if="borrowing.items && borrowing.items.length > 1" class="text-xs text-slate-500">
+                    {{ borrowing.items.length }} jenis barang
                   </div>
                 </td>
-                <td class="px-4 py-3 text-slate-700" data-title="Qty">{{ borrowing.quantity }}</td>
-                <td class="px-4 py-3 text-slate-700" data-title="Pinjam">{{ formatDate(borrowing.borrow_date) }}</td>
-                <td class="px-4 py-3 text-slate-700" data-title="Kembali">{{ formatDate(borrowing.return_date) }}</td>
+                <td class="px-4 py-3 text-slate-700" data-title="Qty">{{ getTotalQuantity(borrowing) }}</td>
+                <td class="px-4 py-3 text-slate-700" data-title="Pinjam">{{ formatDate(getBorrowDates(borrowing)) }}</td>
+                <td class="px-4 py-3 text-slate-700" data-title="Kembali">{{ formatDate(getReturnDates(borrowing)) }}</td>
                 <td class="px-4 py-3" data-title="Status">
                   <span
                     class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold"
@@ -320,7 +376,7 @@ const cancelBorrowing = (borrowing) => {
               @click="changePage(1)"
               :disabled="currentPage === 1 || !filteredBorrowings.length"
             >
-              First
+              «
             </button>
             <button
               type="button"
@@ -328,7 +384,7 @@ const cancelBorrowing = (borrowing) => {
               @click="changePage(currentPage - 1)"
               :disabled="currentPage === 1 || !filteredBorrowings.length"
             >
-              Prev
+              ‹
             </button>
             <template v-if="filteredBorrowings.length">
               <button
@@ -352,7 +408,7 @@ const cancelBorrowing = (borrowing) => {
               @click="changePage(currentPage + 1)"
               :disabled="currentPage === pages.length || !filteredBorrowings.length"
             >
-              Next
+              ›
             </button>
             <button
               type="button"
@@ -360,7 +416,7 @@ const cancelBorrowing = (borrowing) => {
               @click="changePage(pages.length)"
               :disabled="currentPage === pages.length || !filteredBorrowings.length"
             >
-              Last
+              »
             </button>
           </div>
         </div>

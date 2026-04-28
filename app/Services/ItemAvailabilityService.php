@@ -4,8 +4,10 @@ namespace App\Services;
 
 use App\Models\Item;
 use App\Models\ItemBorrowing;
+use App\Models\ItemBorrowingItem;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Builder;
 
 class ItemAvailabilityService
 {
@@ -18,50 +20,77 @@ class ItemAvailabilityService
      *     borrowings: array<int, array<string, mixed>>
      * }
      */
-    public function getAvailability(Item $item, Carbon $borrowDate, Carbon $returnDate, ?int $excludeBorrowingId = null): array
-    {
-        $borrowings = $this->overlappingBorrowings($item, $borrowDate, $returnDate, $excludeBorrowingId);
-        $reservedQuantity = (int) $borrowings->sum('quantity');
+    /**
+     * Get availability for item - support both legacy ItemBorrowing & new ItemBorrowingItem
+     */
+    public function getAvailability(
+        Item $item, 
+        Carbon $borrowDate, 
+        Carbon $returnDate, 
+        mixed $excludeRecord = null
+    ): array {
+        $overlaps = $this->overlappingRecords($item, $borrowDate, $returnDate, $excludeRecord);
+        $reservedQuantity = $overlaps->sum('quantity');
         $totalQuantity = (int) $item->quantity;
         $remainingQuantity = max(0, $totalQuantity - $reservedQuantity);
 
         return [
             'available' => (bool) $item->is_available && $remainingQuantity > 0,
             'total_quantity' => $totalQuantity,
-            'reserved_quantity' => $reservedQuantity,
+            'reserved_quantity' => (int) $reservedQuantity,
             'remaining_quantity' => $remainingQuantity,
-            'borrowings' => $borrowings->map(fn (ItemBorrowing $borrowing) => [
-                'id' => $borrowing->id,
-                'title' => $borrowing->title,
-                'status' => $borrowing->status,
-                'quantity' => $borrowing->quantity,
-                'borrow_date' => optional($borrowing->borrow_date)->format('Y-m-d'),
-                'return_date' => optional($borrowing->return_date)->format('Y-m-d'),
-            ])->values()->all(),
+            'borrowings' => $overlaps->map(function ($record) {
+                return [
+                    'id' => $record->id,
+                    'title' => $record->borrowing?->title ?? $record->title ?? 'Unknown',
+                    'status' => $record->borrowing?->status ?? $record->status ?? 'unknown',
+                    'quantity' => $record->quantity,
+                    'borrow_date' => $record->borrow_date->format('Y-m-d'),
+                    'return_date' => $record->return_date->format('Y-m-d'),
+                ];
+            })->values()->all(),
         ];
     }
 
-    public function hasEnoughStock(Item $item, Carbon $borrowDate, Carbon $returnDate, int $requestedQuantity, ?int $excludeBorrowingId = null): bool
-    {
-        $availability = $this->getAvailability($item, $borrowDate, $returnDate, $excludeBorrowingId);
-
+    public function hasEnoughStock(
+        Item $item, 
+        Carbon $borrowDate, 
+        Carbon $returnDate, 
+        int $requestedQuantity, 
+        mixed $excludeRecord = null
+    ): bool {
+        $availability = $this->getAvailability($item, $borrowDate, $returnDate, $excludeRecord);
         return $availability['remaining_quantity'] >= $requestedQuantity;
     }
 
     /**
-     * @return Collection<int, ItemBorrowing>
+     * Get overlapping records (supports both legacy & pivot)
      */
-    public function overlappingBorrowings(Item $item, Carbon $borrowDate, Carbon $returnDate, ?int $excludeBorrowingId = null): Collection
+    public function overlappingRecords(Item $item, Carbon $borrowDate, Carbon $returnDate, mixed $excludeRecord = null): Collection
     {
-        $query = ItemBorrowing::query()
-            ->with('user:id,name,email')
-            ->overlappingPeriod($item->id, $borrowDate, $returnDate)
-            ->orderBy('borrow_date');
+        $legacyQuery = ItemBorrowing::overlappingPeriod($item->id, $borrowDate, $returnDate);
+        $pivotQuery = ItemBorrowingItem::where('item_id', $item->id)
+            ->where('borrow_date', '<=', $returnDate->copy()->endOfDay())
+            ->where('return_date', '>=', $borrowDate->copy()->startOfDay())
+            ->whereExists(function ($q) {
+                $q->select(\Illuminate\Support\Facades\DB::raw(1))
+                  ->from('item_borrowings')
+                  ->whereColumn('item_borrowings.id', 'item_borrowing_items.item_borrowing_id')
+                  ->whereNotIn('item_borrowings.status', ['rejected', 'cancelled', 'returned']);
+            });
 
-        if ($excludeBorrowingId) {
-            $query->whereKeyNot($excludeBorrowingId);
+        // Exclude logic
+        if ($excludeRecord) {
+            if ($excludeRecord instanceof ItemBorrowing) {
+                $legacyQuery->whereKeyNot($excludeRecord->id);
+            } elseif (method_exists($excludeRecord, 'borrowing') || method_exists($excludeRecord, 'borrowing_id')) {
+                $pivotQuery->where('id', '!=', $excludeRecord->id);
+            }
         }
 
-        return $query->get();
+        $legacyBorrowings = $legacyQuery->with('user:id,name,email')->get();
+        $pivotItems = $pivotQuery->get();
+
+        return $legacyBorrowings->merge($pivotItems);
     }
 }

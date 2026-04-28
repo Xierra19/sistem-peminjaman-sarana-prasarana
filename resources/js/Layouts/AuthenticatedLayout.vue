@@ -130,11 +130,13 @@ const subLinkClasses = (isActive) =>
     isActive ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-slate-600 hover:bg-slate-50',
   ].join(' ')
 
-// selalu render di lapisan teratas
+// selalu render di lapisan teratas menggunakan customClass
 const swal = Swal.mixin({
   heightAuto: false,
   allowOutsideClick: true,
-  zIndex: 2147483647,
+  customClass: {
+    container: 'swal-z-top' // Menggunakan class CSS alih-alih parameter zIndex
+  }
 })
 
 // jika ada <dialog open>, render di dalamnya (top layer). Kalau tidak ada, ke body biasa
@@ -495,3 +497,10 @@ watch(
     </div>
   </div>
 </template>
+
+<style>
+/* CSS global untuk SweetAlert2 agar muncul di atas segalanya */
+div.swal-z-top {
+  z-index: 2147483647 !important;
+}
+</style>

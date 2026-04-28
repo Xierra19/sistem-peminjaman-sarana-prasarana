@@ -320,7 +320,7 @@ const formatDate = (value) => {
               @click="changePage(1)"
               :disabled="currentPage === 1 || !usersList.length"
             >
-              First
+              «
             </button>
             <button
               type="button"
@@ -328,7 +328,7 @@ const formatDate = (value) => {
               @click="changePage(currentPage - 1)"
               :disabled="currentPage === 1 || !usersList.length"
             >
-              Prev
+              ‹
             </button>
             <template v-if="usersList.length">
               <button
@@ -352,7 +352,7 @@ const formatDate = (value) => {
               @click="changePage(currentPage + 1)"
               :disabled="currentPage === pages.length || !usersList.length"
             >
-              Next
+              ›
             </button>
             <button
               type="button"
@@ -360,7 +360,7 @@ const formatDate = (value) => {
               @click="changePage(pages.length)"
               :disabled="currentPage === pages.length || !usersList.length"
             >
-              Last
+              »
             </button>
           </div>
         </div>

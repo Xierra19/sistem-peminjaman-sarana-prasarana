@@ -6,7 +6,7 @@ import { usePagination } from '@/Composables/usePagination'
 import { useTableSort } from '@/Composables/useTableSort'
 import { Head, Link, useForm, router } from '@inertiajs/vue3'
 import { computed, ref } from 'vue'
-import Swal from 'sweetalert2'                           // ⬅️ panggil Swal di halaman
+import Swal from 'sweetalert2'
 
 const props = defineProps({
   rooms: Array,
@@ -28,6 +28,9 @@ const ensureBuildingsLoaded = () => {
   }
 }
 
+// ==========================================
+// LOGIKA MODAL CREATE
+// ==========================================
 const openCreateModal = () => {
   createForm.reset()
   createForm.is_available = true
@@ -41,19 +44,37 @@ const closeCreateModal = () => {
   createForm.reset(); createForm.clearErrors()
 }
 
+const confirmCreate = () => {
+  Swal.fire({
+    title: 'Konfirmasi Simpan',
+    text: "Apakah Anda yakin data ruangan yang dimasukkan sudah benar?",
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#2563eb',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: 'Ya, Simpan',
+    cancelButtonText: 'Periksa Lagi',
+    target: getSwalTarget(), // Agar muncul di atas modal
+    customClass: {
+      container: 'swal-z-top-force'
+    }
+  }).then((result) => {
+    if (result.isConfirmed) {
+      submitCreate()
+    }
+  })
+}
+
 const submitCreate = () => {
   createForm.post(route('admin.rooms.store'), {
     preserveState: true,
     preserveScroll: true,
     onSuccess: () => {
       closeCreateModal()
-      // popup sukses bisa via flash global dari layout; kalau backend belum set flash, bisa aktifkan baris di bawah:
-      // Swal.fire({ icon:'success', title:'Berhasil', timer:1800, showConfirmButton:false, target:getSwalTarget(), heightAuto:false })
     },
     onError: (errors) => {
-      // tampilkan pesan validasi pertama
       const msg = errors.name || errors.building_id || errors.capacity || 'Periksa kembali input Anda.'
-      Swal.fire({ icon: 'error', title: 'Problem', text: msg, target: getSwalTarget(), heightAuto: false, zIndex: 2147483647 })
+      Swal.fire({ icon: 'error', title: 'Problem', text: msg, target: getSwalTarget(), heightAuto: false, customClass: { container: 'swal-z-top-force' } })
       ensureBuildingsLoaded()
     },
     onFinish: () => {
@@ -62,6 +83,9 @@ const submitCreate = () => {
   })
 }
 
+// ==========================================
+// LOGIKA MODAL EDIT (UPDATE)
+// ==========================================
 const openEditModal = (room) => {
   selectedRoom.value = room
   editForm.name = room.name ?? ''
@@ -79,6 +103,27 @@ const closeEditModal = () => {
   editForm.reset(); editForm.clearErrors()
 }
 
+const confirmEdit = () => {
+  Swal.fire({
+    title: 'Konfirmasi Update',
+    text: "Apakah Anda yakin ingin menyimpan perubahan pada ruangan ini?",
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#eab308',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: 'Ya, Update',
+    cancelButtonText: 'Batal',
+    target: getSwalTarget(), // Agar muncul di atas modal
+    customClass: {
+      container: 'swal-z-top-force'
+    }
+  }).then((result) => {
+    if (result.isConfirmed) {
+      submitEdit()
+    }
+  })
+}
+
 const submitEdit = () => {
   if (!selectedRoom.value) return
   editForm.put(route('admin.rooms.update', selectedRoom.value.id), {
@@ -86,11 +131,10 @@ const submitEdit = () => {
     preserveScroll: true,
     onSuccess: () => {
       closeEditModal()
-      // Optional success swal seperti di atas
     },
     onError: (errors) => {
       const msg = errors.name || errors.building_id || errors.capacity || 'Periksa kembali input Anda.'
-      Swal.fire({ icon: 'error', title: 'Problem', text: msg, target: getSwalTarget(), heightAuto: false, zIndex: 2147483647 })
+      Swal.fire({ icon: 'error', title: 'Problem', text: msg, target: getSwalTarget(), heightAuto: false, customClass: { container: 'swal-z-top-force' } })
       ensureBuildingsLoaded()
     },
     onFinish: () => {
@@ -99,7 +143,29 @@ const submitEdit = () => {
   })
 }
 
-// aman kalau buildings belum ada
+// ==========================================
+// LOGIKA DELETE
+// ==========================================
+const confirmDelete = (id, name) => {
+  Swal.fire({
+    title: 'Yakin ingin menghapus?',
+    text: `Data ruangan "${name}" akan dihapus permanen dan tidak dapat dikembalikan!`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#dc2626',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: 'Ya, Hapus!',
+    cancelButtonText: 'Batal',
+  }).then((result) => {
+    if (result.isConfirmed) {
+      router.delete(route('admin.rooms.destroy', id))
+    }
+  })
+}
+
+// ==========================================
+// LOGIKA TABEL & LAINNYA
+// ==========================================
 const buildingOptions = computed(() => {
   const list = props.buildings ?? []
   return list.map(b => ({
@@ -264,14 +330,13 @@ const perPageOptions = [5, 10, 25, 50]
                   >
                     ✏️ Edit
                   </button>
-                  <Link
-                    :href="route('admin.rooms.destroy', room.id)"
-                    method="delete"
-                    as="button"
+                  <button
+                    type="button"
                     class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                    @click="confirmDelete(room.id, room.name)"
                   >
                     🗑 Hapus
-                  </Link>
+                  </button>
                 </div>
               </td>
             </tr>
@@ -341,12 +406,12 @@ const perPageOptions = [5, 10, 25, 50]
       </div>
     </div>
 
-    <!-- CREATE MODAL -->
-    <Modal :show="showCreateModal" max-width="lg" @close="closeCreateModal">
+    <!-- CREATE MODAL (Diperbesar ke 3xl) -->
+    <Modal :show="showCreateModal" maxWidth="3xl" @close="closeCreateModal">
       <div class="p-6">
         <h2 class="text-lg font-semibold text-gray-800 mb-4">➕ Tambah Ruangan</h2>
 
-        <form @submit.prevent="submitCreate" class="space-y-4">
+        <form @submit.prevent="confirmCreate" class="space-y-4">
           <div>
             <label class="block text-sm font-medium text-gray-700">Nama Ruangan</label>
             <input
@@ -417,12 +482,12 @@ const perPageOptions = [5, 10, 25, 50]
       </div>
     </Modal>
 
-    <!-- EDIT MODAL -->
-    <Modal :show="showEditModal" max-width="lg" @close="closeEditModal">
+    <!-- EDIT MODAL (Diperbesar ke 3xl) -->
+    <Modal :show="showEditModal" maxWidth="3xl" @close="closeEditModal">
       <div class="p-6">
         <h2 class="text-lg font-semibold text-gray-800 mb-4">✏️ Edit Ruangan</h2>
 
-        <form @submit.prevent="submitEdit" class="space-y-4">
+        <form @submit.prevent="confirmEdit" class="space-y-4">
           <div>
             <label class="block text-sm font-medium text-gray-700">Nama Ruangan</label>
             <input
@@ -495,3 +560,10 @@ const perPageOptions = [5, 10, 25, 50]
     </Modal>
   </AuthenticatedLayout>
 </template>
+
+<style>
+/* Class CSS agar modal konfirmasi selalu di depan */
+div.swal-z-top-force {
+  z-index: 999999 !important;
+}
+</style>

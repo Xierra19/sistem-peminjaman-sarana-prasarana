@@ -13,6 +13,7 @@ const props = defineProps({
 const approvalForm = useForm({
   status: '',
   notes: '',
+  signed_letter: null,
 })
 
 const statusLabels = {
@@ -36,10 +37,43 @@ const statusColors = {
 const normalizedStatus = computed(() =>
   props.itemBorrowing.status === 'requested' ? 'waiting' : props.itemBorrowing.status,
 )
+const borrowingItems = computed(() => {
+  if (props.itemBorrowing.items?.length) {
+    return [...props.itemBorrowing.items].sort((left, right) =>
+      String(left.borrow_date).localeCompare(String(right.borrow_date)),
+    )
+  }
+
+  if (props.itemBorrowing.single_item && props.itemBorrowing.borrow_date && props.itemBorrowing.return_date) {
+    return [{
+      id: `legacy-${props.itemBorrowing.id}`,
+      item: props.itemBorrowing.single_item,
+      quantity: props.itemBorrowing.quantity,
+      borrow_date: props.itemBorrowing.borrow_date,
+      return_date: props.itemBorrowing.return_date,
+    }]
+  }
+
+  return []
+})
 const isWaiting = computed(() => normalizedStatus.value === 'waiting')
 const canCancel = computed(() => normalizedStatus.value === 'approved')
 const canMarkReturned = computed(() => normalizedStatus.value === 'approved')
 const actionsLocked = computed(() => !isWaiting.value && !canCancel.value && !canMarkReturned.value)
+const approvalFileLabel = computed(() => approvalForm.signed_letter?.name ?? 'Upload surat bertandatangan')
+const earliestBorrowDate = computed(() => borrowingItems.value[0]?.borrow_date ?? null)
+const latestReturnDate = computed(() => borrowingItems.value[borrowingItems.value.length - 1]?.return_date ?? null)
+const signedLetterHelpText = computed(() => {
+  if (normalizedStatus.value === 'approved') {
+    return 'Surat yang tersimpan untuk persetujuan ini.'
+  }
+
+  if (normalizedStatus.value === 'rejected') {
+    return 'Surat penolakan yang tersimpan untuk permintaan ini.'
+  }
+
+  return 'Belum ada surat yang diunggah admin.'
+})
 
 const formatDate = (value) => {
   if (!value) return '-'
@@ -65,10 +99,16 @@ const submitApproval = (status) => {
   approvalForm.status = status
   approvalForm.post(route('admin.item-borrowings.update-status', props.itemBorrowing.id), {
     preserveScroll: true,
+    forceFormData: true,
     onSuccess: () => {
-      approvalForm.reset('notes')
+      approvalForm.reset('notes', 'signed_letter')
     },
   })
+}
+
+const onSignedLetterChange = (event) => {
+  const [file] = event.target.files || []
+  approvalForm.signed_letter = file ?? null
 }
 </script>
 
@@ -121,19 +161,28 @@ const submitApproval = (status) => {
               <div class="space-y-3">
                 <div>
                   <div class="text-xs font-semibold uppercase text-gray-500">Barang</div>
-                  <p class="text-sm text-gray-700">
-                    Nama:
-                    <span class="font-semibold text-gray-900">{{ itemBorrowing.item?.name ?? '-' }}</span>
-                  </p>
-                  <p class="text-sm text-gray-700">Kode: {{ itemBorrowing.item?.code ?? '-' }}</p>
-                  <p class="text-sm text-gray-700">Kategori: {{ itemBorrowing.item?.category ?? '-' }}</p>
-                  <p class="text-sm text-gray-700">Stok total: {{ itemBorrowing.item?.quantity ?? '-' }}</p>
+                  <ul class="space-y-2">
+                    <li
+                      v-for="borrowingItem in borrowingItems"
+                      :key="borrowingItem.id"
+                      class="rounded-lg border border-gray-100 px-3 py-2 text-sm text-gray-700"
+                    >
+                      <div class="font-semibold text-gray-900">{{ borrowingItem.item?.name ?? '-' }}</div>
+                      <div class="text-xs text-gray-500">
+                        {{ borrowingItem.item?.code ?? '-' }} • {{ borrowingItem.item?.category ?? '-' }}
+                      </div>
+                      <div class="mt-1 text-xs text-gray-600">
+                        Jumlah {{ borrowingItem.quantity }} •
+                        {{ formatDate(borrowingItem.borrow_date) }} s/d {{ formatDate(borrowingItem.return_date) }}
+                      </div>
+                    </li>
+                  </ul>
                 </div>
                 <div>
                   <div class="text-xs font-semibold uppercase text-gray-500">Periode</div>
-                  <p class="text-sm text-gray-700">Pinjam: <span class="font-semibold text-gray-900">{{ formatDate(itemBorrowing.borrow_date) }}</span></p>
-                  <p class="text-sm text-gray-700">Kembali: <span class="font-semibold text-gray-900">{{ formatDate(itemBorrowing.return_date) }}</span></p>
-                  <p class="text-sm text-gray-700">Jumlah: <span class="font-semibold text-gray-900">{{ itemBorrowing.quantity }}</span></p>
+                  <p class="text-sm text-gray-700">Pinjam: <span class="font-semibold text-gray-900">{{ formatDate(earliestBorrowDate) }}</span></p>
+                  <p class="text-sm text-gray-700">Kembali: <span class="font-semibold text-gray-900">{{ formatDate(latestReturnDate) }}</span></p>
+                  <p class="text-sm text-gray-700">Jenis barang: <span class="font-semibold text-gray-900">{{ borrowingItems.length }}</span></p>
                 </div>
               </div>
             </div>
@@ -158,6 +207,29 @@ const submitApproval = (status) => {
               <p v-else class="text-gray-400">Tidak ada lampiran yang diunggah.</p>
             </div>
           </section>
+
+          <section class="rounded-xl border border-gray-200 bg-white shadow-sm">
+            <header class="border-b border-gray-100 px-6 py-4">
+              <h2 class="text-lg font-semibold text-gray-800">Surat Admin Sarpras</h2>
+              <p class="text-sm text-gray-500">Surat yang sudah ditandatangani admin untuk persetujuan atau penolakan.</p>
+            </header>
+            <div class="space-y-3 px-6 py-5 text-sm text-gray-600">
+              <template v-if="itemBorrowing.signed_letter">
+                <a
+                  :href="route('item-borrowings.signed-letter', itemBorrowing.id)"
+                  target="_blank"
+                  rel="noopener"
+                  class="inline-flex items-center rounded-md border border-emerald-200 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:border-emerald-300 hover:text-emerald-800"
+                >
+                  Unduh Surat Ditandatangani
+                </a>
+                <p class="text-xs text-gray-400">
+                  Diunggah {{ formatDateTime(itemBorrowing.signed_letter_uploaded_at) }}
+                </p>
+              </template>
+              <p v-else class="text-gray-400">Belum ada surat yang diunggah admin.</p>
+            </div>
+          </section>
         </div>
 
         <aside class="space-y-6">
@@ -175,19 +247,57 @@ const submitApproval = (status) => {
               />
               <p v-if="approvalForm.errors.notes" class="text-xs text-rose-500">{{ approvalForm.errors.notes }}</p>
 
+              <div v-if="itemBorrowing.signed_letter" class="space-y-2 rounded-lg border border-emerald-100 bg-emerald-50 px-4 py-3">
+                <div class="text-xs font-semibold uppercase text-emerald-700">Surat tersimpan</div>
+                <a
+                  :href="route('item-borrowings.signed-letter', itemBorrowing.id)"
+                  target="_blank"
+                  rel="noopener"
+                  class="inline-flex items-center rounded-md border border-emerald-200 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:border-emerald-300 hover:text-emerald-800"
+                >
+                  Lihat Surat Ditandatangani
+                </a>
+                <p class="text-xs text-emerald-700/80">
+                  {{ signedLetterHelpText }}
+                  <span v-if="itemBorrowing.signed_letter_uploaded_at">
+                    Diunggah {{ formatDateTime(itemBorrowing.signed_letter_uploaded_at) }}.
+                  </span>
+                </p>
+              </div>
+
+              <div v-if="isWaiting" class="space-y-2">
+                <label class="block text-xs font-semibold uppercase text-gray-500">Surat bertandatangan admin</label>
+                <label
+                  class="flex cursor-pointer items-center justify-between rounded-lg border border-dashed border-gray-300 px-3 py-3 text-sm text-gray-600 transition hover:border-blue-300 hover:bg-blue-50"
+                >
+                  <span class="truncate pr-3">{{ approvalFileLabel }}</span>
+                  <span class="rounded-md bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">Pilih File</span>
+                  <input
+                    type="file"
+                    class="hidden"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    @change="onSignedLetterChange"
+                  >
+                </label>
+                <p class="text-xs text-gray-400">Wajib saat setujui, opsional saat tolak. Format PDF/JPG/JPEG/PNG, maksimal 2MB.</p>
+                <p v-if="approvalForm.errors.signed_letter" class="text-xs text-rose-500">{{ approvalForm.errors.signed_letter }}</p>
+              </div>
+
               <div class="flex flex-col gap-2">
                 <button
+                  v-if="isWaiting"
                   type="button"
                   class="inline-flex items-center justify-center rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
-                  :disabled="approvalForm.processing || !isWaiting"
+                  :disabled="approvalForm.processing"
                   @click="submitApproval('approved')"
                 >
                   Setujui Peminjaman
                 </button>
                 <button
+                  v-if="isWaiting"
                   type="button"
                   class="inline-flex items-center justify-center rounded-md bg-rose-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
-                  :disabled="approvalForm.processing || !isWaiting"
+                  :disabled="approvalForm.processing"
                   @click="submitApproval('rejected')"
                 >
                   Tolak Peminjaman

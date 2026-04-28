@@ -64,10 +64,31 @@ const formatDateTime = (value) => {
 const normalizedStatus = computed(() =>
   props.itemBorrowing.status === 'requested' ? 'waiting' : props.itemBorrowing.status,
 )
+const borrowingItems = computed(() => {
+  if (props.itemBorrowing.items?.length) {
+    return [...props.itemBorrowing.items].sort((left, right) =>
+      String(left.borrow_date).localeCompare(String(right.borrow_date)),
+    )
+  }
+
+  if (props.itemBorrowing.single_item && props.itemBorrowing.borrow_date && props.itemBorrowing.return_date) {
+    return [{
+      id: `legacy-${props.itemBorrowing.id}`,
+      item: props.itemBorrowing.single_item,
+      quantity: props.itemBorrowing.quantity,
+      borrow_date: props.itemBorrowing.borrow_date,
+      return_date: props.itemBorrowing.return_date,
+    }]
+  }
+
+  return []
+})
 const decisionStatus = computed(() => props.latestDecisionLog?.action ?? '')
 const hasDecision = computed(() =>
   ['approved', 'rejected', 'cancelled', 'returned'].includes(decisionStatus.value),
 )
+const earliestBorrowDate = computed(() => borrowingItems.value[0]?.borrow_date ?? null)
+const latestReturnDate = computed(() => borrowingItems.value[borrowingItems.value.length - 1]?.return_date ?? null)
 
 const decisionNote = computed(() => {
   const raw = props.latestDecisionLog?.description ?? ''
@@ -145,10 +166,22 @@ const cancelBorrowing = () => {
               <div class="space-y-3">
                 <div>
                   <div class="text-xs font-semibold uppercase text-gray-500">Barang</div>
-                  <div class="text-sm font-medium text-gray-800">{{ itemBorrowing.item?.name ?? '-' }}</div>
-                  <div class="text-xs text-gray-500">
-                    {{ itemBorrowing.item?.code ?? '-' }} • {{ itemBorrowing.item?.category ?? '-' }}
-                  </div>
+                  <ul class="space-y-2">
+                    <li
+                      v-for="borrowingItem in borrowingItems"
+                      :key="borrowingItem.id"
+                      class="rounded-lg border border-gray-100 px-3 py-2 text-sm text-gray-700"
+                    >
+                      <div class="font-semibold text-gray-900">{{ borrowingItem.item?.name ?? '-' }}</div>
+                      <div class="text-xs text-gray-500">
+                        {{ borrowingItem.item?.code ?? '-' }} • {{ borrowingItem.item?.category ?? '-' }}
+                      </div>
+                      <div class="mt-1 text-xs text-gray-600">
+                        Jumlah {{ borrowingItem.quantity }} •
+                        {{ formatDate(borrowingItem.borrow_date) }} s/d {{ formatDate(borrowingItem.return_date) }}
+                      </div>
+                    </li>
+                  </ul>
                 </div>
                 <div>
                   <div class="text-xs font-semibold uppercase text-gray-500">Deskripsi</div>
@@ -161,15 +194,15 @@ const cancelBorrowing = () => {
                 <div>
                   <div class="text-xs font-semibold uppercase text-gray-500">Periode</div>
                   <p class="text-sm text-gray-700">
-                    Pinjam: <span class="font-semibold text-gray-900">{{ formatDate(itemBorrowing.borrow_date) }}</span>
+                    Pinjam: <span class="font-semibold text-gray-900">{{ formatDate(earliestBorrowDate) }}</span>
                   </p>
                   <p class="text-sm text-gray-700">
-                    Kembali: <span class="font-semibold text-gray-900">{{ formatDate(itemBorrowing.return_date) }}</span>
+                    Kembali: <span class="font-semibold text-gray-900">{{ formatDate(latestReturnDate) }}</span>
                   </p>
                 </div>
                 <div>
-                  <div class="text-xs font-semibold uppercase text-gray-500">Jumlah</div>
-                  <p class="text-sm font-semibold text-gray-900">{{ itemBorrowing.quantity }}</p>
+                  <div class="text-xs font-semibold uppercase text-gray-500">Jenis Barang</div>
+                  <p class="text-sm font-semibold text-gray-900">{{ borrowingItems.length }}</p>
                 </div>
               </div>
             </div>
@@ -192,6 +225,29 @@ const cancelBorrowing = () => {
                 </a>
               </template>
               <p v-else class="text-gray-400">Tidak ada lampiran yang diunggah.</p>
+            </div>
+          </section>
+
+          <section class="rounded-xl border border-gray-200 bg-white shadow-sm">
+            <header class="border-b border-gray-100 px-6 py-4">
+              <h2 class="text-lg font-semibold text-gray-800">Surat Admin Sarpras</h2>
+              <p class="text-sm text-gray-500">Surat hasil persetujuan atau penolakan dari admin Sarpras.</p>
+            </header>
+            <div class="space-y-3 px-6 py-5 text-sm text-gray-600">
+              <template v-if="itemBorrowing.signed_letter">
+                <a
+                  :href="route('item-borrowings.signed-letter', itemBorrowing.id)"
+                  target="_blank"
+                  rel="noopener"
+                  class="inline-flex items-center rounded-md border border-emerald-200 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:border-emerald-300 hover:text-emerald-800"
+                >
+                  Unduh Surat Ditandatangani
+                </a>
+                <p class="text-xs text-gray-400">
+                  Diunggah {{ formatDateTime(itemBorrowing.signed_letter_uploaded_at) }}
+                </p>
+              </template>
+              <p v-else class="text-gray-400">Belum ada surat yang diunggah admin.</p>
             </div>
           </section>
         </div>

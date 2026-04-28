@@ -17,7 +17,6 @@ class Booking extends Model
         'user_id',
         'title',
         'description',
-        'date',
         'start_time',
         'end_time',
         'status',
@@ -29,7 +28,6 @@ class Booking extends Model
     ];
 
     protected $casts = [
-        'date' => 'date',
         'start_time' => 'string',
         'end_time' => 'string',
         'letter_generated_at' => 'datetime',
@@ -67,7 +65,7 @@ class Booking extends Model
     {
         return $query
             ->where('room_id', $roomId)
-            ->where('date', $date)
+            ->whereDate('start_time', $date)
             ->whereIn('status', ['waiting', 'approved'])
             ->where('start_time', '<', $end)
             ->where('end_time', '>', $start);

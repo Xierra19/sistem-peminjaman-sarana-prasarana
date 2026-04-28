@@ -8,13 +8,15 @@ use App\Models\ItemBorrowing;
 use App\Models\ItemBorrowingLog;
 use App\Notifications\ItemBorrowingStatusUpdatedNotification;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class ItemBorrowingApprovalController extends Controller
 {
     public function index()
     {
-        $itemBorrowings = ItemBorrowing::with(['user', 'item'])
+        $itemBorrowings = ItemBorrowing::with(['user', 'items.item', 'singleItem'])
             ->orderByRaw("
                 CASE
                     WHEN status = 'waiting' THEN 1
@@ -37,7 +39,8 @@ class ItemBorrowingApprovalController extends Controller
     {
         $itemBorrowing->load([
             'user',
-            'item',
+            'items.item',
+            'singleItem', // legacy
             'logs' => function ($query) {
                 $query->with('user')->orderBy('created_at');
             },
@@ -47,6 +50,7 @@ class ItemBorrowingApprovalController extends Controller
             'itemBorrowing' => $itemBorrowing,
         ]);
     }
+
 
     public function updateStatus(UpdateItemBorrowingStatusRequest $request, ItemBorrowing $itemBorrowing)
     {
@@ -72,42 +76,54 @@ class ItemBorrowingApprovalController extends Controller
                 ->with('error', 'Aksi tidak valid untuk status saat ini.');
         }
 
-        $updatePayload = [
-            'status' => $targetStatus,
-        ];
+        DB::transaction(function () use ($request, $itemBorrowing, $targetStatus, $data): void {
+            $updatePayload = [
+                'status' => $targetStatus,
+            ];
 
-        if ($targetStatus === 'approved') {
-            $updatePayload['approved_at'] = now();
-            $updatePayload['approved_by'] = Auth::id();
-        }
+            if ($request->hasFile('signed_letter')) {
+                if ($itemBorrowing->signed_letter && Storage::disk('public')->exists($itemBorrowing->signed_letter)) {
+                    Storage::disk('public')->delete($itemBorrowing->signed_letter);
+                }
 
-        if ($targetStatus === 'returned') {
-            $updatePayload['returned_at'] = now();
-            $updatePayload['returned_by'] = Auth::id();
-        }
+                $updatePayload['signed_letter'] = $request->file('signed_letter')->store('item-borrowing-signed-letters', 'public');
+                $updatePayload['signed_letter_uploaded_at'] = now();
+            }
 
-        $itemBorrowing->update($updatePayload);
+            if ($targetStatus === 'approved') {
+                $updatePayload['approved_at'] = now();
+                $updatePayload['approved_by'] = Auth::id();
+            }
 
-        $description = match ($targetStatus) {
-            'approved' => 'Peminjaman barang disetujui',
-            'rejected' => 'Peminjaman barang ditolak',
-            'cancelled' => 'Peminjaman barang dibatalkan oleh admin',
-            'returned' => 'Barang telah dikembalikan dan diverifikasi admin',
-            default => 'Status peminjaman barang diperbarui',
-        };
+            if ($targetStatus === 'returned') {
+                $updatePayload['returned_at'] = now();
+                $updatePayload['returned_by'] = Auth::id();
+            }
 
-        if (! empty($data['notes'])) {
-            $description .= ' - '.$data['notes'];
-        }
+            $itemBorrowing->update($updatePayload);
 
-        ItemBorrowingLog::create([
-            'item_borrowing_id' => $itemBorrowing->id,
-            'user_id' => Auth::id(),
-            'action' => $targetStatus,
-            'description' => $description,
-        ]);
+            $description = match ($targetStatus) {
+                'approved' => 'Peminjaman barang disetujui',
+                'rejected' => 'Peminjaman barang ditolak',
+                'cancelled' => 'Peminjaman barang dibatalkan oleh admin',
+                'returned' => 'Barang telah dikembalikan dan diverifikasi admin',
+                default => 'Status peminjaman barang diperbarui',
+            };
 
-        $itemBorrowing->load(['user', 'item']);
+            if (! empty($data['notes'])) {
+                $description .= ' - '.$data['notes'];
+            }
+
+            ItemBorrowingLog::create([
+                'item_borrowing_id' => $itemBorrowing->id,
+                'user_id' => Auth::id(),
+                'action' => $targetStatus,
+                'description' => $description,
+            ]);
+        });
+
+        $itemBorrowing->load(['user', 'items.item', 'singleItem']);
+
 
         if ($itemBorrowing->user && ! empty($itemBorrowing->user->email)) {
             try {

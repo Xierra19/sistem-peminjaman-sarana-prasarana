@@ -16,6 +16,10 @@ return new class extends Migration
             return;
         }
 
+        if (Schema::getConnection()->getDriverName() === 'sqlite') {
+            return;
+        }
+
         Schema::table('bookings', function (Blueprint $table): void {
             DB::statement("
                 ALTER TABLE `bookings`
@@ -30,6 +34,10 @@ return new class extends Migration
     public function down(): void
     {
         if (! Schema::hasTable('bookings')) {
+            return;
+        }
+
+        if (Schema::getConnection()->getDriverName() === 'sqlite') {
             return;
         }
 

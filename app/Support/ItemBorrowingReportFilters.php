@@ -51,6 +51,12 @@ class ItemBorrowingReportFilters
                             ->where('name', 'like', $pattern)
                             ->orWhere('code', 'like', $pattern)
                             ->orWhere('category', 'like', $pattern);
+                    })
+                    ->orWhereHas('items.item', function (Builder $itemQuery) use ($pattern): void {
+                        $itemQuery
+                            ->where('name', 'like', $pattern)
+                            ->orWhere('code', 'like', $pattern)
+                            ->orWhere('category', 'like', $pattern);
                     });
             });
         }

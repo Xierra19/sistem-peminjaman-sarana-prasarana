@@ -16,23 +16,24 @@ class ItemBorrowing extends Model
     protected $fillable = [
         'title',
         'description',
-        'item_id',
         'user_id',
-        'borrow_date',
-        'return_date',
-        'quantity',
         'status',
         'attachment',
+        'signed_letter',
+        'signed_letter_uploaded_at',
         'approved_at',
         'approved_by',
         'returned_at',
         'returned_by',
+        // Legacy single-item fields
+        'item_id',
+        'quantity',
+        'borrow_date',
+        'return_date',
     ];
 
     protected $casts = [
-        'borrow_date' => 'date',
-        'return_date' => 'date',
-        'quantity' => 'integer',
+        'signed_letter_uploaded_at' => 'datetime',
         'approved_at' => 'datetime',
         'returned_at' => 'datetime',
     ];
@@ -46,9 +47,17 @@ class ItemBorrowing extends Model
     }
 
     /**
-     * @return BelongsTo<Item, ItemBorrowing>
+     * @return HasMany<ItemBorrowingItem>
      */
-    public function item(): BelongsTo
+    public function items(): HasMany
+    {
+        return $this->hasMany(ItemBorrowingItem::class);
+    }
+
+    /**
+     * Legacy single item support (existing data)
+     */
+    public function singleItem(): BelongsTo
     {
         return $this->belongsTo(Item::class);
     }
@@ -77,12 +86,16 @@ class ItemBorrowing extends Model
         return $this->hasMany(ItemBorrowingLog::class)->orderBy('created_at');
     }
 
+    /**
+     * Updated scope for new pivot structure
+     */
     public function scopeOverlappingPeriod(Builder $query, int $itemId, Carbon $start, Carbon $end): Builder
     {
-        return $query
-            ->where('item_id', $itemId)
-            ->whereNotIn('status', ['rejected', 'cancelled', 'returned'])
-            ->where('borrow_date', '<=', $end->copy()->endOfDay())
-            ->where('return_date', '>=', $start->copy()->startOfDay());
+        return $query->whereHas('items', function ($q) use ($itemId, $start, $end) {
+            $q->where('item_id', $itemId)
+              ->where('borrow_date', '<=', $end->copy()->endOfDay())
+              ->where('return_date', '>=', $start->copy()->startOfDay());
+        })->whereNotIn('status', ['rejected', 'cancelled', 'returned']);
     }
+
 }

@@ -22,7 +22,8 @@ class ItemBorrowingReportExport implements FromCollection, WithHeadings, WithMap
         $query = ItemBorrowing::query()
             ->with([
                 'user:id,name,email,phone',
-                'item:id,code,name,category,quantity',
+                'items.item:id,code,name,category',
+                'singleItem:id,code,name,category',
             ]);
 
         ItemBorrowingReportFilters::apply($query, $this->filters);
@@ -52,6 +53,26 @@ class ItemBorrowingReportExport implements FromCollection, WithHeadings, WithMap
 
     public function map($itemBorrowing): array
     {
+        $hasItems = $itemBorrowing->items && $itemBorrowing->items->isNotEmpty();
+
+        if ($hasItems) {
+            $itemNames = $itemBorrowing->items->map(fn ($p) => $p->item?->name)->filter()->implode(', ');
+            $itemCodes = $itemBorrowing->items->map(fn ($p) => $p->item?->code)->filter()->implode(', ');
+            $itemCategories = $itemBorrowing->items->map(fn ($p) => $p->item?->category)->filter()->implode(', ');
+            $totalQuantity = $itemBorrowing->items->sum(fn ($p) => $p->quantity ?? 0);
+            $borrowDates = $itemBorrowing->items->pluck('borrow_date')->filter()->sort()->values();
+            $returnDates = $itemBorrowing->items->pluck('return_date')->filter()->sort()->values();
+            $borrowDate = $borrowDates->first();
+            $returnDate = $returnDates->last();
+        } else {
+            $itemNames = $itemBorrowing->singleItem?->name;
+            $itemCodes = $itemBorrowing->singleItem?->code;
+            $itemCategories = $itemBorrowing->singleItem?->category;
+            $totalQuantity = $itemBorrowing->quantity ?? 0;
+            $borrowDate = $itemBorrowing->borrow_date;
+            $returnDate = $itemBorrowing->return_date;
+        }
+
         return [
             $itemBorrowing->id,
             $this->formatDateTime($itemBorrowing->created_at),
@@ -61,12 +82,12 @@ class ItemBorrowingReportExport implements FromCollection, WithHeadings, WithMap
             $itemBorrowing->user?->phone,
             $itemBorrowing->title,
             $itemBorrowing->description,
-            $this->formatDate($itemBorrowing->borrow_date),
-            $this->formatDate($itemBorrowing->return_date),
-            $itemBorrowing->quantity,
-            $itemBorrowing->item?->code,
-            $itemBorrowing->item?->name,
-            $itemBorrowing->item?->category,
+            $this->formatDate($borrowDate),
+            $this->formatDate($returnDate),
+            $totalQuantity,
+            $itemCodes,
+            $itemNames,
+            $itemCategories,
         ];
     }
 

@@ -23,10 +23,19 @@ class Item extends Model
     ];
 
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany<ItemBorrowing>
+     * Direct borrowings (legacy)
      */
     public function itemBorrowings(): HasMany
     {
         return $this->hasMany(ItemBorrowing::class);
     }
+
+    /**
+     * Borrowings via pivot (new multi)
+     */
+    public function borrowingItems(): HasMany
+    {
+        return $this->hasMany(ItemBorrowingItem::class);
+    }
+
 }

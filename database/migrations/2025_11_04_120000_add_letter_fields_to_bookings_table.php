@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('bookings', function (Blueprint $table): void {
-            $table->unsignedInteger('letter_sequence')->nullable()->after('type');
+$table->unsignedInteger('letter_sequence')->nullable()->after('status');
             $table->string('letter_number')->nullable()->after('letter_sequence');
             $table->timestamp('letter_generated_at')->nullable()->after('letter_number');
             $table->index('letter_generated_at');

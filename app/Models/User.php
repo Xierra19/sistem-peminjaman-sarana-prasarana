@@ -8,6 +8,19 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
+use App\Models\Booking;
+use App\Models\ItemBorrowing;
+
+/**
+ * @method bool isAdmin()
+ * @method bool isSuperAdmin()
+ * @method bool isAdminBap()
+ * @method bool isAdminSarpras()
+ * @method bool canManageUsers()
+ * @method bool canManageHistory()
+ * @method bool canManageRoomModule()
+ * @method bool canManageItemModule()
+ */
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */

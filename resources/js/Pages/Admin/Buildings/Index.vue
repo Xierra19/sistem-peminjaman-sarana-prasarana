@@ -6,6 +6,7 @@ import { usePagination } from '@/Composables/usePagination'
 import { useTableSort } from '@/Composables/useTableSort'
 import { Head, Link, useForm, router } from '@inertiajs/vue3'
 import { computed, ref } from 'vue'
+import Swal from 'sweetalert2' // <-- Import SweetAlert
 
 const props = defineProps({
   buildings: Array,
@@ -33,6 +34,9 @@ const ensureCampusesLoaded = () => {
   }
 }
 
+// ==========================================
+// LOGIKA MODAL CREATE
+// ==========================================
 const openCreateModal = () => {
   createForm.reset()
   createForm.clearErrors()
@@ -46,6 +50,27 @@ const closeCreateModal = () => {
   createForm.clearErrors()
 }
 
+const confirmCreate = () => {
+  Swal.fire({
+    title: 'Konfirmasi Simpan',
+    text: "Apakah Anda yakin data gedung yang dimasukkan sudah benar?",
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#2563eb',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: 'Ya, Simpan',
+    cancelButtonText: 'Periksa Lagi',
+    target: document.querySelector('dialog[open]') || document.body,
+    customClass: {
+      container: 'swal-z-top-force'
+    }
+  }).then((result) => {
+    if (result.isConfirmed) {
+      submitCreate()
+    }
+  })
+}
+
 const submitCreate = () => {
   createForm.post(route('admin.buildings.store'), {
    preserveState: true,
@@ -54,16 +79,17 @@ const submitCreate = () => {
       closeCreateModal()
     },
    onError: () => {
-     // setelah validasi gagal, lazy prop campuses biasanya kosong lagi
      ensureCampusesLoaded()
    },
    onFinish: () => {
-     // jaga-jaga: kalau masih kosong, muat ulang
      ensureCampusesLoaded()
    }
   })
 }
 
+// ==========================================
+// LOGIKA MODAL EDIT (UPDATE)
+// ==========================================
 const openEditModal = (building) => {
   selectedBuilding.value = building
   editForm.name = building.name ?? ''
@@ -78,6 +104,27 @@ const closeEditModal = () => {
   selectedBuilding.value = null
   editForm.reset()
   editForm.clearErrors()
+}
+
+const confirmEdit = () => {
+  Swal.fire({
+    title: 'Konfirmasi Update',
+    text: "Apakah Anda yakin ingin menyimpan perubahan pada gedung ini?",
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#eab308',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: 'Ya, Update',
+    cancelButtonText: 'Batal',
+    target: document.querySelector('dialog[open]') || document.body,
+    customClass: {
+      container: 'swal-z-top-force'
+    }
+  }).then((result) => {
+    if (result.isConfirmed) {
+      submitEdit()
+    }
+  })
 }
 
 const submitEdit = () => {
@@ -96,6 +143,30 @@ const submitEdit = () => {
    }
   })
 }
+
+// ==========================================
+// LOGIKA DELETE
+// ==========================================
+const confirmDelete = (id, name) => {
+  Swal.fire({
+    title: 'Yakin ingin menghapus?',
+    text: `Data gedung "${name}" akan dihapus permanen dan tidak dapat dikembalikan!`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#dc2626',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: 'Ya, Hapus!',
+    cancelButtonText: 'Batal',
+  }).then((result) => {
+    if (result.isConfirmed) {
+      router.delete(route('admin.buildings.destroy', id))
+    }
+  })
+}
+
+// ==========================================
+// LOGIKA TABEL & PAGINASI
+// ==========================================
 const buildingsList = computed(() => props.buildings ?? [])
 
 const {
@@ -225,14 +296,14 @@ const perPageOptions = [5, 10, 25, 50]
                   >
                     ✏️ Edit
                   </button>
-                  <Link
-                    :href="route('admin.buildings.destroy', building.id)"
-                    method="delete"
-                    as="button"
+                  <!-- Ubah Link menjadi button memanggil confirmDelete -->
+                  <button
+                    type="button"
                     class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                    @click="confirmDelete(building.id, building.name)"
                   >
                     🗑 Hapus
-                  </Link>
+                  </button>
                 </div>
               </td>
             </tr>
@@ -302,12 +373,12 @@ const perPageOptions = [5, 10, 25, 50]
       </div>
     </div>
 
-    <!-- CREATE MODAL -->
-    <Modal :show="showCreateModal" max-width="lg" @close="closeCreateModal">
+    <!-- CREATE MODAL (Diperbesar ke 3xl) -->
+    <Modal :show="showCreateModal" maxWidth="3xl" @close="closeCreateModal">
       <div class="p-6">
         <h2 class="text-lg font-semibold text-gray-800 mb-4">➕ Tambah Gedung</h2>
 
-        <form @submit.prevent="submitCreate" class="space-y-4">
+        <form @submit.prevent="confirmCreate" class="space-y-4">
           <div>
             <label class="block text-sm font-medium text-gray-700">Nama Gedung</label>
             <input v-model="createForm.name" type="text" class="w-full border rounded px-3 py-2 mt-1" />
@@ -340,12 +411,12 @@ const perPageOptions = [5, 10, 25, 50]
       </div>
     </Modal>
 
-    <!-- EDIT MODAL -->
-    <Modal :show="showEditModal" max-width="lg" @close="closeEditModal">
+    <!-- EDIT MODAL (Diperbesar ke 3xl) -->
+    <Modal :show="showEditModal" maxWidth="3xl" @close="closeEditModal">
       <div class="p-6">
         <h2 class="text-lg font-semibold text-gray-800 mb-4">✏️ Edit Gedung</h2>
 
-        <form @submit.prevent="submitEdit" class="space-y-4">
+        <form @submit.prevent="confirmEdit" class="space-y-4">
           <div>
             <label class="block text-sm font-medium text-gray-700">Nama Gedung</label>
             <input v-model="editForm.name" type="text" class="w-full border rounded px-3 py-2 mt-1" />
@@ -379,3 +450,10 @@ const perPageOptions = [5, 10, 25, 50]
     </Modal>
   </AuthenticatedLayout>
 </template>
+
+<style>
+/* Memaksa pop-up SweetAlert tampil di urutan paling depan */
+div.swal-z-top-force {
+  z-index: 999999 !important;
+}
+</style>

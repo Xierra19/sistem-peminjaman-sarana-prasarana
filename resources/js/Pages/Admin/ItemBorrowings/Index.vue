@@ -2,7 +2,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import SortableTh from '@/Components/SortableTh.vue'
 import { Head, Link } from '@inertiajs/vue3'
-import { computed } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { usePagination } from '@/Composables/usePagination'
 import { useTableSort } from '@/Composables/useTableSort'
 
@@ -31,8 +31,140 @@ const badgeClasses = {
   returned: 'bg-blue-100 text-blue-700',
 }
 
-const borrowingsList = computed(() => props.itemBorrowings ?? [])
+const statusOptions = ['waiting', 'approved', 'returned', 'rejected', 'cancelled']
 
+// ── Filter state ──────────────────────────────────────────────────────────────
+const filterForm = reactive({
+  search: '',
+  status: '',
+  start_date: '',
+  end_date: '',
+})
+
+// Applied filters (only updated when user clicks "Terapkan Filter")
+const appliedFilters = reactive({
+  search: '',
+  status: '',
+  start_date: '',
+  end_date: '',
+})
+
+const applyFilters = () => {
+  Object.assign(appliedFilters, { ...filterForm })
+}
+
+const resetFilters = () => {
+  Object.assign(filterForm, { search: '', status: '', start_date: '', end_date: '' })
+  Object.assign(appliedFilters, { search: '', status: '', start_date: '', end_date: '' })
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+const getItemNames = (borrowing) => {
+  if (borrowing.items && borrowing.items.length > 0) {
+    return borrowing.items.map((pivot) => pivot.item?.name).filter(Boolean).join(', ')
+  }
+  return borrowing.singleItem?.name ?? '-'
+}
+
+const getItemCodes = (borrowing) => {
+  if (borrowing.items && borrowing.items.length > 0) {
+    return borrowing.items.map((pivot) => pivot.item?.code).filter(Boolean).join(', ')
+  }
+  return borrowing.singleItem?.code ?? '-'
+}
+
+const getItemCategories = (borrowing) => {
+  if (borrowing.items && borrowing.items.length > 0) {
+    return borrowing.items.map((pivot) => pivot.item?.category).filter(Boolean).join(', ')
+  }
+  return borrowing.singleItem?.category ?? '-'
+}
+
+const getTotalQuantity = (borrowing) => {
+  if (borrowing.items && borrowing.items.length > 0) {
+    return borrowing.items.reduce((sum, pivot) => sum + (pivot.quantity || 0), 0)
+  }
+  return borrowing.quantity ?? 0
+}
+
+const getBorrowDates = (borrowing) => {
+  if (borrowing.items && borrowing.items.length > 0) {
+    const dates = borrowing.items.map((pivot) => pivot.borrow_date).filter(Boolean)
+    if (dates.length === 0) return null
+    return dates.sort()[0]
+  }
+  return borrowing.borrow_date
+}
+
+const getReturnDates = (borrowing) => {
+  if (borrowing.items && borrowing.items.length > 0) {
+    const dates = borrowing.items.map((pivot) => pivot.return_date).filter(Boolean)
+    if (dates.length === 0) return null
+    return dates.sort()[dates.length - 1]
+  }
+  return borrowing.return_date
+}
+
+const normalizeStatus = (status) => (status === 'requested' ? 'waiting' : status)
+
+// ── Filtered list (respects appliedFilters) ───────────────────────────────────
+const borrowingsList = computed(() => {
+  let list = props.itemBorrowings ?? []
+
+  if (appliedFilters.search) {
+    const q = appliedFilters.search.toLowerCase()
+    list = list.filter((b) => {
+      return (
+        (b.title ?? '').toLowerCase().includes(q) ||
+        (b.user?.name ?? '').toLowerCase().includes(q) ||
+        getItemNames(b).toLowerCase().includes(q) ||
+        getItemCodes(b).toLowerCase().includes(q)
+      )
+    })
+  }
+
+  if (appliedFilters.status) {
+    list = list.filter((b) => normalizeStatus(b.status) === appliedFilters.status)
+  }
+
+  if (appliedFilters.start_date) {
+    const from = new Date(appliedFilters.start_date)
+    list = list.filter((b) => {
+      const d = b.created_at ? new Date(b.created_at) : null
+      return d && d >= from
+    })
+  }
+
+  if (appliedFilters.end_date) {
+    const to = new Date(appliedFilters.end_date)
+    to.setHours(23, 59, 59, 999)
+    list = list.filter((b) => {
+      const d = b.created_at ? new Date(b.created_at) : null
+      return d && d <= to
+    })
+  }
+
+  return list
+})
+
+// ── Summary cards (based on filtered list) ───────────────────────────────────
+const summary = computed(() => {
+  const all = props.itemBorrowings ?? []
+  const filtered = borrowingsList.value
+
+  const count = (arr, fn) => arr.filter(fn).length
+
+  return {
+    total: filtered.length,
+    waiting:   count(filtered, (b) => ['waiting', 'requested'].includes(b.status)),
+    approved:  count(filtered, (b) => b.status === 'approved'),
+    returned:  count(filtered, (b) => b.status === 'returned'),
+    rejected:  count(filtered, (b) => b.status === 'rejected'),
+    cancelled: count(filtered, (b) => b.status === 'cancelled'),
+  }
+})
+
+// ── Sort & pagination ─────────────────────────────────────────────────────────
 const {
   sortedItems,
   toggleSort,
@@ -40,12 +172,15 @@ const {
   ariaSortValue,
 } = useTableSort(borrowingsList, {
   accessors: {
-    title: (borrowing) => borrowing.title ?? '',
-    applicant: (borrowing) => borrowing.user?.name ?? '',
-    item: (borrowing) => borrowing.item?.name ?? '',
-    quantity: (borrowing) => borrowing.quantity ?? 0,
-    borrow_date: (borrowing) => (borrowing.borrow_date ? new Date(borrowing.borrow_date) : null),
-    status: (borrowing) => (borrowing.status === 'requested' ? 'waiting' : borrowing.status) ?? '',
+    title:      (b) => b.title ?? '',
+    applicant:  (b) => b.user?.name ?? '',
+    item:       (b) => getItemNames(b),
+    quantity:   (b) => getTotalQuantity(b),
+    borrow_date: (b) => {
+      const d = getBorrowDates(b)
+      return d ? new Date(d) : null
+    },
+    status: (b) => normalizeStatus(b.status) ?? '',
   },
 })
 
@@ -80,7 +215,103 @@ const formatDate = (value) => {
         <p class="text-sm text-gray-500">Kelola permintaan peminjaman barang yang masuk.</p>
       </div>
 
+      <!-- Summary Cards -->
+      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Total Data</p>
+          <p class="mt-2 text-2xl font-semibold text-slate-900">{{ summary.total }}</p>
+          <p class="text-xs text-slate-500">Seluruh hasil sesuai filter aktif</p>
+        </div>
+        <div class="rounded-xl border border-amber-200 bg-white p-5 shadow-sm">
+          <p class="text-xs font-medium uppercase tracking-wide text-amber-500">Menunggu</p>
+          <p class="mt-2 text-2xl font-semibold text-amber-600">{{ summary.waiting }}</p>
+          <p class="text-xs text-amber-500">Booking belum diputuskan</p>
+        </div>
+        <div class="rounded-xl border border-emerald-200 bg-white p-5 shadow-sm">
+          <p class="text-xs font-medium uppercase tracking-wide text-emerald-500">Disetujui</p>
+          <p class="mt-2 text-2xl font-semibold text-emerald-600">{{ summary.approved }}</p>
+          <p class="text-xs text-emerald-500">Booking aktif</p>
+        </div>
+        <div class="rounded-xl border border-blue-200 bg-white p-5 shadow-sm">
+          <p class="text-xs font-medium uppercase tracking-wide text-blue-500">Dikembalikan</p>
+          <p class="mt-2 text-2xl font-semibold text-blue-600">{{ summary.returned }}</p>
+          <p class="text-xs text-blue-500">Barang yang sudah dikembalikan</p>
+        </div>
+        <div class="rounded-xl border border-rose-200 bg-white p-5 shadow-sm">
+          <p class="text-xs font-medium uppercase tracking-wide text-rose-500">Ditolak / Batal</p>
+          <p class="mt-2 text-2xl font-semibold text-rose-600">{{ summary.rejected + summary.cancelled }}</p>
+          <p class="text-xs text-rose-500">Termasuk pembatalan admin</p>
+        </div>
+      </div>
+      <!-- End Summary Cards -->
+
+      <!-- Filter Panel -->
+      <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-medium text-gray-700" for="item-report-search">Pencarian bebas</label>
+            <input
+              id="item-report-search"
+              v-model="filterForm.search"
+              type="text"
+              placeholder="Nama pemohon, barang, kode…"
+              class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-medium text-gray-700" for="item-report-status">Status peminjaman</label>
+            <select
+              id="item-report-status"
+              v-model="filterForm.status"
+              class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              <option value="">Semua status</option>
+              <option v-for="status in statusOptions" :key="`item-status-${status}`" :value="status">
+                {{ statusLabels[status] ?? status }}
+              </option>
+            </select>
+          </div>
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-medium text-gray-700" for="item-report-start-date">Tanggal pengajuan (dari)</label>
+            <input
+              id="item-report-start-date"
+              v-model="filterForm.start_date"
+              type="date"
+              class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-medium text-gray-700" for="item-report-end-date">Tanggal pengajuan (sampai)</label>
+            <input
+              id="item-report-end-date"
+              v-model="filterForm.end_date"
+              type="date"
+              class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+        <div class="mt-4 flex flex-wrap items-center justify-end gap-3">
+          <button
+            type="button"
+            class="rounded-md border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 transition hover:border-gray-300 hover:text-gray-800"
+            @click="resetFilters"
+          >
+            Reset
+          </button>
+          <button
+            type="button"
+            class="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+            @click="applyFilters"
+          >
+            Terapkan Filter
+          </button>
+        </div>
+      </div>
+      <!-- End Filter Panel -->
+
       <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+
+        <!-- Card Header -->
         <div class="flex flex-col gap-3 border-b border-gray-100 px-5 py-4 md:flex-row md:items-center md:justify-between">
           <div class="text-sm font-semibold text-gray-700">Daftar Permintaan Masuk</div>
           <div class="flex items-center justify-end gap-3 text-sm text-gray-600">
@@ -96,7 +327,9 @@ const formatDate = (value) => {
             </select>
           </div>
         </div>
+        <!-- End Card Header -->
 
+        <!-- Table -->
         <table class="min-w-full divide-y divide-gray-200 text-sm">
           <thead class="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
             <tr>
@@ -155,13 +388,16 @@ const formatDate = (value) => {
                 <div class="text-xs text-gray-500">{{ borrowing.user?.email ?? '-' }}</div>
               </td>
               <td class="px-5 py-4">
-                <div class="font-medium text-gray-800">{{ borrowing.item?.name ?? '-' }}</div>
-                <div class="text-xs text-gray-500">{{ borrowing.item?.code ?? '-' }} • {{ borrowing.item?.category ?? '-' }}</div>
+                <div class="font-medium text-gray-800">{{ getItemNames(borrowing) }}</div>
+                <div class="text-xs text-gray-500">{{ getItemCodes(borrowing) }} • {{ getItemCategories(borrowing) }}</div>
+                <div v-if="borrowing.items && borrowing.items.length > 1" class="mt-1 text-xs text-gray-400">
+                  {{ borrowing.items.length }} jenis barang
+                </div>
               </td>
-              <td class="px-5 py-4 text-sm">{{ borrowing.quantity }}</td>
+              <td class="px-5 py-4 text-sm">{{ getTotalQuantity(borrowing) }}</td>
               <td class="px-5 py-4 text-sm">
-                <div>Pinjam: <span class="font-medium text-gray-800">{{ formatDate(borrowing.borrow_date) }}</span></div>
-                <div>Kembali: <span class="font-medium text-gray-800">{{ formatDate(borrowing.return_date) }}</span></div>
+                <div>Pinjam: <span class="font-medium text-gray-800">{{ formatDate(getBorrowDates(borrowing)) }}</span></div>
+                <div>Kembali: <span class="font-medium text-gray-800">{{ formatDate(getReturnDates(borrowing)) }}</span></div>
               </td>
               <td class="px-5 py-4 text-center">
                 <span
@@ -187,7 +423,9 @@ const formatDate = (value) => {
             </tr>
           </tbody>
         </table>
+        <!-- End Table -->
 
+        <!-- Pagination -->
         <div class="flex flex-col gap-3 border-t border-gray-100 px-5 py-4 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <span v-if="pageMeta.of">Menampilkan {{ pageMeta.from }}-{{ pageMeta.to }} dari {{ pageMeta.of }} data</span>
@@ -197,18 +435,18 @@ const formatDate = (value) => {
             <button
               type="button"
               class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-              @click="changePage(1)"
               :disabled="currentPage === 1 || !borrowingsList.length"
+              @click="changePage(1)"
             >
-              First
+              «
             </button>
             <button
               type="button"
               class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-              @click="changePage(currentPage - 1)"
               :disabled="currentPage === 1 || !borrowingsList.length"
+              @click="changePage(currentPage - 1)"
             >
-              Prev
+              ‹
             </button>
             <template v-if="borrowingsList.length">
               <button
@@ -229,22 +467,25 @@ const formatDate = (value) => {
             <button
               type="button"
               class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-              @click="changePage(currentPage + 1)"
               :disabled="currentPage === pages.length || !borrowingsList.length"
+              @click="changePage(currentPage + 1)"
             >
-              Next
+              ›
             </button>
             <button
               type="button"
               class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-              @click="changePage(pages.length)"
               :disabled="currentPage === pages.length || !borrowingsList.length"
+              @click="changePage(pages.length)"
             >
-              Last
+              »
             </button>
           </div>
         </div>
+        <!-- End Pagination -->
+
       </div>
     </div>
+
   </AuthenticatedLayout>
 </template>

@@ -1,7 +1,8 @@
+
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import { Head, useForm } from '@inertiajs/vue3'
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, nextTick } from 'vue'
 
 const props = defineProps({
   items: {
@@ -11,199 +12,138 @@ const props = defineProps({
 })
 
 const form = useForm({
-  item_id: '',
   title: '',
   description: '',
-  borrow_date: '',
-  return_date: '',
-  quantity: 1,
   attachment: null,
+  items: [],
 })
 
-const availability = ref({
-  total_quantity: 0,
-  reserved_quantity: 0,
-  remaining_quantity: 0,
-  borrowings: [],
-})
-const availabilityMessage = ref('')
-const isAvailabilityLoading = ref(false)
+const itemAvailabilities = ref({})
+const isLoadingAvailability = ref({})
+const formErrors = ref({})
 
 const formatDateForInput = (date) => {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
+  if (!date) return ''
+  const d = new Date(date)
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
 }
 
-const minBorrowDate = computed(() => {
+const getMinBorrowDate = () => {
   const date = new Date()
   date.setHours(0, 0, 0, 0)
   date.setDate(date.getDate() + 3)
   return formatDateForInput(date)
-})
-
-const minReturnDate = computed(() => form.borrow_date || minBorrowDate.value)
-const selectedItem = computed(() =>
-  (props.items ?? []).find((item) => String(item.id) === String(form.item_id)),
-)
-
-const requestedQuantityExceeded = computed(() => {
-  const requested = Number(form.quantity || 0)
-  const remaining = Number(availability.value.remaining_quantity || 0)
-  return requested > 0 && form.item_id && form.borrow_date && form.return_date && requested > remaining
-})
-
-watch(
-  () => form.borrow_date,
-  (value) => {
-    if (!value) {
-      form.return_date = ''
-      resetAvailability()
-      return
-    }
-
-    if (value < minBorrowDate.value) {
-      form.borrow_date = ''
-      return
-    }
-
-    if (!form.return_date || form.return_date < value) {
-      form.return_date = value
-    }
-  },
-)
-
-watch(
-  () => form.return_date,
-  (value) => {
-    if (!value) {
-      if (form.borrow_date) {
-        form.return_date = form.borrow_date
-      }
-      return
-    }
-
-    if (form.borrow_date && value < form.borrow_date) {
-      form.return_date = form.borrow_date
-    }
-  },
-)
-
-watch(
-  () => [form.item_id, form.borrow_date, form.return_date],
-  () => {
-    if (form.item_id && form.borrow_date && form.return_date) {
-      loadAvailability()
-      return
-    }
-
-    resetAvailability()
-  },
-)
-
-function resetAvailability() {
-  availability.value = {
-    total_quantity: selectedItem.value?.quantity ?? 0,
-    reserved_quantity: 0,
-    remaining_quantity: selectedItem.value?.quantity ?? 0,
-    borrowings: [],
-  }
-  availabilityMessage.value = ''
-  isAvailabilityLoading.value = false
 }
 
-const loadAvailability = async () => {
-  const item = selectedItem.value
+const addItem = () => {
+  form.items.push({
+    item_id: '',
+    quantity: 1,
+    borrow_date: getMinBorrowDate(),
+    return_date: getMinBorrowDate(),
+  })
+  nextTick(() => {
+    updateAvailability(form.items.length - 1)
+  })
+}
 
-  if (!item || !form.borrow_date || !form.return_date) {
-    resetAvailability()
+const removeItem = (index) => {
+  form.items.splice(index, 1)
+  // Clear availability
+  delete itemAvailabilities.value[index]
+}
+
+const getItemById = (itemId) => props.items.find(i => String(i.id) === String(itemId)) || null
+
+const updateAvailability = async (index) => {
+  const itemRow = form.items[index]
+  if (!itemRow.item_id || !itemRow.borrow_date || !itemRow.return_date) return
+
+  // Basic date format validation
+  const borrowDate = new Date(itemRow.borrow_date)
+  const returnDate = new Date(itemRow.return_date)
+  if (isNaN(borrowDate.getTime()) || isNaN(returnDate.getTime()) || returnDate <= borrowDate) {
     return
   }
 
-  if (!item.is_available) {
-    availability.value = {
-      total_quantity: item.quantity ?? 0,
-      reserved_quantity: item.quantity ?? 0,
-      remaining_quantity: 0,
-      borrowings: [],
-    }
-    availabilityMessage.value = 'Barang ini sedang tidak tersedia untuk dipilih.'
-    isAvailabilityLoading.value = false
-    return
-  }
+  const item = getItemById(itemRow.item_id)
+  if (!item) return
 
-  isAvailabilityLoading.value = true
-  availabilityMessage.value = ''
+  isLoadingAvailability.value[index] = true
 
   try {
-    const response = await fetch(
-      route('items.availability', {
-        item: item.id,
-        borrow_date: form.borrow_date,
-        return_date: form.return_date,
-      }),
-      {
-        headers: {
-          Accept: 'application/json',
-        },
-      },
-    )
+    const response = await fetch(route('items.availability', {
+      item: itemRow.item_id,
+      borrow_date: itemRow.borrow_date,
+      return_date: itemRow.return_date,
+    }), {
+      headers: { Accept: 'application/json' },
+    })
 
     if (!response.ok) {
-      throw new Error('Gagal memuat ketersediaan')
+      const errorText = await response.text()
+      throw new Error(`HTTP ${response.status}: ${errorText}`)
     }
 
     const data = await response.json()
-    availability.value = {
-      total_quantity: Number(data.total_quantity ?? item.quantity ?? 0),
-      reserved_quantity: Number(data.reserved_quantity ?? 0),
-      remaining_quantity: Number(data.remaining_quantity ?? item.quantity ?? 0),
-      borrowings: Array.isArray(data.borrowings) ? data.borrowings : [],
-    }
-    availabilityMessage.value =
-      data.available === false && data.message
-        ? data.message
-        : availability.value.borrowings.length === 0
-          ? 'Belum ada pengajuan lain pada rentang tanggal ini.'
-          : ''
+    itemAvailabilities.value[index] = data
   } catch (error) {
-    availabilityMessage.value = 'Tidak dapat memuat ketersediaan barang. Silakan coba lagi.'
+    console.error(`Availability fetch failed for item ${itemRow.item_id} (${itemRow.borrow_date} to ${itemRow.return_date}):`, error)
+    itemAvailabilities.value[index] = { 
+      remaining_quantity: 0,
+      total_quantity: item?.quantity || 0,
+      reserved_quantity: 'Error'
+    }
   } finally {
-    isAvailabilityLoading.value = false
+    isLoadingAvailability.value[index] = false
   }
 }
 
-const handleFileChange = (event) => {
-  const [file] = event.target.files || []
-  form.attachment = file ?? null
+const isRowValid = (index) => {
+  const row = form.items[index]
+  const avail = itemAvailabilities.value[index] || {}
+  return row.item_id && row.quantity > 0 && row.borrow_date && row.return_date && row.quantity <= (avail.remaining_quantity || 0)
 }
 
-const formatDate = (value) =>
-  value
-    ? new Date(value).toLocaleDateString('id-ID', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-      })
-    : '-'
+const hasAnyRowError = computed(() => form.items.some((_, index) => !isRowValid(index)))
 
-const statusLabel = (status) => {
-  const labels = {
-    requested: 'Menunggu',
-    waiting: 'Menunggu',
-    approved: 'Disetujui',
-    rejected: 'Ditolak',
-    cancelled: 'Dibatalkan',
-    returned: 'Dikembalikan',
-  }
+watch(() => form.items, () => {
+  formErrors.value = {}
+}, { deep: true })
 
-  return labels[status] ?? status
+watch(() => form.items, (newItems) => {
+  newItems.forEach((row, index) => {
+    // Only update if all required fields are set and valid
+    if (row.item_id && row.borrow_date && row.return_date) {
+      updateAvailability(index)
+    }
+  })
+}, { deep: true })
+
+const handleFileChange = (e) => {
+  const file = e.target.files[0]
+  form.attachment = file || null
 }
+
+const formatDate = (date) => date ? new Date(date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'
 
 const submit = () => {
+  if (form.items.length === 0) {
+    formErrors.value.items = 'Minimal 1 barang harus dipilih.'
+    return
+  }
+  if (hasAnyRowError.value) {
+    formErrors.value.submit = 'Periksa ketersediaan semua barang.'
+    return
+  }
+  form.clearErrors()
   form.post(route('item-borrowings.store'))
 }
+
+addItem() // Start with 1 row
 </script>
 
 <template>
@@ -215,7 +155,7 @@ const submit = () => {
         <div class="border-b border-slate-200 pb-5">
           <h1 class="text-2xl font-semibold text-slate-900">Request Peminjaman Barang</h1>
           <p class="mt-1 text-sm text-slate-500">
-            Pilih barang, tentukan tanggal peminjaman, lalu lengkapi detail pengajuan.
+            Pilih multiple barang untuk satu request. Upload surat tugas <span class="text-rose-500 font-medium">*</span>
           </p>
         </div>
 
@@ -223,211 +163,157 @@ const submit = () => {
           <div class="flex items-start gap-3">
             <span class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">1</span>
             <div>
-              <p class="font-semibold text-slate-800">Pilih Barang</p>
-              <p>Pilih barang yang tersedia dan jumlah yang dibutuhkan.</p>
+              <p class="font-semibold text-slate-800">Tambah Barang</p>
+              <p>Pilih barang & tentukan jumlah + tanggal.</p>
             </div>
           </div>
           <div class="flex items-start gap-3">
             <span class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">2</span>
             <div>
-              <p class="font-semibold text-slate-800">Atur Periode</p>
-              <p>Tentukan tanggal pinjam dan tanggal kembali.</p>
+              <p class="font-semibold text-slate-800">Detail Request</p>
+              <p>Judul & deskripsi kegiatan.</p>
             </div>
           </div>
           <div class="flex items-start gap-3">
             <span class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">3</span>
             <div>
-              <p class="font-semibold text-slate-800">Lengkapi Dokumen</p>
-              <p>Isi keperluan peminjaman dan upload lampiran bila perlu.</p>
+              <p class="font-semibold text-slate-800">Upload Surat <span class="text-rose-500">*</span></p>
+              <p>Surat tugas/wajib lampiran.</p>
             </div>
           </div>
         </div>
 
-        <form class="space-y-8" @submit.prevent="submit">
-          <div class="grid gap-6 md:grid-cols-2">
-            <div class="space-y-2 md:col-span-2">
-              <label class="block text-sm font-medium text-slate-700">Barang</label>
-              <select
-                v-model="form.item_id"
-                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              >
-                <option value="" disabled>Pilih barang</option>
-                <option
-                  v-for="item in props.items"
-                  :key="item.id"
-                  :value="item.id"
-                  :disabled="!item.is_available || Number(item.quantity) <= 0"
-                >
-                  {{ item.name }} ({{ item.code }}) - Stok {{ item.quantity }}
-                  {{ item.is_available && Number(item.quantity) > 0 ? '' : '(Tidak tersedia)' }}
-                </option>
-              </select>
-              <div v-if="form.errors.item_id" class="text-sm text-red-500">{{ form.errors.item_id }}</div>
-            </div>
-
-            <div class="space-y-2">
-              <label class="block text-sm font-medium text-slate-700">Jumlah</label>
-              <input
-                v-model.number="form.quantity"
-                type="number"
-                min="1"
-                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
-              <p v-if="requestedQuantityExceeded" class="text-xs text-rose-500">
-                Jumlah yang diminta melebihi stok tersedia pada rentang tanggal ini.
-              </p>
-              <div v-if="form.errors.quantity" class="text-sm text-red-500">{{ form.errors.quantity }}</div>
-            </div>
-
-            <div class="space-y-2">
-              <label class="block text-sm font-medium text-slate-700">Keperluan / Judul</label>
-              <input
-                v-model="form.title"
-                type="text"
-                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                placeholder="Contoh: Dokumentasi kegiatan seminar"
-              />
-              <div v-if="form.errors.title" class="text-sm text-red-500">{{ form.errors.title }}</div>
-            </div>
+        <form @submit.prevent="submit" class="space-y-8">
+          <!-- Title -->
+          <div class="space-y-2">
+            <label class="block text-sm font-medium text-slate-700">Keperluan / Judul <span class="text-rose-500">*</span></label>
+            <input v-model="form.title" type="text" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500" placeholder="Contoh: Seminar Teknologi 2026" />
+            <div v-if="form.errors.title" class="text-sm text-red-500">{{ form.errors.title }}</div>
           </div>
 
-          <div
-            v-if="selectedItem"
-            class="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm text-slate-600"
-          >
-            <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div>
-                <p class="text-sm font-semibold text-slate-700">Detail Barang</p>
-                <p class="mt-1">Nama: <span class="font-medium text-slate-800">{{ selectedItem.name }}</span></p>
-                <p>Kode: <span class="font-medium text-slate-800">{{ selectedItem.code }}</span></p>
-                <p>Kategori: <span class="font-medium text-slate-800">{{ selectedItem.category }}</span></p>
-                <p>Stok total: <span class="font-medium text-slate-800">{{ selectedItem.quantity }}</span></p>
-              </div>
-              <div>
-                <span
-                  class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium"
-                  :class="selectedItem.is_available
-                    ? 'border-emerald-200 bg-emerald-100 text-emerald-700'
-                    : 'border-rose-200 bg-rose-100 text-rose-700'"
-                >
-                  {{ selectedItem.is_available ? 'Tersedia' : 'Tidak tersedia' }}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div class="grid gap-6 md:grid-cols-2">
-            <div class="space-y-2">
-              <label class="block text-sm font-medium text-slate-700">Tanggal Pinjam</label>
-              <input
-                v-model="form.borrow_date"
-                type="date"
-                :min="minBorrowDate"
-                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
-              <p class="text-xs text-slate-500">Tanggal minimal peminjaman: {{ minBorrowDate }} (H+3)</p>
-              <div v-if="form.errors.borrow_date" class="text-sm text-red-500">{{ form.errors.borrow_date }}</div>
-            </div>
-            <div class="space-y-2">
-              <label class="block text-sm font-medium text-slate-700">Tanggal Kembali</label>
-              <input
-                v-model="form.return_date"
-                type="date"
-                :min="minReturnDate"
-                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
-              <p class="text-xs text-slate-500">Tanggal kembali harus sama atau setelah tanggal pinjam.</p>
-              <div v-if="form.errors.return_date" class="text-sm text-red-500">{{ form.errors.return_date }}</div>
-            </div>
-          </div>
-
-          <div class="space-y-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm">
-            <div class="flex items-center justify-between">
-              <p class="font-semibold text-slate-700">Ketersediaan Barang pada Rentang Tanggal</p>
-              <span v-if="isAvailabilityLoading" class="text-xs text-blue-500">Memuat stok...</span>
+          <!-- Multi Items Rows -->
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-semibold text-slate-900">Daftar Barang</h3>
+              <button type="button" @click="addItem" class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+                + Tambah Barang
+              </button>
             </div>
 
-            <div class="grid gap-3 sm:grid-cols-3">
-              <div class="rounded-xl bg-white p-3 shadow-sm">
-                <div class="text-xs font-semibold uppercase tracking-wide text-slate-400">Stok Total</div>
-                <div class="mt-1 text-2xl font-semibold text-slate-900">{{ availability.total_quantity ?? selectedItem?.quantity ?? 0 }}</div>
-              </div>
-              <div class="rounded-xl bg-white p-3 shadow-sm">
-                <div class="text-xs font-semibold uppercase tracking-wide text-slate-400">Dipakai</div>
-                <div class="mt-1 text-2xl font-semibold text-slate-900">{{ availability.reserved_quantity }}</div>
-              </div>
-              <div class="rounded-xl bg-white p-3 shadow-sm">
-                <div class="text-xs font-semibold uppercase tracking-wide text-slate-400">Tersisa</div>
-                <div class="mt-1 text-2xl font-semibold text-slate-900">{{ availability.remaining_quantity ?? selectedItem?.quantity ?? 0 }}</div>
-              </div>
+            <div v-if="form.items.length === 0" class="text-center py-12 text-slate-500">
+              Belum ada barang. Klik "Tambah Barang" untuk mulai.
             </div>
 
-            <p v-if="availabilityMessage" class="text-sm text-slate-600">{{ availabilityMessage }}</p>
-            <ul v-else-if="availability.borrowings.length" class="space-y-2 text-sm text-slate-600">
-              <li
-                v-for="borrowing in availability.borrowings"
-                :key="borrowing.id"
-                class="flex flex-col gap-2 rounded-xl bg-white px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div>
-                  <p class="font-medium text-slate-800">{{ borrowing.title }}</p>
-                  <p class="text-xs text-slate-500">
-                    {{ formatDate(borrowing.borrow_date) }} - {{ formatDate(borrowing.return_date) }}
+            <div v-else class="space-y-4">
+              <div v-for="(itemRow, index) in form.items" :key="index" class="border border-slate-200 rounded-2xl p-6 space-y-4 hover:border-blue-300">
+                <div class="flex items-center justify-between">
+                  <h4 class="font-semibold text-slate-900">Barang #{{ index + 1 }}</h4>
+                  <button type="button" @click="removeItem(index)" class="text-rose-500 hover:text-rose-600 text-sm font-medium">Hapus</button>
+                </div>
+
+                <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  <!-- Item Select -->
+                  <div class="space-y-2">
+                    <label class="block text-sm font-medium text-slate-700">Barang</label>
+                    <select v-model="itemRow.item_id" @change="updateAvailability(index)" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                      <option value="">Pilih barang</option>
+                      <option
+                        v-for="item in props.items"
+                        :key="item.id"
+                        :value="item.id"
+                        :disabled="!item.is_available || form.items.some((row, i) => i !== index && String(row.item_id) === String(item.id))"
+                      >
+                        {{ item.name }} ({{ item.code }}) - Stok {{ item.quantity }}
+                      </option>
+                    </select>
+                  </div>
+
+                  <!-- Quantity -->
+                  <div class="space-y-2">
+                    <label class="block text-sm font-medium text-slate-700">Jumlah</label>
+                    <input v-model.number="itemRow.quantity" type="number" min="1" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+                  </div>
+
+                  <!-- Borrow Date -->
+                  <div class="space-y-2">
+                    <label class="block text-sm font-medium text-slate-700">Tanggal Pinjam</label>
+                    <input v-model="itemRow.borrow_date" type="date" :min="getMinBorrowDate()" @change="updateAvailability(index)" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+                  </div>
+
+                  <!-- Return Date -->
+                  <div class="space-y-2">
+                    <label class="block text-sm font-medium text-slate-700">Tanggal Kembali</label>
+                    <input v-model="itemRow.return_date" type="date" :min="itemRow.borrow_date || getMinBorrowDate()" @change="updateAvailability(index)" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+                  </div>
+                </div>
+
+                <!-- Availability Card (same style) -->
+                <div v-if="itemRow.item_id" class="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+
+                  <div class="flex items-center justify-between mb-3">
+                    <p class="font-semibold text-slate-700">Ketersediaan {{ getItemById(itemRow.item_id)?.name }}</p>
+                    <span v-if="isLoadingAvailability[index]" class="text-xs text-blue-500">Memuat...</span>
+                  </div>
+                  <div v-if="itemAvailabilities[index]" class="grid gap-3 sm:grid-cols-3">
+                    <div class="rounded-xl bg-white p-3 shadow-sm">
+                      <div class="text-xs font-semibold uppercase tracking-wide text-slate-400">Total</div>
+                      <div class="mt-1 text-2xl font-semibold text-slate-900">{{ itemAvailabilities[index].total_quantity }}</div>
+                    </div>
+                    <div class="rounded-xl bg-white p-3 shadow-sm">
+                      <div class="text-xs font-semibold uppercase tracking-wide text-slate-400">Dipakai</div>
+                      <div class="mt-1 text-2xl font-semibold text-slate-900">{{ itemAvailabilities[index].reserved_quantity }}</div>
+                    </div>
+                    <div class="rounded-xl bg-white p-3 shadow-sm">
+                      <div class="text-xs font-semibold uppercase tracking-wide text-slate-400">Tersisa</div>
+                      <div class="mt-1 text-2xl font-semibold text-slate-900" :class="itemRow.quantity > itemAvailabilities[index].remaining_quantity ? 'text-rose-600' : 'text-emerald-600'">
+                        {{ itemAvailabilities[index].remaining_quantity }}
+                      </div>
+                    </div>
+                  </div>
+                  <p v-else class="text-sm text-slate-500">Pilih tanggal untuk melihat ketersediaan.</p>
+                  <p v-if="itemRow.quantity > (itemAvailabilities[index]?.remaining_quantity || 0)" class="mt-2 text-xs text-rose-500 font-medium">
+                    ⚠️ Jumlah melebihi stok tersedia
                   </p>
                 </div>
-                <div class="flex items-center gap-3">
-                  <span class="text-xs font-semibold text-slate-500">Qty {{ borrowing.quantity }}</span>
-                  <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-                    {{ statusLabel(borrowing.status) }}
-                  </span>
-                </div>
-              </li>
-            </ul>
-            <p v-else class="text-sm text-slate-500">
-              Pilih barang dan rentang tanggal untuk melihat pemakaian stok.
-            </p>
+              </div>
+            </div>
+            <div v-if="formErrors.items" class="text-sm text-red-500 mt-2">{{ formErrors.items }}</div>
           </div>
 
+          <!-- Description -->
           <div class="space-y-2">
             <label class="block text-sm font-medium text-slate-700">Deskripsi</label>
-            <textarea
-              v-model="form.description"
-              rows="4"
-              class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              placeholder="Tuliskan detail kegiatan atau kebutuhan peminjaman barang."
-            />
+            <textarea v-model="form.description" rows="3" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500" placeholder="Detail kegiatan atau keperluan..."></textarea>
             <div v-if="form.errors.description" class="text-sm text-red-500">{{ form.errors.description }}</div>
           </div>
 
+          <!-- Mandatory Attachment * -->
           <div class="space-y-3">
-            <div class="flex items-center justify-between">
-              <label class="block text-sm font-medium text-slate-700">Lampiran Pendukung</label>
-              <span class="text-xs text-slate-400">PDF, JPG, PNG maksimal 2 MB</span>
-            </div>
-            <label class="flex cursor-pointer items-center justify-between rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-4 transition hover:border-blue-400 hover:bg-blue-50/40">
-              <div>
-                <p class="text-sm font-medium text-slate-700">
-                  {{ form.attachment ? form.attachment.name : 'Pilih file lampiran' }}
+            <label class="block text-sm font-medium text-slate-700">Lampiran Surat Tugas <span class="text-rose-500">*</span></label>
+            <p class="text-xs text-slate-500 mb-2">PDF, JPG, PNG (max 2MB) - Wajib untuk verifikasi</p>
+            <label class="flex cursor-pointer items-center justify-between rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-6 transition hover:border-blue-400 hover:bg-blue-50/20">
+              <div class="text-left">
+                <p class="font-medium text-slate-700">
+                  {{ form.attachment ? form.attachment.name : 'Upload surat tugas (wajib)' }}
                 </p>
-                <p class="text-xs text-slate-500">Opsional, gunakan untuk surat tugas atau dokumen pendukung lain.</p>
+                <p class="text-xs text-slate-500 mt-1">Wajib lampiran surat tugas / dokumen resmi</p>
               </div>
-              <span class="rounded-xl bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm">Browse</span>
-              <input class="hidden" type="file" accept=".pdf,.jpg,.jpeg,.png" @change="handleFileChange" />
+              <span class="rounded-xl bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm">Pilih File</span>
+              <input class="hidden" type="file" accept=".pdf,.jpg,.jpeg,.png" @change="handleFileChange" required />
             </label>
             <div v-if="form.errors.attachment" class="text-sm text-red-500">{{ form.errors.attachment }}</div>
           </div>
 
           <div class="flex flex-col gap-3 border-t border-slate-200 pt-6 sm:flex-row sm:justify-end">
-            <button
-              type="submit"
-              class="inline-flex items-center justify-center rounded-2xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-              :disabled="form.processing || requestedQuantityExceeded"
-            >
-              {{ form.processing ? 'Menyimpan...' : 'Ajukan Peminjaman Barang' }}
+            <button type="submit" :disabled="form.processing || hasAnyRowError || form.items.length === 0 || !form.attachment" class="inline-flex items-center justify-center rounded-2xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto">
+              {{ form.processing ? 'Menyimpan...' : 'Ajukan Peminjaman' }}
             </button>
           </div>
+          <p v-if="formErrors.submit" class="text-sm text-red-500 text-center">{{ formErrors.submit }}</p>
         </form>
       </div>
     </div>
   </AuthenticatedLayout>
-</template>
+  </template>
+
+

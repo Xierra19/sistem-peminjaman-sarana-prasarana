@@ -1,5 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
+import Dropdown from '@/Components/Dropdown.vue'
 import SortableTh from '@/Components/SortableTh.vue'
 import { usePagination } from '@/Composables/usePagination'
 import { useTableSort } from '@/Composables/useTableSort'
@@ -146,6 +147,11 @@ const exportExcel = () => {
   const url = route('admin.reports.export', buildQuery())
   window.open(url, '_blank')
 }
+
+const exportPdf = () => {
+  const url = route('admin.reports.export.pdf', buildQuery())
+  window.open(url, '_blank')
+}
 </script>
 
 <template>
@@ -160,15 +166,43 @@ const exportExcel = () => {
             Rekap lengkap pengajuan ruangan beserta status terbaru dan data pemohon.
           </p>
         </div>
-        <div class="flex gap-3">
-          <button
-            type="button"
-            class="inline-flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 shadow-sm transition hover:bg-emerald-100"
-            @click="exportExcel"
-          >
-            <span>Export Excel</span>
-          </button>
-        </div>
+        <Dropdown align="right" width="48">
+          <template #trigger>
+            <button
+              type="button"
+              class="inline-flex items-center justify-center gap-2 rounded-2xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-100"
+            >
+              <span>Export</span>
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                <path
+                  d="M5.25 7.5 10 12.5l4.75-5"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.5"
+                />
+              </svg>
+            </button>
+          </template>
+          <template #content>
+            <div class="flex flex-col gap-1 p-2 text-sm text-slate-700">
+              <button
+                type="button"
+                class="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-blue-50"
+                @click="exportExcel"
+              >
+                <span>Export Excel</span>
+              </button>
+              <button
+                type="button"
+                class="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-blue-50"
+                @click="exportPdf"
+              >
+                <span>Export PDF</span>
+              </button>
+            </div>
+          </template>
+        </Dropdown>
       </div>
 
       <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -431,7 +465,7 @@ const exportExcel = () => {
               @click="changePage(1)"
               :disabled="currentPage === 1 || !pageMeta.of"
             >
-              Awal
+              «
             </button>
             <button
               type="button"
@@ -439,7 +473,7 @@ const exportExcel = () => {
               @click="changePage(currentPage - 1)"
               :disabled="currentPage === 1 || !pageMeta.of"
             >
-              Sebelumnya
+              ‹
             </button>
             <template v-if="pageMeta.of">
               <button
@@ -463,7 +497,7 @@ const exportExcel = () => {
               @click="changePage(currentPage + 1)"
               :disabled="currentPage === pages.length || !pageMeta.of"
             >
-              Berikutnya
+              ›
             </button>
             <button
               type="button"
@@ -471,7 +505,7 @@ const exportExcel = () => {
               @click="changePage(pages.length)"
               :disabled="currentPage === pages.length || !pageMeta.of"
             >
-              Akhir
+              »
             </button>
           </div>
         </div>

@@ -4,8 +4,10 @@ import Modal from '@/Components/Modal.vue'
 import SortableTh from '@/Components/SortableTh.vue'
 import { usePagination } from '@/Composables/usePagination'
 import { useTableSort } from '@/Composables/useTableSort'
-import { Head, Link, useForm } from '@inertiajs/vue3'
+// PENTING: Tambahkan 'router' di sini untuk fungsi delete
+import { Head, Link, useForm, router } from '@inertiajs/vue3' 
 import { computed, ref } from 'vue'
+import Swal from 'sweetalert2'
 
 const props = defineProps({
   campuses: Array
@@ -27,6 +29,9 @@ const editForm = useForm({
   phone: ''
 })
 
+// ==========================================
+// LOGIKA MODAL CREATE
+// ==========================================
 const openCreateModal = () => {
   createForm.reset()
   createForm.clearErrors()
@@ -39,6 +44,27 @@ const closeCreateModal = () => {
   createForm.clearErrors()
 }
 
+const confirmCreate = () => {
+  Swal.fire({
+    title: 'Konfirmasi Simpan',
+    text: "Apakah Anda yakin data campus yang dimasukkan sudah benar?",
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#2563eb', 
+    cancelButtonColor: '#6b7280',  
+    confirmButtonText: 'Ya, Simpan',
+    cancelButtonText: 'Periksa Lagi',
+    target: document.querySelector('dialog[open]') || document.body,
+    customClass: {
+      container: 'swal-z-top-force' 
+    }
+  }).then((result) => {
+    if (result.isConfirmed) {
+      submitCreate()
+    }
+  })
+}
+
 const submitCreate = () => {
   createForm.post(route('admin.campus.store'), {
     onSuccess: () => {
@@ -47,6 +73,9 @@ const submitCreate = () => {
   })
 }
 
+// ==========================================
+// LOGIKA MODAL EDIT (UPDATE)
+// ==========================================
 const openEditModal = (campus) => {
   selectedCampus.value = campus
   editForm.name = campus.name ?? ''
@@ -63,6 +92,28 @@ const closeEditModal = () => {
   editForm.clearErrors()
 }
 
+// Konfirmasi Update sudah ada di sini
+const confirmEdit = () => {
+  Swal.fire({
+    title: 'Konfirmasi Update',
+    text: "Apakah Anda yakin ingin menyimpan perubahan pada campus ini?",
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#eab308', 
+    cancelButtonColor: '#6b7280',  
+    confirmButtonText: 'Ya, Update',
+    cancelButtonText: 'Batal',
+    target: document.querySelector('dialog[open]') || document.body,
+    customClass: {
+      container: 'swal-z-top-force' 
+    }
+  }).then((result) => {
+    if (result.isConfirmed) {
+      submitEdit()
+    }
+  })
+}
+
 const submitEdit = () => {
   if (!selectedCampus.value) return
 
@@ -73,6 +124,31 @@ const submitEdit = () => {
   })
 }
 
+// ==========================================
+// LOGIKA DELETE
+// ==========================================
+const confirmDelete = (id, name) => {
+  Swal.fire({
+    title: 'Yakin ingin menghapus?',
+    text: `Data campus "${name}" akan dihapus permanen dan tidak dapat dikembalikan!`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#dc2626', // Warna merah untuk tombol hapus
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: 'Ya, Hapus!',
+    cancelButtonText: 'Batal',
+    // Tidak butuh target khusus karena pop up ini dipanggil saat tidak ada modal yang terbuka
+  }).then((result) => {
+    if (result.isConfirmed) {
+      // Mengirim request DELETE menggunakan router Inertia
+      router.delete(route('admin.campus.destroy', id))
+    }
+  })
+}
+
+// ==========================================
+// LOGIKA TABEL & PAGINASI
+// ==========================================
 const campusesList = computed(() => props.campuses ?? [])
 
 const {
@@ -192,6 +268,7 @@ const perPageOptions = [5, 10, 25, 50]
               <td class="px-4 py-2 text-sm text-gray-700">{{ campus.phone }}</td>
               <td class="px-4 py-2 text-sm">
 
+                <!-- Tombol Edit -->
                 <button
                   type="button"
                   class="px-3 py-1 bg-yellow-400 text-white rounded hover:bg-yellow-500 mr-2"
@@ -199,14 +276,16 @@ const perPageOptions = [5, 10, 25, 50]
                 >
                   ✏️ Edit
                 </button>
-                <Link
-                  :href="route('admin.campus.destroy', campus.id)"
-                  method="delete"
-                  as="button"
+
+                <!-- Tombol Delete yang sudah diperbarui memanggil confirmDelete -->
+                <button
+                  type="button"
                   class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                  @click="confirmDelete(campus.id, campus.name)"
                 >
                   🗑 Hapus
-                </Link>
+                </button>
+
               </td>
             </tr>
             <tr v-if="!campusesList.length">
@@ -274,11 +353,13 @@ const perPageOptions = [5, 10, 25, 50]
         </div>
       </div>
     </div>
-    <Modal :show="showCreateModal" max-width="lg" @close="closeCreateModal">
+    
+    <!-- MODAL CREATE -->
+    <Modal :show="showCreateModal" maxWidth="3xl" @close="closeCreateModal">
       <div class="p-6">
         <h2 class="text-lg font-semibold text-gray-800 mb-4">➕ Tambah Campus</h2>
 
-        <form @submit.prevent="submitCreate" class="space-y-4">
+        <form @submit.prevent="confirmCreate" class="space-y-4">
           <div>
             <label class="block text-sm font-medium text-gray-700">Nama Campus</label>
             <input
@@ -329,11 +410,12 @@ const perPageOptions = [5, 10, 25, 50]
       </div>
     </Modal>
 
-    <Modal :show="showEditModal" max-width="lg" @close="closeEditModal">
+    <!-- MODAL EDIT -->
+    <Modal :show="showEditModal" maxWidth="3xl" @close="closeEditModal">
       <div class="p-6">
         <h2 class="text-lg font-semibold text-gray-800 mb-4">✏️ Edit Campus</h2>
 
-        <form @submit.prevent="submitEdit" class="space-y-4">
+        <form @submit.prevent="confirmEdit" class="space-y-4">
           <div>
             <label class="block text-sm font-medium text-gray-700">Nama Campus</label>
             <input
@@ -385,3 +467,10 @@ const perPageOptions = [5, 10, 25, 50]
     </Modal>
   </AuthenticatedLayout>
 </template>
+
+<style>
+/* Class CSS agar modal konfirmasi selalu di depan */
+div.swal-z-top-force {
+  z-index: 999999 !important;
+}
+</style>

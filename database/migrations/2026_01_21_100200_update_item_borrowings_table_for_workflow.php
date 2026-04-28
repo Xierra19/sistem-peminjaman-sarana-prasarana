@@ -50,12 +50,16 @@ return new class extends Migration
             ->where('status', 'requested')
             ->update(['status' => 'waiting']);
 
-        DB::statement("ALTER TABLE `item_borrowings` MODIFY `status` VARCHAR(255) NOT NULL DEFAULT 'waiting'");
+        if (Schema::getConnection()->getDriverName() !== 'sqlite') {
+            DB::statement("ALTER TABLE `item_borrowings` MODIFY `status` VARCHAR(255) NOT NULL DEFAULT 'waiting'");
+        }
     }
 
     public function down(): void
     {
-        DB::statement("ALTER TABLE `item_borrowings` MODIFY `status` VARCHAR(255) NOT NULL DEFAULT 'requested'");
+        if (Schema::getConnection()->getDriverName() !== 'sqlite') {
+            DB::statement("ALTER TABLE `item_borrowings` MODIFY `status` VARCHAR(255) NOT NULL DEFAULT 'requested'");
+        }
 
         Schema::table('item_borrowings', function (Blueprint $table): void {
             $table->dropIndex('item_borrowings_item_period_index');

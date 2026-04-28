@@ -4,8 +4,9 @@ import Modal from '@/Components/Modal.vue'
 import SortableTh from '@/Components/SortableTh.vue'
 import { usePagination } from '@/Composables/usePagination'
 import { useTableSort } from '@/Composables/useTableSort'
-import { Head, Link, useForm } from '@inertiajs/vue3'
+import { Head, Link, useForm, router } from '@inertiajs/vue3'
 import { computed, ref } from 'vue'
+import Swal from 'sweetalert2' // <-- Import SweetAlert
 
 const props = defineProps({
   items: Array
@@ -31,6 +32,11 @@ const editForm = useForm({
   is_available: true,
 })
 
+const getSwalTarget = () => document.querySelector('dialog[open]') || document.body
+
+// ==========================================
+// LOGIKA MODAL CREATE
+// ==========================================
 const openCreateModal = () => {
   createForm.reset()
   createForm.clearErrors()
@@ -43,14 +49,44 @@ const closeCreateModal = () => {
   createForm.clearErrors()
 }
 
-const submitCreate = () => {
-  createForm.post(route('admin.items.store'), {
-    onSuccess: () => {
-      closeCreateModal()
+const confirmCreate = () => {
+  Swal.fire({
+    title: 'Konfirmasi Simpan',
+    text: "Apakah Anda yakin data barang yang dimasukkan sudah benar?",
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#2563eb',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: 'Ya, Simpan',
+    cancelButtonText: 'Periksa Lagi',
+    target: getSwalTarget(),
+    customClass: {
+      container: 'swal-z-top-force'
+    }
+  }).then((result) => {
+    if (result.isConfirmed) {
+      submitCreate()
     }
   })
 }
 
+const submitCreate = () => {
+  createForm.post(route('admin.items.store'), {
+    preserveState: true,
+    preserveScroll: true,
+    onSuccess: () => {
+      closeCreateModal()
+    },
+    onError: (errors) => {
+      const msg = errors.code || errors.name || errors.category || errors.quantity || 'Periksa kembali input Anda.'
+      Swal.fire({ icon: 'error', title: 'Problem', text: msg, target: getSwalTarget(), heightAuto: false, customClass: { container: 'swal-z-top-force' } })
+    }
+  })
+}
+
+// ==========================================
+// LOGIKA MODAL EDIT (UPDATE)
+// ==========================================
 const openEditModal = (item) => {
   selectedItem.value = item
   editForm.code = item.code ?? ''
@@ -69,16 +105,66 @@ const closeEditModal = () => {
   editForm.clearErrors()
 }
 
-const submitEdit = () => {
-  if (!selectedItem.value) return
-
-  editForm.put(route('admin.items.update', selectedItem.value.id), {
-    onSuccess: () => {
-      closeEditModal()
+const confirmEdit = () => {
+  Swal.fire({
+    title: 'Konfirmasi Update',
+    text: "Apakah Anda yakin ingin menyimpan perubahan pada barang ini?",
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#eab308',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: 'Ya, Update',
+    cancelButtonText: 'Batal',
+    target: getSwalTarget(),
+    customClass: {
+      container: 'swal-z-top-force'
+    }
+  }).then((result) => {
+    if (result.isConfirmed) {
+      submitEdit()
     }
   })
 }
 
+const submitEdit = () => {
+  if (!selectedItem.value) return
+
+  editForm.put(route('admin.items.update', selectedItem.value.id), {
+    preserveState: true,
+    preserveScroll: true,
+    onSuccess: () => {
+      closeEditModal()
+    },
+    onError: (errors) => {
+      const msg = errors.code || errors.name || errors.category || errors.quantity || 'Periksa kembali input Anda.'
+      Swal.fire({ icon: 'error', title: 'Problem', text: msg, target: getSwalTarget(), heightAuto: false, customClass: { container: 'swal-z-top-force' } })
+    }
+  })
+}
+
+// ==========================================
+// LOGIKA DELETE
+// ==========================================
+const confirmDelete = (id, name) => {
+  Swal.fire({
+    title: 'Yakin ingin menghapus?',
+    text: `Data barang "${name}" akan dihapus permanen!`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#dc2626',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: 'Ya, Hapus!',
+    cancelButtonText: 'Batal',
+  }).then((result) => {
+    if (result.isConfirmed) {
+      router.delete(route('admin.items.destroy', id))
+    }
+  })
+}
+
+// ==========================================
+// LOGIKA TABEL & PAGINASI
+// ==========================================
 const itemsList = computed(() => props.items ?? [])
 
 const {
@@ -221,21 +307,22 @@ const perPageOptions = [5, 10, 25, 50]
                 </span>
               </td>
               <td class="px-4 py-2 text-sm">
-                <button
-                  type="button"
-                  class="px-3 py-1 bg-yellow-400 text-white rounded hover:bg-yellow-500 mr-2"
-                  @click="openEditModal(item)"
-                >
-                  ✏️ Edit
-                </button>
-                <Link
-                  :href="route('admin.items.destroy', item.id)"
-                  method="delete"
-                  as="button"
-                  class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
-                >
-                  🗑 Hapus
-                </Link>
+                <div class="flex gap-2">
+                  <button
+                    type="button"
+                    class="px-3 py-1 bg-yellow-400 text-white rounded hover:bg-yellow-500"
+                    @click="openEditModal(item)"
+                  >
+                    ✏️ Edit
+                  </button>
+                  <button
+                    type="button"
+                    class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                    @click="confirmDelete(item.id, item.name)"
+                  >
+                    🗑 Hapus
+                  </button>
+                </div>
               </td>
             </tr>
             <tr v-if="!itemsList.length">
@@ -303,11 +390,13 @@ const perPageOptions = [5, 10, 25, 50]
         </div>
       </div>
     </div>
-    <Modal :show="showCreateModal" max-width="lg" @close="closeCreateModal">
+    
+    <!-- MODAL CREATE (Diperbesar ke 3xl) -->
+    <Modal :show="showCreateModal" maxWidth="3xl" @close="closeCreateModal">
       <div class="p-6">
         <h2 class="text-lg font-semibold text-gray-800 mb-4">➕ Tambah Barang</h2>
 
-        <form @submit.prevent="submitCreate" class="space-y-4">
+        <form @submit.prevent="confirmCreate" class="space-y-4">
           <div>
             <label class="block text-sm font-medium text-gray-700">Kode Barang</label>
             <input
@@ -378,11 +467,12 @@ const perPageOptions = [5, 10, 25, 50]
       </div>
     </Modal>
 
-    <Modal :show="showEditModal" max-width="lg" @close="closeEditModal">
+    <!-- MODAL EDIT (Diperbesar ke 3xl) -->
+    <Modal :show="showEditModal" maxWidth="3xl" @close="closeEditModal">
       <div class="p-6">
         <h2 class="text-lg font-semibold text-gray-800 mb-4">✏️ Edit Barang</h2>
 
-        <form @submit.prevent="submitEdit" class="space-y-4">
+        <form @submit.prevent="confirmEdit" class="space-y-4">
           <div>
             <label class="block text-sm font-medium text-gray-700">Kode Barang</label>
             <input
@@ -454,3 +544,10 @@ const perPageOptions = [5, 10, 25, 50]
     </Modal>
   </AuthenticatedLayout>
 </template>
+
+<style>
+/* Memaksa pop-up SweetAlert tampil di urutan paling depan */
+div.swal-z-top-force {
+  z-index: 999999 !important;
+}
+</style>

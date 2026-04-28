@@ -6,6 +6,7 @@ use App\Models\ItemBorrowing;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 class ItemBorrowingStatusUpdatedNotification extends Notification
@@ -18,7 +19,7 @@ class ItemBorrowingStatusUpdatedNotification extends Notification
         protected ?string $notes = null,
         protected ?string $moderatorName = null,
     ) {
-        $this->itemBorrowing->loadMissing(['item', 'user']);
+        $this->itemBorrowing->loadMissing(['items.item', 'singleItem', 'user']);
     }
 
     public function via(object $notifiable): array
@@ -29,8 +30,8 @@ class ItemBorrowingStatusUpdatedNotification extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         $borrowing = $this->itemBorrowing;
-        $item = $borrowing->item;
         $status = Str::headline($this->status);
+        $items = $borrowing->items instanceof Collection ? $borrowing->items : collect();
 
         $mail = (new MailMessage())
             ->subject($status.' Peminjaman Barang: '.$borrowing->title)
@@ -38,13 +39,32 @@ class ItemBorrowingStatusUpdatedNotification extends Notification
 
         $mail->line('Pengajuan peminjaman barang Anda telah '.$status.' oleh tim Sarpras.');
 
-        if ($item?->name) {
-            $mail->line('Barang: '.$item->name.' ('.$item->code.')');
+        if ($items->isNotEmpty()) {
+            $mail->line('Barang: '.$items->map(function ($borrowingItem) {
+                $item = $borrowingItem->item;
+
+                if (! $item) {
+                    return null;
+                }
+
+                return $item->name.' ('.$item->code.') x'.$borrowingItem->quantity;
+            })->filter()->implode(', '));
+        } elseif ($borrowing->singleItem?->name) {
+            $mail->line('Barang: '.$borrowing->singleItem->name.' ('.$borrowing->singleItem->code.')');
         }
 
-        $mail
-            ->line('Jumlah: '.$borrowing->quantity)
-            ->line('Periode: '.$borrowing->borrow_date?->format('d M Y').' - '.$borrowing->return_date?->format('d M Y'));
+        if ($items->isNotEmpty()) {
+            $mail->line('Total jenis barang: '.$items->count());
+        } elseif ($borrowing->quantity) {
+            $mail->line('Jumlah: '.$borrowing->quantity);
+        }
+
+        $startDate = $items->map->borrow_date->filter()->sort()->first() ?? $borrowing->borrow_date;
+        $endDate = $items->map->return_date->filter()->sortDesc()->first() ?? $borrowing->return_date;
+
+        if ($startDate && $endDate) {
+            $mail->line('Periode: '.$startDate->format('d M Y').' - '.$endDate->format('d M Y'));
+        }
 
         if ($this->moderatorName) {
             $mail->line('Diproses oleh: '.$this->moderatorName);
@@ -52,6 +72,10 @@ class ItemBorrowingStatusUpdatedNotification extends Notification
 
         if ($this->notes) {
             $mail->line('Catatan: '.$this->notes);
+        }
+
+        if ($this->status === 'approved' && $borrowing->signed_letter) {
+            $mail->line('Surat persetujuan yang telah ditandatangani sudah tersedia pada detail peminjaman barang Anda.');
         }
 
         $fromAddress = config('mail.from.address');

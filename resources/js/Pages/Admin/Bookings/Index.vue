@@ -1,11 +1,10 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
-import Dropdown from '@/Components/Dropdown.vue'
 import SortableTh from '@/Components/SortableTh.vue'
 import { usePagination } from '@/Composables/usePagination'
 import { useTableSort } from '@/Composables/useTableSort'
 import { Head, Link } from '@inertiajs/vue3'
-import { computed } from 'vue'
+import { computed, reactive } from 'vue'
 
 const props = defineProps({
   bookings: {
@@ -44,13 +43,86 @@ const formatDateTime = (value) => {
   })
 }
 
-const bookingsList = computed(() =>
+// ── Filter state ──────────────────────────────────────────────────────────────
+const filterForm = reactive({
+  search: '',
+  status: '',
+  start_date: '',
+  end_date: '',
+})
+
+const activeFilter = reactive({
+  search: '',
+  status: '',
+  start_date: '',
+  end_date: '',
+})
+
+const statusOptions = Object.keys(statusLabels)
+
+const applyFilters = () => {
+  Object.assign(activeFilter, filterForm)
+}
+
+const resetFilters = () => {
+  Object.assign(filterForm, { search: '', status: '', start_date: '', end_date: '' })
+  Object.assign(activeFilter, { search: '', status: '', start_date: '', end_date: '' })
+}
+
+// ── All bookings (normalized) ──────────────────────────────────────────────────
+const allBookings = computed(() =>
   (props.bookings ?? []).map((booking) => ({
     ...booking,
     normalizedStatus: normalizeStatus(booking.status),
   })),
 )
 
+// ── Summary (always based on full list, not filtered) ─────────────────────────
+const summary = computed(() => {
+  const list = allBookings.value
+  return {
+    total: list.length,
+    waiting: list.filter((b) => b.normalizedStatus === 'waiting').length,
+    approved: list.filter((b) => b.normalizedStatus === 'approved').length,
+    rejected: list.filter((b) => b.normalizedStatus === 'rejected').length,
+    cancelled: list.filter((b) => b.normalizedStatus === 'cancelled').length,
+  }
+})
+
+// ── Filtered list ─────────────────────────────────────────────────────────────
+const bookingsList = computed(() => {
+  let list = allBookings.value
+
+  if (activeFilter.search) {
+    const q = activeFilter.search.toLowerCase()
+    list = list.filter(
+      (b) =>
+        b.title?.toLowerCase().includes(q) ||
+        b.user?.name?.toLowerCase().includes(q) ||
+        b.user?.email?.toLowerCase().includes(q) ||
+        b.room?.name?.toLowerCase().includes(q),
+    )
+  }
+
+  if (activeFilter.status) {
+    list = list.filter((b) => b.normalizedStatus === activeFilter.status)
+  }
+
+  if (activeFilter.start_date) {
+    const from = new Date(activeFilter.start_date)
+    list = list.filter((b) => b.created_at && new Date(b.created_at) >= from)
+  }
+
+  if (activeFilter.end_date) {
+    const to = new Date(activeFilter.end_date)
+    to.setHours(23, 59, 59, 999)
+    list = list.filter((b) => b.created_at && new Date(b.created_at) <= to)
+  }
+
+  return list
+})
+
+// ── Sort & pagination ─────────────────────────────────────────────────────────
 const {
   sortedItems: sortedBookings,
   toggleSort: toggleAdminBookingSort,
@@ -76,14 +148,6 @@ const {
 } = usePagination(sortedBookings)
 
 const perPageOptions = [5, 10, 25, 50]
-
-const exportExcel = () => {
-  window.open(route('admin.bookings.export.excel'), '_blank')
-}
-
-const exportPdf = () => {
-  window.open(route('admin.bookings.export.pdf'), '_blank')
-}
 </script>
 
 <template>
@@ -96,6 +160,94 @@ const exportPdf = () => {
         <p class="text-sm text-gray-500">Kelola permintaan booking ruangan yang masuk.</p>
       </div>
 
+      <!-- Summary cards -->
+      <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Total Data</p>
+          <p class="mt-2 text-2xl font-semibold text-slate-900">{{ summary.total }}</p>
+          <p class="text-xs text-slate-500">Seluruh hasil sesuai filter aktif</p>
+        </div>
+        <div class="rounded-xl border border-amber-200 bg-white p-5 shadow-sm">
+          <p class="text-xs font-medium uppercase tracking-wide text-amber-500">Menunggu</p>
+          <p class="mt-2 text-2xl font-semibold text-amber-600">{{ summary.waiting }}</p>
+          <p class="text-xs text-amber-500">Booking belum diputuskan</p>
+        </div>
+        <div class="rounded-xl border border-emerald-200 bg-white p-5 shadow-sm">
+          <p class="text-xs font-medium uppercase tracking-wide text-emerald-500">Disetujui</p>
+          <p class="mt-2 text-2xl font-semibold text-emerald-600">{{ summary.approved }}</p>
+          <p class="text-xs text-emerald-500">Booking aktif</p>
+        </div>
+        <div class="rounded-xl border border-rose-200 bg-white p-5 shadow-sm">
+          <p class="text-xs font-medium uppercase tracking-wide text-rose-500">Ditolak / Batal</p>
+          <p class="mt-2 text-2xl font-semibold text-rose-600">{{ summary.rejected + summary.cancelled }}</p>
+          <p class="text-xs text-rose-500">Termasuk pembatalan admin</p>
+        </div>
+      </div>
+
+      <!-- Filter panel -->
+      <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div class="flex flex-col gap-2">
+            <label for="report-search" class="text-sm font-medium text-gray-700">Pencarian bebas</label>
+            <input
+              id="report-search"
+              v-model="filterForm.search"
+              type="text"
+              placeholder="Nama pemohon, email, ruangan…"
+              class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+          <div class="flex flex-col gap-2">
+            <label for="report-status" class="text-sm font-medium text-gray-700">Status peminjaman</label>
+            <select
+              id="report-status"
+              v-model="filterForm.status"
+              class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              <option value="">Semua status</option>
+              <option v-for="status in statusOptions" :key="`status-${status}`" :value="status">
+                {{ statusLabels[status] ?? status }}
+              </option>
+            </select>
+          </div>
+          <div class="flex flex-col gap-2">
+            <label for="report-start-date" class="text-sm font-medium text-gray-700">Tanggal pengajuan (dari)</label>
+            <input
+              id="report-start-date"
+              v-model="filterForm.start_date"
+              type="date"
+              class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+          <div class="flex flex-col gap-2">
+            <label for="report-end-date" class="text-sm font-medium text-gray-700">Tanggal pengajuan (sampai)</label>
+            <input
+              id="report-end-date"
+              v-model="filterForm.end_date"
+              type="date"
+              class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+        <div class="mt-4 flex flex-wrap items-center justify-end gap-3">
+          <button
+            type="button"
+            class="rounded-md border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 transition hover:border-gray-300 hover:text-gray-800"
+            @click="resetFilters"
+          >
+            Reset
+          </button>
+          <button
+            type="button"
+            class="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+            @click="applyFilters"
+          >
+            Terapkan Filter
+          </button>
+        </div>
+      </div>
+
+      <!-- Table -->
       <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
         <div
           class="flex flex-col gap-3 border-b border-gray-100 px-5 py-4 md:flex-row md:items-center md:justify-between"
@@ -125,43 +277,6 @@ const exportPdf = () => {
                 </span>
               </div>
             </div>
-            <Dropdown align="right" width="48">
-              <template #trigger>
-                <button
-                  type="button"
-                  class="inline-flex items-center justify-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-100"
-                >
-                  <span>Export</span>
-                  <svg class="h-4 w-4" fill="none" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                    <path
-                      d="M5.25 7.5 10 12.5l4.75-5"
-                      stroke="currentColor"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="1.5"
-                    />
-                  </svg>
-                </button>
-              </template>
-              <template #content>
-                <div class="flex flex-col gap-1 p-2 text-sm text-gray-700">
-                  <button
-                    type="button"
-                    class="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-blue-50"
-                    @click="exportExcel"
-                  >
-                    <span>Export Excel</span>
-                  </button>
-                  <button
-                    type="button"
-                    class="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-blue-50"
-                    @click="exportPdf"
-                  >
-                    <span>Export PDF</span>
-                  </button>
-                </div>
-              </template>
-            </Dropdown>
           </div>
         </div>
 
@@ -271,7 +386,7 @@ const exportPdf = () => {
               @click="changePage(1)"
               :disabled="currentPage === 1 || !bookingsList.length"
             >
-              First
+              «
             </button>
             <button
               type="button"
@@ -279,7 +394,7 @@ const exportPdf = () => {
               @click="changePage(currentPage - 1)"
               :disabled="currentPage === 1 || !bookingsList.length"
             >
-              Prev
+              ‹
             </button>
             <template v-if="bookingsList.length">
               <button
@@ -303,7 +418,7 @@ const exportPdf = () => {
               @click="changePage(currentPage + 1)"
               :disabled="currentPage === pages.length || !bookingsList.length"
             >
-              Next
+              ›
             </button>
             <button
               type="button"
@@ -311,7 +426,7 @@ const exportPdf = () => {
               @click="changePage(pages.length)"
               :disabled="currentPage === pages.length || !bookingsList.length"
             >
-              Last
+              »
             </button>
           </div>
         </div>

@@ -1,5 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
+import Dropdown from '@/Components/Dropdown.vue'
 import SortableTh from '@/Components/SortableTh.vue'
 import { usePagination } from '@/Composables/usePagination'
 import { useTableSort } from '@/Composables/useTableSort'
@@ -164,6 +165,11 @@ const exportExcel = () => {
   const url = route('admin.item-borrowing-reports.export', buildQuery())
   window.open(url, '_blank')
 }
+
+const exportPdf = () => {
+  const url = route('admin.item-borrowing-reports.export.pdf', buildQuery())
+  window.open(url, '_blank')
+}
 </script>
 
 <template>
@@ -178,35 +184,70 @@ const exportExcel = () => {
             Rekap lengkap pengajuan barang beserta status terbaru dan data pemohon.
           </p>
         </div>
-        <button
-          type="button"
-          class="inline-flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 shadow-sm transition hover:bg-emerald-100"
-          @click="exportExcel"
-        >
-          <span>Export Excel</span>
-        </button>
+        <Dropdown align="right" width="48">
+          <template #trigger>
+            <button
+              type="button"
+              class="inline-flex items-center justify-center gap-2 rounded-2xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-100"
+            >
+              <span>Export</span>
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                <path
+                  d="M5.25 7.5 10 12.5l4.75-5"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.5"
+                />
+              </svg>
+            </button>
+          </template>
+          <template #content>
+            <div class="flex flex-col gap-1 p-2 text-sm text-slate-700">
+              <button
+                type="button"
+                class="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-blue-50"
+                @click="exportExcel"
+              >
+                <span>Export Excel</span>
+              </button>
+              <button
+                type="button"
+                class="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-blue-50"
+                @click="exportPdf"
+              >
+                <span>Export PDF</span>
+              </button>
+            </div>
+          </template>
+        </Dropdown>
       </div>
 
       <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Total Data</p>
           <p class="mt-2 text-2xl font-semibold text-slate-900">{{ summary.total }}</p>
+          <p class="text-xs text-slate-500">Seluruh hasil sesuai filter aktif</p>
         </div>
         <div class="rounded-xl border border-amber-200 bg-white p-5 shadow-sm">
           <p class="text-xs font-medium uppercase tracking-wide text-amber-500">Menunggu</p>
           <p class="mt-2 text-2xl font-semibold text-amber-600">{{ summary.waiting }}</p>
+          <p class="text-xs text-amber-500">Booking belum diputuskan</p>
         </div>
         <div class="rounded-xl border border-emerald-200 bg-white p-5 shadow-sm">
           <p class="text-xs font-medium uppercase tracking-wide text-emerald-500">Disetujui</p>
           <p class="mt-2 text-2xl font-semibold text-emerald-600">{{ summary.approved }}</p>
+          <p class="text-xs text-emerald-500">Booking aktif</p>
         </div>
         <div class="rounded-xl border border-blue-200 bg-white p-5 shadow-sm">
           <p class="text-xs font-medium uppercase tracking-wide text-blue-500">Dikembalikan</p>
           <p class="mt-2 text-2xl font-semibold text-blue-600">{{ summary.returned }}</p>
+          <p class="text-xs text-blue-500">Barang yang sudah dikembalikan</p>
         </div>
         <div class="rounded-xl border border-rose-200 bg-white p-5 shadow-sm">
           <p class="text-xs font-medium uppercase tracking-wide text-rose-500">Ditolak / Batal</p>
           <p class="mt-2 text-2xl font-semibold text-rose-600">{{ summary.rejected + summary.cancelled }}</p>
+          <p class="text-xs text-rose-500">Termasuk pembatalan admin</p>
         </div>
       </div>
 
@@ -360,8 +401,8 @@ const exportExcel = () => {
             <span v-else>Menampilkan 0 data</span>
           </div>
           <div class="flex items-center gap-2">
-            <button type="button" class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50" @click="changePage(1)" :disabled="currentPage === 1 || !itemBorrowings.length">First</button>
-            <button type="button" class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50" @click="changePage(currentPage - 1)" :disabled="currentPage === 1 || !itemBorrowings.length">Prev</button>
+            <button type="button" class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50" @click="changePage(1)" :disabled="currentPage === 1 || !itemBorrowings.length">«</button>
+            <button type="button" class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50" @click="changePage(currentPage - 1)" :disabled="currentPage === 1 || !itemBorrowings.length">‹</button>
             <template v-if="itemBorrowings.length">
               <button
                 v-for="page in pages"
@@ -374,8 +415,8 @@ const exportExcel = () => {
                 {{ page }}
               </button>
             </template>
-            <button type="button" class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50" @click="changePage(currentPage + 1)" :disabled="currentPage === pages.length || !itemBorrowings.length">Next</button>
-            <button type="button" class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50" @click="changePage(pages.length)" :disabled="currentPage === pages.length || !itemBorrowings.length">Last</button>
+            <button type="button" class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50" @click="changePage(currentPage + 1)" :disabled="currentPage === pages.length || !itemBorrowings.length">›</button>
+            <button type="button" class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50" @click="changePage(pages.length)" :disabled="currentPage === pages.length || !itemBorrowings.length">»</button>
           </div>
         </div>
       </div>

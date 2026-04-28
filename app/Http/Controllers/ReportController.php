@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Exports\BookingReportExport;
 use App\Models\Booking;
 use App\Support\BookingReportFilters;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -60,6 +61,34 @@ class ReportController extends Controller
         $fileName = 'booking-report-' . now()->format('Ymd_His') . '.xlsx';
 
         return Excel::download(new BookingReportExport($filters), $fileName);
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $this->ensureAdmin($request);
+
+        $filters = $this->validatedFilters($request);
+
+        $query = Booking::query()
+            ->with([
+                'user:id,name,email,phone',
+                'room:id,name,building_id',
+                'room.building:id,name,campus_id',
+                'room.building.campus:id,name',
+            ]);
+
+        BookingReportFilters::apply($query, $filters);
+
+        $bookings = $query->orderByDesc('created_at')->get();
+
+        $pdf = Pdf::loadView('pdf.booking-report', [
+            'bookings' => $bookings,
+            'generatedAt' => now(),
+        ])->setPaper('a4', 'landscape');
+
+        $fileName = 'booking-report-' . now()->format('Ymd_His') . '.pdf';
+
+        return $pdf->download($fileName);
     }
 
     private function ensureAdmin(Request $request): void
