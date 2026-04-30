@@ -87,6 +87,10 @@ const formatDateTime = (value) => {
 const exportExcel = () => {
   window.open(route('history.export.excel'), '_blank')
 }
+
+const exportPdf = () => {
+  window.open(route('history.export.pdf'), '_blank')
+}
 </script>
 
 <template>
@@ -161,15 +165,22 @@ const exportExcel = () => {
                 </button>
               </template>
               <template #content>
-                <div class="flex flex-col gap-1 p-2 text-sm text-slate-700">
-                  <button
-                    type="button"
-                    class="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-blue-50"
-                    @click="exportExcel"
-                  >
-                    <span>Export Excel</span>
-                  </button>
-                </div>
+              <div class="flex flex-col gap-1 p-2 text-sm text-slate-700">
+                <button
+                  type="button"
+                  class="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-blue-50"
+                  @click="exportExcel"
+                >
+                  <span>Export Excel</span>
+                </button>
+                <button
+                  type="button"
+                  class="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-blue-50"
+                  @click="exportPdf"
+                >
+                  <span>Export PDF</span>
+                </button>
+              </div>
               </template>
             </Dropdown>
           </div>

@@ -5,7 +5,7 @@ import SortableTh from '@/Components/SortableTh.vue'
 import { usePagination } from '@/Composables/usePagination'
 import { useTableSort } from '@/Composables/useTableSort'
 import { Head, router } from '@inertiajs/vue3'
-import { computed, reactive, watch } from 'vue'
+import { computed, reactive, watch, ref, onMounted } from 'vue'
 import { Bar, Pie } from 'vue-chartjs'
 import {
   Chart as ChartJS,
@@ -17,6 +17,9 @@ import {
   LinearScale,
   ArcElement,
 } from 'chart.js'
+import flatpickr from 'flatpickr'
+import 'flatpickr/dist/flatpickr.css'
+import { Indonesian } from 'flatpickr/dist/l10n/id'
 
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, ArcElement)
 
@@ -44,6 +47,51 @@ const filterForm = reactive({
   status: props.filters?.status ?? '',
   start_date: props.filters?.start_date ?? '',
   end_date: props.filters?.end_date ?? '',
+})
+
+// Referensi untuk elemen date range picker
+const dateRangePicker = ref(null)
+
+// Inisialisasi Flatpickr untuk Date Range Picker
+onMounted(() => {
+  if (dateRangePicker.value) {
+    flatpickr(dateRangePicker.value, {
+      mode: 'range',
+      dateFormat: 'Y-m-d',
+      locale: Indonesian,
+      allowInput: true,
+      // Menampilkan dropdown bulan dan tahun untuk navigasi mudah
+      showMonths: 1,
+      // Inisialisasi dengan nilai awal jika ada
+      defaultDate: 
+        filterForm.start_date && filterForm.end_date 
+          ? [filterForm.start_date, filterForm.end_date] 
+          : filterForm.start_date || filterForm.end_date || null,
+      // Update filterForm ketika range dipilih
+      onChange: (selectedDates) => {
+        if (selectedDates.length === 1) {
+          // Jika hanya satu tanggal yang dipilih, gunakan untuk start_date
+          filterForm.start_date = selectedDates[0].toISOString().split('T')[0]
+          filterForm.end_date = ''
+        } else if (selectedDates.length === 2) {
+          // Jika dua tanggal dipilih, gunakan untuk start_date dan end_date
+          filterForm.start_date = selectedDates[0].toISOString().split('T')[0]
+          filterForm.end_date = selectedDates[1].toISOString().split('T')[0]
+        } else {
+          // Jika tidak ada tanggal yang dipilih
+          filterForm.start_date = ''
+          filterForm.end_date = ''
+        }
+      },
+      // Pastikan nilai tetap sinkron saat input manual
+      onClose: (selectedDates) => {
+        if (selectedDates.length === 0) {
+          filterForm.start_date = ''
+          filterForm.end_date = ''
+        }
+      }
+    })
+  }
 })
 
 watch(
@@ -366,22 +414,17 @@ const chartOptions = {
             </select>
           </div>
           <div class="flex flex-col gap-2">
-            <label for="report-start-date" class="text-sm font-medium text-gray-700">Tanggal pengajuan (dari)</label>
+            <label for="report-date-range" class="text-sm font-medium text-gray-700">Rentang Tanggal Pengajuan</label>
             <input
-              id="report-start-date"
-              v-model="filterForm.start_date"
-              type="date"
-              class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              id="report-date-range"
+              ref="dateRangePicker"
+              type="text"
+              placeholder="Pilih rentang tanggal..."
+              class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 w-full"
             />
-          </div>
-          <div class="flex flex-col gap-2">
-            <label for="report-end-date" class="text-sm font-medium text-gray-700">Tanggal pengajuan (sampai)</label>
-            <input
-              id="report-end-date"
-              v-model="filterForm.end_date"
-              type="date"
-              class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
+            <p class="text-xs text-gray-500 mt-1">
+              Dari: {{ filterForm.start_date || '-' }} | Sampai: {{ filterForm.end_date || '-' }}
+            </p>
           </div>
         </div>
         <div class="mt-4 flex flex-wrap items-center justify-end gap-3">

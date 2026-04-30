@@ -6,20 +6,7 @@ import { usePagination } from '@/Composables/usePagination'
 import { useTableSort } from '@/Composables/useTableSort'
 import { Head, Link, useForm, router } from '@inertiajs/vue3'
 import { computed, ref } from 'vue'
-import { Bar, Pie } from 'vue-chartjs'
-import {
-  Chart as ChartJS,
-  Title,
-  Tooltip,
-  Legend,
-  BarElement,
-  CategoryScale,
-  LinearScale,
-  ArcElement,
-} from 'chart.js'
 import Swal from 'sweetalert2' // <-- Import SweetAlert 
-
-ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, ArcElement)
 
 const props = defineProps({
   items: Array
@@ -222,70 +209,8 @@ const {
 
 const perPageOptions = [5, 10, 25, 50]
 
-// ==========================================
-// CHART DATA: ITEMS BY CATEGORY (PIE)
-// ==========================================
-const categoryChartData = computed(() => {
-  const items = props.items ?? []
-  const categoryCounts = {}
-  
-  items.forEach(item => {
-    const cat = item.category || 'Uncategorized'
-    categoryCounts[cat] = (categoryCounts[cat] || 0) + 1
-  })
-  
-  const colors = [
-    '#3b82f6', // blue-500
-    '#10b981', // emerald-500
-    '#f59e0b', // amber-500
-    '#f43f5e', // rose-500
-    '#8b5cf6', // violet-500
-    '#06b6d4', // cyan-500
-  ]
-  
-  const labels = Object.keys(categoryCounts)
-  const data = labels.map(cat => categoryCounts[cat])
-  
-  return {
-    labels,
-    datasets: [{
-      data,
-      backgroundColor: colors.slice(0, labels.length),
-      borderWidth: 1,
-    }],
-  }
-})
 
-// ==========================================
-// CHART DATA: ITEMS AVAILABILITY (DONUT)
-// ==========================================
-const availabilityChartData = computed(() => {
-  const items = props.items ?? []
-  const available = items.filter(i => i.is_available).length
-  const unavailable = items.filter(i => !i.is_available).length
-  
-  return {
-    labels: ['Tersedia', 'Tidak Tersedia'],
-    datasets: [{
-      data: [available, unavailable],
-      backgroundColor: [
-        '#10b981', // emerald-500
-        '#f43f5e', // rose-500
-      ],
-      borderWidth: 1,
-    }],
-  }
-})
 
-const chartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      position: 'bottom',
-    },
-  },
-}
 </script>
 
 
@@ -309,21 +234,6 @@ const chartOptions = {
         </button>
       </div>
 
-      <!-- Charts Section -->
-      <div class="grid gap-6 md:grid-cols-2 mb-6">
-        <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-          <h3 class="text-lg font-semibold text-gray-800 mb-4">Distribusi Kategori Barang</h3>
-          <div class="h-64">
-            <Pie :data="categoryChartData" :options="chartOptions" />
-          </div>
-        </div>
-        <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-          <h3 class="text-lg font-semibold text-gray-800 mb-4">Ketersediaan Barang</h3>
-          <div class="h-64">
-            <Pie :data="availabilityChartData" :options="chartOptions" />
-          </div>
-        </div>
-      </div>
 
       <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
         <div class="flex flex-col gap-4 px-5 py-4 md:flex-row md:items-end md:justify-between">

@@ -6,6 +6,19 @@ import { usePagination } from '@/Composables/usePagination'
 import { useTableSort } from '@/Composables/useTableSort'
 import { Head, router } from '@inertiajs/vue3'
 import { computed, reactive, watch } from 'vue'
+import { Bar, Pie } from 'vue-chartjs'
+import {
+  Chart as ChartJS,
+  Title,
+  Tooltip,
+  Legend,
+  BarElement,
+  CategoryScale,
+  LinearScale,
+  ArcElement,
+} from 'chart.js'
+
+ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, ArcElement)
 
 const props = defineProps({
   itemBorrowings: {
@@ -170,6 +183,94 @@ const exportPdf = () => {
   const url = route('admin.item-borrowing-reports.export.pdf', buildQuery())
   window.open(url, '_blank')
 }
+
+// ==========================================
+// CHART DATA: STATUS DISTRIBUTION (PIE) - Distribusi Status Peminjaman Barang
+// ==========================================
+const statusChartData = computed(() => {
+  const borrowings = props.itemBorrowings ?? []
+  const counts = {
+    waiting: 0,
+    requested: 0,
+    approved: 0,
+    rejected: 0,
+    cancelled: 0,
+    returned: 0,
+  }
+  
+  borrowings.forEach(b => {
+    const s = b.status || ''
+    // Normalize status (requested -> waiting)
+    const normalizedStatus = s === 'requested' ? 'waiting' : s
+    if (counts[normalizedStatus] !== undefined) {
+      counts[normalizedStatus]++
+    }
+  })
+
+  return {
+    labels: ['Menunggu', 'Disetujui', 'Dikembalikan', 'Ditolak', 'Dibatalkan'],
+    datasets: [{
+      data: [counts.waiting + counts.requested, counts.approved, counts.returned, counts.rejected, counts.cancelled],
+      backgroundColor: [
+        '#f59e0b', // amber-500 (Menunggu)
+        '#10b981', // emerald-500 (Disetujui)
+        '#3b82f6', // blue-500 (Dikembalikan)
+        '#f43f5e', // rose-500 (Ditolak)
+        '#8b5cf6', // violet-500 (Dibatalkan)
+      ],
+      borderWidth: 1,
+    }],
+  }
+})
+
+// ==========================================
+// CHART DATA: MONTHLY TREND (BAR) - Tren Peminjaman 6 Bulan Terakhir
+// ==========================================
+const monthlyChartData = computed(() => {
+  const borrowings = props.itemBorrowings ?? []
+  const monthCounts = {}
+
+  borrowings.forEach(b => {
+    if (!b.created_at) return
+    const d = new Date(b.created_at)
+    if (isNaN(d.getTime())) return
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    monthCounts[key] = (monthCounts[key] || 0) + 1
+  })
+
+  // Sort months and take last 6
+  const sortedMonths = Object.keys(monthCounts).sort()
+  const last6 = sortedMonths.slice(-6)
+
+  const labels = last6.map(m => {
+    const [year, month] = m.split('-')
+    const date = new Date(year, month - 1, 1)
+    return date.toLocaleString('id-ID', { month: 'short', year: 'numeric' })
+  })
+
+  const data = last6.map(m => monthCounts[m])
+
+  return {
+    labels,
+    datasets: [{
+      label: 'Jumlah Peminjaman Barang',
+      data,
+      backgroundColor: '#3b82f6', // blue-500
+      borderColor: '#2563eb', // blue-600
+      borderWidth: 1,
+    }],
+  }
+})
+
+const chartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      position: 'bottom',
+    },
+  },
+}
 </script>
 
 <template>
@@ -248,6 +349,22 @@ const exportPdf = () => {
           <p class="text-xs font-medium uppercase tracking-wide text-rose-500">Ditolak / Batal</p>
           <p class="mt-2 text-2xl font-semibold text-rose-600">{{ summary.rejected + summary.cancelled }}</p>
           <p class="text-xs text-rose-500">Termasuk pembatalan admin</p>
+        </div>
+      </div>
+
+      <!-- Charts Section -->
+      <div class="grid gap-6 md:grid-cols-2 mb-6">
+        <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">Distribusi Status Peminjaman Barang</h3>
+          <div class="h-64">
+            <Pie :data="statusChartData" :options="chartOptions" />
+          </div>
+        </div>
+        <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">Tren Peminjaman Barang 6 Bulan Terakhir</h3>
+          <div class="h-64">
+            <Bar :data="monthlyChartData" :options="chartOptions" />
+          </div>
         </div>
       </div>
 
