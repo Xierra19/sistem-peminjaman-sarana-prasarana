@@ -1,6 +1,15 @@
 <script setup>
 import { Transition } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
+import {
+    CalendarCheck2,
+    ShieldCheck,
+    Sparkles,
+    Mail,
+    Phone,
+    Eye,
+    EyeOff
+} from 'lucide-vue-next';
 
 const props = defineProps({
     canLogin: {
@@ -21,60 +30,46 @@ const props = defineProps({
     },
 });
 
-const appName = 'Sistem Booking Ruangan Kampus';
+const appName = 'Sistem Reservasi Ruangan & Barang Kampus';
 const campusName = 'Universitas Esa Unggul Kampus Bekasi';
 const currentYear = new Date().getFullYear();
 
+const heroContent = {
+    badge: 'Selamat Datang di Portal Reservasi Internal',
+    title: 'Reservasi Ruangan & Barang Kampus',
+    subtitle: 'Kelola peminjaman ruangan kelas, ruang rapat, laboratorium, hingga perangkat pendukung kampus dalam satu platform terintegrasi yang modern dan efisien.',
+};
+
 const features = [
     {
-        icon: 'calendar',
-        badgeClass: 'bg-blue-100',
-        iconClass: 'text-blue-600',
-        title: 'Easy Booking',
-        description: 'Proses pemesanan ruangan yang cepat dan intuitif dengan informasi ketersediaan real-time.',
+        icon: CalendarCheck2,
+        title: 'Reservasi Ruangan & Barang',
+        description: 'Pesan ruang kelas, rapat, laboratorium, serta pinjam perangkat pendukung seperti meja, kursi, proyektor, dan sound system secara real-time.',
     },
     {
-        icon: 'clock',
-        badgeClass: 'bg-purple-100',
-        iconClass: 'text-purple-600',
-        title: 'Time Management',
-        description: 'Kelola jadwal pemakaian ruangan dengan slot waktu fleksibel sesuai kebutuhan kegiatan.',
+        icon: ShieldCheck,
+        title: 'Akses Terverifikasi & Aman',
+        description: 'Hanya civitas academica dengan email resmi kampus yang dapat mengakses sistem dengan enkripsi keamanan tingkat tinggi.',
     },
     {
-        icon: 'users',
-        badgeClass: 'bg-orange-100',
-        iconClass: 'text-orange-600',
-        title: 'User Friendly',
-        description: 'Antarmuka sederhana yang dirancang untuk dosen, staf, dan mahasiswa.',
-    },
-    {
-        icon: 'notification',
-        badgeClass: 'bg-sky-100',
-        iconClass: 'text-sky-600',
-        title: 'Notification Email',
-        description: 'Pemberitahuan email otomatis menjaga pemohon dan admin selalu mengetahui status terbaru.',
-    },
-    {
-        icon: 'document',
-        badgeClass: 'bg-emerald-100',
-        iconClass: 'text-emerald-600',
-        title: 'Room Request Letter',
-        description: 'Template surat dan lampiran siap pakai sehingga dokumen bisa diunduh hanya dalam satu klik.',
+        icon: Sparkles,
+        title: 'Pengalaman Tanpa Hambatan',
+        description: 'Antarmuka minimalis dengan konfirmasi instan, notifikasi otomatis, dan template surat peminjaman siap unduh.',
     },
 ];
 
 const aboutBadges = [
     {
         text: 'Real-time Availability',
-        classes: 'bg-blue-100 text-blue-700',
+        classes: 'bg-indigo-500/20 text-indigo-200',
     },
     {
-        text: 'Instant Confirmation',
-        classes: 'bg-purple-100 text-purple-700',
+        text: 'Konfirmasi Instan',
+        classes: 'bg-indigo-500/20 text-indigo-200',
     },
     {
-        text: '24/7 Access',
-        classes: 'bg-green-100 text-green-700',
+        text: 'Akses 24/7',
+        classes: 'bg-indigo-500/20 text-indigo-200',
     },
 ];
 </script>
@@ -82,9 +77,16 @@ const aboutBadges = [
 <template>
     <Head title="Selamat Datang" />
 
-    <div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-        <header class="sticky top-0 z-10 border-b bg-white/80 backdrop-blur-sm">
-            <div class="container mx-auto flex items-center justify-between gap-3 px-4 py-4">
+    <div class="relative min-h-screen overflow-hidden bg-slate-950 text-white">
+        <!-- Background Blur Effects -->
+        <div class="absolute inset-0">
+            <div class="absolute -left-10 top-16 hidden h-64 w-64 rounded-full bg-indigo-500/20 blur-[120px] sm:block"></div>
+            <div class="absolute -right-10 bottom-10 h-80 w-80 rounded-full bg-blue-500/20 blur-[140px]"></div>
+            <div class="absolute inset-x-0 top-32 mx-auto h-72 w-[32rem] rounded-full bg-white/5 blur-[160px]"></div>
+        </div>
+
+        <header class="sticky top-0 z-10 border-b border-white/10 bg-slate-950/80 backdrop-blur-sm">
+            <div class="container mx-auto flex flex-wrap items-center justify-between gap-3 px-4 py-4">
                 <div class="flex items-center gap-3">
                     <img
                         src="/images/LOGO_UEU_BY_ASU-06.png"
@@ -93,30 +95,31 @@ const aboutBadges = [
                         loading="lazy"
                     />
                     <div>
-                        <p class="text-sm font-semibold text-blue-700">{{ appName }}</p>
-                        <p class="text-xs font-medium text-blue-500">{{ campusName }}</p>
+                        <p class="text-sm font-semibold text-indigo-200">{{ appName }}</p>
+                        <p class="text-xs font-medium text-indigo-300">{{ campusName }}</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-3">
                     <Link
                         v-if="props.canRegister"
                         :href="route('register')"
-                        class="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400"
+                        class="w-full rounded-full border border-indigo-200/20 px-4 py-2 text-center text-sm font-semibold text-indigo-200 transition hover:border-indigo-400 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 sm:w-auto"
                     >
-                        Register
+                        Daftar Sekarang
                     </Link>
                     <Link
                         v-if="props.canLogin"
                         :href="route('login')"
-                        class="rounded-full border border-blue-200 px-4 py-2 text-sm font-semibold text-blue-600 transition hover:border-blue-400 hover:text-blue-700"
+                        class="w-full rounded-full bg-indigo-600 px-4 py-2 text-center text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 sm:w-auto"
                     >
-                        Masuk
+                        Masuk ke Sistem
                     </Link>
                 </div>
             </div>
         </header>
 
-        <main>
+        <main class="relative z-10">
+            <!-- Hero Section -->
             <section class="container mx-auto px-4 py-16 md:py-24">
                 <Transition
                     appear
@@ -125,46 +128,38 @@ const aboutBadges = [
                     enter-to-class="translate-y-0 opacity-100"
                 >
                     <div class="relative mx-auto max-w-4xl">
-                        <div aria-hidden="true" class="absolute inset-0 -z-10">
-                            <div class="absolute -left-16 top-0 h-48 w-48 rounded-full bg-blue-500/20 blur-3xl"></div>
-                            <div class="absolute right-[-10%] top-[-20%] h-60 w-60 rounded-full bg-purple-400/25 blur-[120px]"></div>
-                            <div class="absolute bottom-[-25%] left-[15%] h-56 w-56 rounded-full bg-cyan-300/20 blur-[120px]"></div>
-                        </div>
-                        <div class="relative overflow-hidden rounded-[40px] border border-blue-100/70 bg-white/80 px-6 py-12 shadow-2xl shadow-blue-500/20 backdrop-blur">
+                        <div class="relative overflow-hidden rounded-[40px] border border-white/10 bg-white/5 px-6 py-12 shadow-2xl shadow-indigo-500/20 backdrop-blur">
+                            <!-- Decorative Blur -->
                             <div aria-hidden="true" class="pointer-events-none absolute inset-0">
-                                <div class="absolute -top-24 left-10 h-56 w-56 rounded-full bg-blue-200/20 blur-3xl"></div>
+                                <div class="absolute -top-24 left-10 h-56 w-56 rounded-full bg-indigo-200/20 blur-3xl"></div>
                                 <div class="absolute bottom-[-40px] right-0 h-48 w-48 rounded-full bg-purple-300/20 blur-2xl"></div>
-                                <div class="absolute left-1/2 top-1/2 h-32 w-32 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/40 blur-2xl"></div>
                             </div>
+
                             <div class="relative space-y-6 text-center">
-                                <div class="inline-flex items-center gap-2 rounded-full bg-blue-100 px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm shadow-blue-200/60">
-                                    <span class="inline-flex size-2 rounded-full bg-blue-500"></span>
-                                    Selamat datang di Sistem Booking Ruangan Internal
+                                <div class="inline-flex items-center gap-2 rounded-full bg-indigo-500/20 px-4 py-2 text-sm font-semibold text-indigo-200 shadow-sm shadow-indigo-200/60">
+                                    <span class="inline-flex size-2 rounded-full bg-indigo-500"></span>
+                                    {{ heroContent.badge }}
                                 </div>
-                                <h1 class="text-4xl font-semibold text-blue-900 md:text-5xl lg:text-6xl">
+                                <h1 class="text-4xl font-semibold text-white md:text-5xl lg:text-6xl">
                                     {{ campusName }}
-                                    <span class="block bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Room Reservation</span>
+                                    <span class="block bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">{{ heroContent.title }}</span>
                                 </h1>
-                                <p class="mx-auto max-w-2xl text-lg leading-relaxed text-blue-700/80">
-                                    Permudah pengalaman peminjaman ruangan dengan sistem reservasi internal yang modern dan efisien. Booking ruang kelas, ruang rapat,
-                                    dan fasilitas kampus hanya dengan beberapa klik.
+                                <p class="mx-auto max-w-2xl text-base leading-relaxed text-indigo-100/80 md:text-lg">
+                                    {{ heroContent.subtitle }}
                                 </p>
-                                <div class="flex flex-wrap justify-center gap-3 pt-5">
+                                <div class="flex flex-col flex-wrap items-center justify-center gap-3 pt-5 sm:flex-row">
                                     <Link
                                         v-if="props.canRegister"
                                         :href="route('register')"
-                                        class="inline-flex items-center gap-2 rounded-full border border-blue-200 px-6 py-3 text-base font-semibold text-blue-700 transition hover:border-blue-400 hover:text-blue-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400"
+                                        class="inline-flex w-full items-center justify-center gap-2 rounded-full border border-indigo-200/20 px-6 py-3 text-base font-semibold text-indigo-200 transition hover:border-indigo-400 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 sm:w-auto"
                                     >
-                                        <svg class="size-4 text-blue-600" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" viewBox="0 0 24 24">
-                                            <path d="M12 5v14" />
-                                            <path d="M5 12h14" />
-                                        </svg>
-                                        Register
+                                        <Sparkles class="size-4 text-indigo-300" />
+                                        Daftar Sekarang
                                     </Link>
                                     <Link
                                         v-if="props.canLogin"
                                         :href="route('login')"
-                                        class="group relative inline-flex items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-3 text-base font-semibold text-white shadow-lg shadow-blue-500/30 transition hover:-translate-y-0.5 hover:from-blue-700 hover:to-purple-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400"
+                                        class="group relative inline-flex w-full items-center justify-center rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 px-8 py-3 text-base font-semibold text-white shadow-lg shadow-indigo-500/30 transition hover:-translate-y-0.5 hover:from-indigo-700 hover:to-purple-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 sm:w-auto"
                                     >
                                         <span class="absolute inset-0 rounded-full bg-white/20 opacity-0 transition group-hover:opacity-100"></span>
                                         <span class="relative flex items-center gap-2">
@@ -176,7 +171,7 @@ const aboutBadges = [
                                         </span>
                                     </Link>
                                 </div>
-                                <p v-if="props.canRegister" class="text-xs font-semibold uppercase tracking-wide text-blue-500">
+                                <p v-if="props.canRegister" class="text-xs font-semibold uppercase tracking-wide text-indigo-300">
                                     Registrasi hanya tersedia untuk email @student.esaunggul.ac.id.
                                 </p>
                             </div>
@@ -185,130 +180,52 @@ const aboutBadges = [
                 </Transition>
             </section>
 
+            <!-- Features Section -->
             <section class="container mx-auto px-4 py-16">
                 <div class="mx-auto max-w-6xl">
                     <div class="mb-12 text-center">
-                        <h2 class="mb-4 text-2xl font-semibold text-blue-900">Fitur Utama</h2>
-                        <p class="mx-auto max-w-2xl text-base text-blue-700/80">
-                            Semua yang dibutuhkan untuk mengatur reservasi ruangan kampus secara efisien dan terorganisir.
+                        <h2 class="mb-4 text-2xl font-semibold text-white">Fitur Utama</h2>
+                        <p class="mx-auto max-w-2xl text-base text-indigo-100/80">
+                            Semua yang dibutuhkan untuk mengatur reservasi ruangan dan peminjaman barang kampus secara efisien dan terorganisir.
                         </p>
                     </div>
-                    <div class="mx-auto grid max-w-5xl gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    <div class="mx-auto grid grid-cols-1 max-w-5xl gap-6 sm:grid-cols-2 lg:grid-cols-3">
                         <article
                             v-for="feature in features"
                             :key="feature.title"
-                            class="rounded-2xl border border-blue-100 bg-white p-6 shadow-sm transition hover:shadow-lg"
+                            class="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-sm transition hover:bg-white/10 hover:shadow-lg"
                         >
-                            <div class="mb-4 flex size-12 items-center justify-center rounded-lg" :class="feature.badgeClass">
-                                <svg
-                                    v-if="feature.icon === 'calendar'"
-                                    class="size-6"
-                                    :class="feature.iconClass"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="1.6"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
-                                    <path d="M16 2v4" />
-                                    <path d="M8 2v4" />
-                                    <path d="M3 10h18" />
-                                    <path d="M8 14h0.01" />
-                                    <path d="M12 14h0.01" />
-                                    <path d="M16 14h0.01" />
-                                </svg>
-                                <svg
-                                    v-else-if="feature.icon === 'clock'"
-                                    class="size-6"
-                                    :class="feature.iconClass"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="1.6"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <circle cx="12" cy="12" r="10" />
-                                    <path d="M12 6v6l4 2" />
-                                </svg>
-                                <svg
-                                    v-else-if="feature.icon === 'users'"
-                                    class="size-6"
-                                    :class="feature.iconClass"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="1.6"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                                    <circle cx="9" cy="7" r="4" />
-                                    <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-                                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                                </svg>
-                                <svg
-                                    v-else-if="feature.icon === 'notification'"
-                                    class="size-6"
-                                    :class="feature.iconClass"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="1.6"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path d="M18 8a6 6 0 1 0-12 0v5a3 3 0 0 1-1 2.24L4 16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2l-.99-.76A3 3 0 0 1 18 13z" />
-                                    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                                </svg>
-                                <svg
-                                    v-else-if="feature.icon === 'document'"
-                                    class="size-6"
-                                    :class="feature.iconClass"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="1.6"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path d="M7 2h8l5 5v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" />
-                                    <path d="M12 2v6h6" />
-                                    <path d="M9 13h6" />
-                                    <path d="M9 17h3" />
-                                </svg>
+                            <div class="mb-4 flex size-12 items-center justify-center rounded-lg bg-indigo-500/20">
+                                <component :is="feature.icon" class="size-6 text-indigo-300" />
                             </div>
-                            <h3 class="mb-2 text-lg font-semibold text-blue-900">{{ feature.title }}</h3>
-                            <p class="text-sm leading-relaxed text-blue-700/80">{{ feature.description }}</p>
+                            <h3 class="mb-2 text-lg font-semibold text-white">{{ feature.title }}</h3>
+                            <p class="text-sm leading-relaxed text-indigo-100/80">{{ feature.description }}</p>
                         </article>
                     </div>
                 </div>
             </section>
 
+            <!-- About Section -->
             <section class="container mx-auto px-4 pb-16">
                 <div class="mx-auto max-w-4xl">
-                    <div class="overflow-hidden rounded-3xl border border-white bg-white/70 shadow-lg">
+                    <div class="overflow-hidden rounded-3xl border border-white/10 bg-white/5 shadow-lg">
                         <div class="grid gap-8 md:grid-cols-2">
-                            <div class="relative h-64 md:h-full">
+                            <div class="relative h-48 md:h-full">
                                 <img
                                     alt="Kampus Bekasi"
                                     class="size-full object-cover"
                                     loading="lazy"
                                     src="/images/Kampus Bekasi IMG.jpg"
                                 />
-                                <div class="absolute inset-0 bg-gradient-to-br from-blue-600/10 via-transparent to-purple-600/20"></div>
+                                <div class="absolute inset-0 bg-gradient-to-br from-indigo-600/10 via-transparent to-purple-600/20"></div>
                             </div>
                             <div class="flex flex-col justify-center gap-4 p-8">
-                                <h2 class="text-2xl font-semibold text-blue-900">Tentang Sistem</h2>
-                                <p class="text-sm leading-relaxed text-blue-700/80">
-                                    Sistem Booking Ruangan Internal dirancang khusus untuk civitas academica Universitas Esa Unggul Kampus Bekasi. Platform ini
-                                    merapikan proses peminjaman dan pengelolaan fasilitas kampus dalam satu alur terpadu.
+                                <h2 class="text-2xl font-semibold text-white">Tentang Sistem Reservasi</h2>
+                                <p class="text-sm leading-relaxed text-indigo-100/80">
+                                    Sistem Reservasi Ruangan & Barang Internal dirancang khusus untuk civitas academica Universitas Esa Unggul Kampus Bekasi. Platform ini merapikan proses peminjaman dan pengelolaan fasilitas kampus dalam satu alur terpadu.
                                 </p>
-                                <p class="text-sm leading-relaxed text-blue-700/80">
-                                    Butuh ruang kelas tambahan, ruangan rapat, atau fasilitas untuk kegiatan kampus? Tinggal pilih ruangannya, ajukan, dan ikuti
-                                    status persetujuannya secara real-time.
+                                <p class="text-sm leading-relaxed text-indigo-100/80">
+                                    Butuh ruang kelas tambahan, ruangan rapat, atau perangkat pendukung seperti meja, kursi, dan proyektor? Tinggal pilih fasilitasnya, ajukan, dan ikuti status persetujuannya secara real-time.
                                 </p>
                                 <div class="flex flex-wrap gap-2 pt-2">
                                     <span
@@ -327,10 +244,62 @@ const aboutBadges = [
             </section>
         </main>
 
-        <footer class="mt-16 border-t bg-white/80 backdrop-blur-sm">
-            <div class="container mx-auto px-4 py-8 text-center text-sm text-blue-600/90">
-                <p class="font-medium text-blue-700/90">© {{ currentYear }} {{ campusName }}</p>
-                <p class="mt-2 text-xs text-blue-500">Internal Room Reservation System • Laravel v{{ props.laravelVersion }} · PHP v{{ props.phpVersion }}</p>
+        <footer class="mt-16 border-t border-white/10 bg-slate-950/80 backdrop-blur-sm">
+            <div class="container mx-auto px-4 py-8">
+                <div class="grid gap-8 md:grid-cols-3">
+                    <!-- Brand Info -->
+                    <div class="space-y-3">
+                        <p class="text-sm font-semibold text-indigo-200">{{ appName }}</p>
+                        <p class="text-xs leading-relaxed text-indigo-100/80">
+                            Platform reservasi ruangan dan peminjaman barang kampus yang terintegrasi untuk civitas academica Universitas Esa Unggul Kampus Bekasi.
+                        </p>
+                    </div>
+
+                    <!-- Navigation Links -->
+                    <div class="space-y-3">
+                        <p class="text-sm font-semibold text-indigo-200">Navigasi</p>
+                        <ul class="space-y-2 text-sm text-indigo-100/80">
+                            <li>
+                                <Link href="/" class="transition hover:text-white">Beranda</Link>
+                            </li>
+                            <li>
+                                <Link :href="route('login')" class="transition hover:text-white">Masuk</Link>
+                            </li>
+                            <li>
+                                <Link :href="route('register')" class="transition hover:text-white">Daftar</Link>
+                            </li>
+                            <li>
+                                <a href="#features" class="transition hover:text-white">Fitur</a>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Contact & Support -->
+                    <div class="space-y-3">
+                        <p class="text-sm font-semibold text-indigo-200">Bantuan & Kontak</p>
+                        <ul class="space-y-2 text-sm text-indigo-100/80">
+                            <li class="flex items-center gap-2">
+                                <Mail class="h-4 w-4 text-indigo-300" />
+                                <a href="mailto:leomarhadi13@gmail.com" class="transition hover:text-white">leomarhadi13@gmail.com</a>
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <Phone class="h-4 w-4 text-indigo-300" />
+                                <a href="tel:+6287851327750" class="transition hover:text-white">+62 878-5132-7750</a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Copyright -->
+                <div class="mt-8 border-t border-white/10 pt-6 text-center">
+                    <p class="font-medium text-indigo-100/90">© {{ currentYear }} {{ campusName }}. All rights reserved.</p>
+                    <p class="mt-2 text-xs text-indigo-300">
+                        Sistem Reservasi Ruangan & Barang • Laravel v{{ props.laravelVersion }} · PHP v{{ props.phpVersion }}
+                    </p>
+                    <p class="mt-1 text-xs text-indigo-400">
+                        Dikembangkan untuk memenuhi tugas skripsi - Universitas Esa Unggul
+                    </p>
+                </div>
             </div>
         </footer>
     </div>

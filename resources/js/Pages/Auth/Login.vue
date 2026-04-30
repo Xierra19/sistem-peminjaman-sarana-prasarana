@@ -6,6 +6,7 @@ import {
     Lock,
     Eye,
     EyeOff,
+    AlertCircle,
     CalendarCheck2,
     ShieldCheck,
     Sparkles,
@@ -27,25 +28,20 @@ const form = useForm({
 
 const featureHighlights = [
     {
-        title: 'Smart availability',
-        description: 'View real-time schedules and avoid double booking with live sync across campuses.',
+        title: 'Ketersediaan Cerdas',
+        description: 'Lihat jadwal real-time dan hindari bentrok jadwal dengan sinkronisasi langsung antar data.',
         icon: CalendarCheck2,
     },
     {
-        title: 'Secure access',
-        description: 'Only verified university accounts can access booking and approval workflows.',
+        title: 'Akses Aman',
+        description: 'Hanya akun kampus terverifikasi yang dapat mengakses alur kerja pemesanan dan persetujuan.',
         icon: ShieldCheck,
-    },
-    {
-        title: 'Frictionless experience',
-        description: 'Clean interface, keyboard shortcuts, and instant confirmations keep you moving.',
-        icon: Sparkles,
-    },
+    }
 ];
 
 const stats = [
-    { label: 'Advance notice', value: 'Submit requests ≥3 days ahead' },
-    { label: 'Live booking status', value: 'Transparent in real time' },
+    { label: 'Pemberitahuan Lanjutan', value: 'Ajukan permohonan ≥3 hari sebelumnya' },
+    { label: 'Status Pemesanan Langsung', value: 'Transparan secara real-time' },
 ];
 
 const submit = () => {
@@ -56,7 +52,7 @@ const submit = () => {
 </script>
 
 <template>
-    <Head title="Log in" />
+    <Head title="Masuk" />
 
     <div class="relative min-h-screen overflow-hidden bg-slate-950 text-white">
         <div class="absolute inset-0">
@@ -70,14 +66,14 @@ const submit = () => {
                 <div class="grid gap-8 lg:grid-cols-[1.05fr_0.95fr]">
                     <section class="rounded-[32px] border border-white/10 bg-white/5 p-8 shadow-[0_20px_80px_rgba(15,23,42,0.55)] backdrop-blur">
                         <p class="text-xs font-semibold uppercase tracking-[0.35em] text-indigo-200">Universitas Esa Unggul</p>
-                        <h1 class="mt-4 text-4xl font-semibold leading-tight text-white">
-                            Room Reservation Platform
+                        <h1 class="mt-4 text-4xl font-semibold leading-tight text-white md:text-5xl">
+                            Platform Reservasi Ruangan & Barang
                         </h1>
-                        <p class="mt-3 text-base text-indigo-100">
-                            Reserve lecture halls, labs, and collaboration rooms across the Bekasi campus with a single, beautiful workflow.
+                        <p class="mt-3 text-base text-indigo-100 md:text-lg">
+                            Pesan ruang kelas, laboratorium, dan ruang kolaborasi di seluruh kampus Bekasi dengan satu alur kerja yang indah.
                         </p>
 
-                        <dl class="mt-10 grid grid-cols-2 gap-4 text-left text-indigo-100">
+                        <dl class="mt-10 grid grid-cols-1 gap-4 text-left text-indigo-100 sm:grid-cols-2">
                             <div v-for="stat in stats" :key="stat.label" class="rounded-2xl border border-white/5 bg-white/5 p-4">
                                 <dt class="text-sm uppercase tracking-wide text-indigo-200">
                                     {{ stat.label }}
@@ -110,20 +106,20 @@ const submit = () => {
 
                     <section class="rounded-[32px] bg-white p-8 text-slate-900 shadow-2xl ring-1 ring-slate-100 lg:p-10">
                         <div class="mb-8 space-y-2">
-                            <p class="text-sm font-semibold uppercase tracking-[0.25em] text-indigo-500">Sign back in</p>
+                            <p class="text-sm font-semibold uppercase tracking-[0.25em] text-indigo-500">Masuk Kembali</p>
                             <h2 class="text-3xl font-semibold text-slate-900">
-                                Welcome back
+                                Selamat Datang Kembali
                             </h2>
                             <p class="text-sm text-slate-500">
-                                Use your university email to access the booking dashboard.
+                                Gunakan email kampus Anda untuk mengakses dasbor reservasi.
                             </p>
                         </div>
 
                         <form class="space-y-5" @submit.prevent="submit">
                             <div>
-                                <label for="email" class="text-sm font-medium text-slate-700">Email address</label>
+                                <label for="email" class="text-sm font-medium text-slate-700">Alamat Email</label>
                                 <div class="relative mt-2">
-                                    <Mail class="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                                    <Mail class="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" aria-hidden="true" />
                                     <input
                                         id="email"
                                         v-model="form.email"
@@ -131,18 +127,22 @@ const submit = () => {
                                         autocomplete="username"
                                         placeholder="nama@student.esaunggul.ac.id"
                                         class="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/60 pl-12 pr-4 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100"
+                                        :class="{ 'border-rose-500': form.errors.email }"
+                                        :aria-invalid="!!form.errors.email"
+                                        :aria-describedby="form.errors.email ? 'email-error' : undefined"
                                         required
                                     />
                                 </div>
-                                <p v-if="form.errors.email" class="mt-2 text-sm text-rose-500">
+                                <p v-if="form.errors.email" id="email-error" class="mt-2 flex items-center gap-2 text-sm text-rose-500">
+                                    <AlertCircle class="h-4 w-4 flex-shrink-0" />
                                     {{ form.errors.email }}
                                 </p>
                             </div>
 
                             <div>
-                                <label for="password" class="text-sm font-medium text-slate-700">Password</label>
+                                <label for="password" class="text-sm font-medium text-slate-700">Kata Sandi</label>
                                 <div class="relative mt-2">
-                                    <Lock class="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                                    <Lock class="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" aria-hidden="true" />
                                     <input
                                         id="password"
                                         v-model="form.password"
@@ -150,47 +150,56 @@ const submit = () => {
                                         autocomplete="current-password"
                                         placeholder="●●●●●●●●"
                                         class="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/60 pl-12 pr-12 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100"
+                                        :class="{ 'border-rose-500': form.errors.password }"
+                                        :aria-invalid="!!form.errors.password"
+                                        :aria-describedby="form.errors.password ? 'password-error' : undefined"
                                         required
                                     />
                                     <button
                                         type="button"
                                         class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-600"
+                                        :aria-label="showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'"
                                         @click="showPassword = !showPassword"
                                     >
                                         <EyeOff v-if="showPassword" class="h-5 w-5" />
                                         <Eye v-else class="h-5 w-5" />
                                     </button>
                                 </div>
-                                <p v-if="form.errors.password" class="mt-2 text-sm text-rose-500">
+                                <p v-if="form.errors.password" id="password-error" class="mt-2 flex items-center gap-2 text-sm text-rose-500">
+                                    <AlertCircle class="h-4 w-4 flex-shrink-0" />
                                     {{ form.errors.password }}
                                 </p>
                             </div>
 
                             <div class="flex items-center justify-between text-sm text-slate-500">
-                                <p>Protected by UEU single sign on.</p>
+                                <p>Dilindungi oleh single sign on UEU.</p>
                                 <Link
                                     v-if="canResetPassword"
                                     :href="route('password.request')"
                                     class="font-medium text-indigo-600 transition hover:text-indigo-500"
                                 >
-                                    Forgot password?
+                                    Lupa kata sandi?
                                 </Link>
                             </div>
 
                             <button
                                 type="submit"
                                 :disabled="form.processing"
-                                class="flex h-12 w-full items-center justify-center rounded-2xl bg-indigo-600 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition hover:bg-indigo-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-200 disabled:cursor-not-allowed disabled:opacity-60"
+                                class="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition hover:bg-indigo-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-200 disabled:cursor-not-allowed disabled:opacity-60 disabled:pointer-events-none"
                             >
-                                <span v-if="form.processing">Signing in…</span>
-                                <span v-else>Sign in</span>
+                                <svg v-if="form.processing" class="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span v-if="form.processing">Masuk…</span>
+                                <span v-else>Masuk</span>
                             </button>
                         </form>
 
                         <p class="mt-8 text-center text-sm text-slate-500">
-                            Need an account?
+                            Belum punya akun?
                             <Link :href="route('register')" class="font-semibold text-indigo-600 hover:text-indigo-500">
-                                Create one here
+                                Buat akun di sini
                             </Link>
                         </p>
 

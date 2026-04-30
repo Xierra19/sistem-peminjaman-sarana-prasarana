@@ -181,26 +181,17 @@ const formatDate = (value) => {
           <div class="text-sm font-semibold text-gray-700">Daftar User Terdaftar</div>
           <div class="flex items-center justify-end gap-3 text-sm text-gray-600">
             <label class="font-medium text-gray-700" for="admin-users-rows">Rows per page</label>
-            <div class="relative">
-              <select
-                id="admin-users-rows"
-                v-model.number="rowsPerPage"
-                class="w-20 appearance-none rounded border border-gray-300 bg-white px-3 py-1.5 pr-8 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              >
-                <option v-for="option in perPageOptions" :key="option" :value="option">
-                  {{ option }}
-                </option>
-              </select>
-              <span class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-gray-400">
-                <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                  <path
-                    fill-rule="evenodd"
-                    d="M5.23 7.21a.75.75 0 011.06.02L10 10.939l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
-                    clip-rule="evenodd"
-                  />
-                </svg>
-              </span>
-            </div>
+              <div class="relative">
+                <select
+                  id="admin-users-rows"
+                  v-model.number="rowsPerPage"
+                  class="w-20 rounded border border-gray-300 bg-white px-3 py-1.5 pr-8 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  <option v-for="option in perPageOptions" :key="option" :value="option">
+                    {{ option }}
+                  </option>
+                </select>
+              </div>
           </div>
         </div>
 

@@ -5,6 +5,19 @@ import { usePagination } from '@/Composables/usePagination'
 import { useTableSort } from '@/Composables/useTableSort'
 import { Head, Link, usePage } from '@inertiajs/vue3'
 import { computed, ref } from 'vue'
+import { Bar, Pie } from 'vue-chartjs'
+import {
+  Chart as ChartJS,
+  Title,
+  Tooltip,
+  Legend,
+  BarElement,
+  CategoryScale,
+  LinearScale,
+  ArcElement,
+} from 'chart.js'
+
+ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, ArcElement)
 
 const page = usePage()
 
@@ -212,6 +225,89 @@ const formatDateTime = (value) => {
     minute: '2-digit',
   })
 }
+
+// ==========================================
+// CHART DATA: STATUS DISTRIBUTION (PIE)
+// ==========================================
+const statusChartData = computed(() => {
+  const bookings = filteredBookings.value
+  const counts = {
+    approved: 0,
+    waiting: 0,
+    rejected: 0,
+    cancelled: 0,
+  }
+  
+  bookings.forEach(b => {
+    const s = b.normalizedStatus || ''
+    if (counts[s] !== undefined) {
+      counts[s]++
+    }
+  })
+
+  return {
+    labels: ['Disetujui', 'Menunggu', 'Ditolak', 'Dibatalkan'],
+    datasets: [{
+      data: [counts.approved, counts.waiting, counts.rejected, counts.cancelled],
+      backgroundColor: [
+        '#10b981', // emerald-500
+        '#f59e0b', // amber-500
+        '#f43f5e', // rose-500
+        '#8b5cf6', // violet-500
+      ],
+      borderWidth: 1,
+    }],
+  }
+})
+
+// ==========================================
+// CHART DATA: MONTHLY BOOKINGS (BAR)
+// ==========================================
+const monthlyChartData = computed(() => {
+  const bookings = filteredBookings.value
+  const monthCounts = {}
+
+  bookings.forEach(b => {
+    if (!b.created_at) return
+    const d = new Date(b.created_at)
+    if (isNaN(d.getTime())) return
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    monthCounts[key] = (monthCounts[key] || 0) + 1
+  })
+
+  // Sort months and take last 6
+  const sortedMonths = Object.keys(monthCounts).sort()
+  const last6 = sortedMonths.slice(-6)
+
+  const labels = last6.map(m => {
+    const [year, month] = m.split('-')
+    const date = new Date(year, month - 1, 1)
+    return date.toLocaleString('id-ID', { month: 'short', year: 'numeric' })
+  })
+
+  const data = last6.map(m => monthCounts[m])
+
+  return {
+    labels,
+    datasets: [{
+      label: 'Jumlah Peminjaman',
+      data,
+      backgroundColor: '#3b82f6', // blue-500
+      borderColor: '#2563eb', // blue-600
+      borderWidth: 1,
+    }],
+  }
+})
+
+const chartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      position: 'bottom',
+    },
+  },
+}
 </script>
 
 <template>
@@ -256,6 +352,22 @@ const formatDateTime = (value) => {
           <div class="rounded-xl border border-slate-100 bg-slate-50 p-4 text-slate-700">
             <div class="text-sm font-medium">Dibatalkan</div>
             <div class="mt-2 text-3xl font-semibold">{{ summary.cancelled }}</div>
+          </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="grid gap-6 md:grid-cols-2 mb-6">
+          <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Distribusi Status Booking</h3>
+            <div class="h-64">
+              <Pie :data="statusChartData" :options="chartOptions" />
+            </div>
+          </div>
+          <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Tren Peminjaman 6 Bulan Terakhir</h3>
+            <div class="h-64">
+              <Bar :data="monthlyChartData" :options="chartOptions" />
+            </div>
           </div>
         </div>
 
@@ -352,21 +464,12 @@ const formatDateTime = (value) => {
                 <select
                   id="dashboard-rows"
                   v-model.number="rowsPerPage"
-                  class="w-24 appearance-none rounded border border-gray-300 bg-white px-3 py-1.5 pr-8 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  class="w-20 rounded border border-gray-300 bg-white px-3 py-1.5 pr-8 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 >
-                  <option v-for="option in perPageOptions" :key="`per-page-${option}`" :value="option">
+                  <option v-for="option in perPageOptions" :key="option" :value="option">
                     {{ option }}
                   </option>
                 </select>
-                <span class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-gray-400">
-                  <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                    <path
-                      fill-rule="evenodd"
-                      d="M5.23 7.21a.75.75 0 011.06.02L10 10.939l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
-                      clip-rule="evenodd"
-                    />
-                  </svg>
-                </span>
               </div>
             </div>
           </div>

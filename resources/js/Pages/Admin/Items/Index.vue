@@ -6,10 +6,40 @@ import { usePagination } from '@/Composables/usePagination'
 import { useTableSort } from '@/Composables/useTableSort'
 import { Head, Link, useForm, router } from '@inertiajs/vue3'
 import { computed, ref } from 'vue'
-import Swal from 'sweetalert2' // <-- Import SweetAlert
+import { Bar, Pie } from 'vue-chartjs'
+import {
+  Chart as ChartJS,
+  Title,
+  Tooltip,
+  Legend,
+  BarElement,
+  CategoryScale,
+  LinearScale,
+  ArcElement,
+} from 'chart.js'
+import Swal from 'sweetalert2' // <-- Import SweetAlert 
+
+ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, ArcElement)
 
 const props = defineProps({
   items: Array
+})
+
+const searchQuery = ref('')
+
+const filteredItems = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase()
+  if (!q) return props.items ?? []
+  
+  return (props.items ?? []).filter(item => {
+    const searchable = [
+      item.code,
+      item.name,
+      item.category,
+    ].filter(Boolean).join(' ').toLowerCase()
+    
+    return searchable.includes(q)
+  })
 })
 
 const showCreateModal = ref(false)
@@ -165,14 +195,12 @@ const confirmDelete = (id, name) => {
 // ==========================================
 // LOGIKA TABEL & PAGINASI
 // ==========================================
-const itemsList = computed(() => props.items ?? [])
-
 const {
   sortedItems,
   toggleSort,
   sortDirection,
   ariaSortValue,
-} = useTableSort(itemsList, {
+} = useTableSort(filteredItems, {
   accessors: {
     number: (item) => item.id ?? 0,
     code: (item) => item.code ?? '',
@@ -193,54 +221,148 @@ const {
 } = usePagination(sortedItems)
 
 const perPageOptions = [5, 10, 25, 50]
+
+// ==========================================
+// CHART DATA: ITEMS BY CATEGORY (PIE)
+// ==========================================
+const categoryChartData = computed(() => {
+  const items = props.items ?? []
+  const categoryCounts = {}
+  
+  items.forEach(item => {
+    const cat = item.category || 'Uncategorized'
+    categoryCounts[cat] = (categoryCounts[cat] || 0) + 1
+  })
+  
+  const colors = [
+    '#3b82f6', // blue-500
+    '#10b981', // emerald-500
+    '#f59e0b', // amber-500
+    '#f43f5e', // rose-500
+    '#8b5cf6', // violet-500
+    '#06b6d4', // cyan-500
+  ]
+  
+  const labels = Object.keys(categoryCounts)
+  const data = labels.map(cat => categoryCounts[cat])
+  
+  return {
+    labels,
+    datasets: [{
+      data,
+      backgroundColor: colors.slice(0, labels.length),
+      borderWidth: 1,
+    }],
+  }
+})
+
+// ==========================================
+// CHART DATA: ITEMS AVAILABILITY (DONUT)
+// ==========================================
+const availabilityChartData = computed(() => {
+  const items = props.items ?? []
+  const available = items.filter(i => i.is_available).length
+  const unavailable = items.filter(i => !i.is_available).length
+  
+  return {
+    labels: ['Tersedia', 'Tidak Tersedia'],
+    datasets: [{
+      data: [available, unavailable],
+      backgroundColor: [
+        '#10b981', // emerald-500
+        '#f43f5e', // rose-500
+      ],
+      borderWidth: 1,
+    }],
+  }
+})
+
+const chartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      position: 'bottom',
+    },
+  },
+}
 </script>
+
 
 <template>
   <Head title="Master Barang" />
 
   <AuthenticatedLayout>
-    <div class="bg-white p-6 rounded-lg shadow-md">
-      <div class="flex justify-between items-center mb-4">
-        <h1 class="text-xl font-semibold text-gray-800">📦 Master Barang</h1>
+    <div class="space-y-6">
+      <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 class="text-2xl font-semibold text-gray-800">Master Barang</h1>
+          <p class="text-sm text-gray-500">Kelola data barang inventaris.</p>
+        </div>
 
         <button
           type="button"
-          class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+          class="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700"
           @click="openCreateModal"
         >
-          ➕ Tambah Barang
+          + Tambah Barang
         </button>
       </div>
 
-      <div class="overflow-x-auto">
-        <div class="flex flex-col gap-3 pb-3 sm:flex-row sm:items-center sm:justify-between">
-          <div class="text-sm font-semibold text-gray-700">Daftar Barang</div>
+      <!-- Charts Section -->
+      <div class="grid gap-6 md:grid-cols-2 mb-6">
+        <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">Distribusi Kategori Barang</h3>
+          <div class="h-64">
+            <Pie :data="categoryChartData" :options="chartOptions" />
+          </div>
+        </div>
+        <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">Ketersediaan Barang</h3>
+          <div class="h-64">
+            <Pie :data="availabilityChartData" :options="chartOptions" />
+          </div>
+        </div>
+      </div>
+
+      <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+        <div class="flex flex-col gap-4 px-5 py-4 md:flex-row md:items-end md:justify-between">
+          <div class="flex flex-1 flex-col gap-3 md:flex-row md:items-center">
+            <div class="w-full md:max-w-sm">
+              <label class="mb-1 block text-sm font-medium text-gray-700" for="admin-items-search">Pencarian</label>
+              <div class="relative">
+                <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35M10 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16Z" />
+                  </svg>
+                </span>
+                <input
+                  id="admin-items-search"
+                  v-model="searchQuery"
+                  type="text"
+                  placeholder="Cari kode, nama, atau kategori..."
+                  class="w-full rounded-xl border border-slate-200 bg-white py-2 pl-10 pr-3 text-sm text-slate-700 placeholder-slate-400 transition focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+          </div>
           <div class="flex items-center justify-end gap-3 text-sm text-gray-600">
             <label class="font-medium text-gray-700" for="admin-items-rows">Rows per page</label>
-            <div class="relative">
-              <select
-                id="admin-items-rows"
-                v-model.number="rowsPerPage"
-                class="appearance-none w-20 rounded border border-gray-300 bg-white px-3 py-1.5 pr-8 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              >
-                <option v-for="option in perPageOptions" :key="option" :value="option">
-                  {{ option }}
-                </option>
-              </select>
-              <span class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-gray-400">
-                <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                  <path
-                    fill-rule="evenodd"
-                    d="M5.23 7.21a.75.75 0 011.06.02L10 10.939l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
-                    clip-rule="evenodd"
-                  />
-                </svg>
-              </span>
-            </div>
+              <div class="relative">
+                <select>
+                  id="admin-items-rows"
+                  v-model.number="rowsPerPage"
+                  class="w-20 rounded border border-gray-300 bg-white px-3 py-1.5 pr-8 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  <option v-for="option in perPageOptions" :key="option" :value="option">
+                    {{ option }}
+                  </option>
+                </select>
+              </div>
           </div>
         </div>
         
-        <table class="min-w-full border border-gray-200 divide-y divide-gray-200">
+        <table class="min-w-full divide-y divide-gray-200 text-sm">
           <thead class="bg-gray-100">
             <tr>
               <SortableTh
@@ -325,7 +447,7 @@ const perPageOptions = [5, 10, 25, 50]
                 </div>
               </td>
             </tr>
-            <tr v-if="!itemsList.length">
+            <tr v-if="!filteredItems.length">
               <td colspan="7" class="px-4 py-4 text-center text-gray-500">
                 Tidak ada data barang.
               </td>
@@ -342,7 +464,7 @@ const perPageOptions = [5, 10, 25, 50]
               type="button"
               class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
               @click="changePage(1)"
-              :disabled="currentPage === 1 || !itemsList.length"
+              :disabled="currentPage === 1 || !filteredItems.length"
             >
               «
             </button>
@@ -350,11 +472,11 @@ const perPageOptions = [5, 10, 25, 50]
               type="button"
               class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
               @click="changePage(currentPage - 1)"
-              :disabled="currentPage === 1 || !itemsList.length"
+              :disabled="currentPage === 1 || !filteredItems.length"
             >
               ‹
             </button>
-            <template v-if="itemsList.length">
+            <template v-if="filteredItems.length">
               <button
                 v-for="page in pages"
                 :key="`item-page-${page}`"
@@ -374,7 +496,7 @@ const perPageOptions = [5, 10, 25, 50]
               type="button"
               class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
               @click="changePage(currentPage + 1)"
-              :disabled="currentPage === pages.length || !itemsList.length"
+              :disabled="currentPage === pages.length || !filteredItems.length"
             >
               ›
             </button>
@@ -382,7 +504,7 @@ const perPageOptions = [5, 10, 25, 50]
               type="button"
               class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
               @click="changePage(pages.length)"
-              :disabled="currentPage === pages.length || !itemsList.length"
+              :disabled="currentPage === pages.length || !filteredItems.length"
             >
               »
             </button>

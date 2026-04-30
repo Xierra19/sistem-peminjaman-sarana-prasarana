@@ -13,6 +13,23 @@ const props = defineProps({
   campuses: Array
 })
 
+const searchQuery = ref('')
+
+const filteredCampuses = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase()
+  if (!q) return props.campuses ?? []
+  
+  return (props.campuses ?? []).filter(campus => {
+    const searchable = [
+      campus.name,
+      campus.address,
+      campus.phone,
+    ].filter(Boolean).join(' ').toLowerCase()
+    
+    return searchable.includes(q)
+  })
+})
+
 const showCreateModal = ref(false)
 const showEditModal = ref(false)
 const selectedCampus = ref(null)
@@ -149,14 +166,12 @@ const confirmDelete = (id, name) => {
 // ==========================================
 // LOGIKA TABEL & PAGINASI
 // ==========================================
-const campusesList = computed(() => props.campuses ?? [])
-
 const {
   sortedItems: sortedCampuses,
   toggleSort: toggleCampusSort,
   sortDirection: campusSortDirection,
   ariaSortValue: campusAriaSortValue,
-} = useTableSort(campusesList, {
+} = useTableSort(filteredCampuses, {
   accessors: {
     number: (campus) => campus.id ?? 0,
     name: (campus) => campus.name ?? '',
@@ -181,48 +196,60 @@ const perPageOptions = [5, 10, 25, 50]
   <Head title="Master Campus" />
 
   <AuthenticatedLayout>
-    <div class="bg-white p-6 rounded-lg shadow-md">
-      <div class="flex justify-between items-center mb-4">
-        <h1 class="text-xl font-semibold text-gray-800">🏫 Master Campus</h1>
+    <div class="space-y-6">
+      <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 class="text-2xl font-semibold text-gray-800">Master Campus</h1>
+          <p class="text-sm text-gray-500">Kelola data kampus yang tersedia dalam sistem.</p>
+        </div>
 
         <button
           type="button"
-          class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+          class="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700"
           @click="openCreateModal"
         >
-          ➕ Tambah Campus
+          + Tambah Campus
         </button>
       </div>
 
-      <div class="overflow-x-auto">
-        <div class="flex flex-col gap-3 pb-3 sm:flex-row sm:items-center sm:justify-between">
-          <div class="text-sm font-semibold text-gray-700">Daftar Campus</div>
+      <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+        <div class="flex flex-col gap-4 px-5 py-4 md:flex-row md:items-end md:justify-between">
+          <div class="flex flex-1 flex-col gap-3 md:flex-row md:items-center">
+            <div class="w-full md:max-w-sm">
+              <label class="mb-1 block text-sm font-medium text-gray-700" for="admin-campus-search">Pencarian</label>
+              <div class="relative">
+                <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35M10 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16Z" />
+                  </svg>
+                </span>
+                <input
+                  id="admin-campus-search"
+                  v-model="searchQuery"
+                  type="text"
+                  placeholder="Cari nama campus, alamat, telepon..."
+                  class="w-full rounded-xl border border-slate-200 bg-white py-2 pl-10 pr-3 text-sm text-slate-700 placeholder-slate-400 transition focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+          </div>
           <div class="flex items-center justify-end gap-3 text-sm text-gray-600">
             <label class="font-medium text-gray-700" for="admin-campus-rows">Rows per page</label>
-            <div class="relative">
-              <select
-                id="admin-campus-rows"
-                v-model.number="rowsPerPage"
-                class="appearance-none w-20 rounded border border-gray-300 bg-white px-3 py-1.5 pr-8 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              >
-                <option v-for="option in perPageOptions" :key="option" :value="option">
-                  {{ option }}
-                </option>
-              </select>
-              <span class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-gray-400">
-                <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                  <path
-                    fill-rule="evenodd"
-                    d="M5.23 7.21a.75.75 0 011.06.02L10 10.939l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
-                    clip-rule="evenodd"
-                  />
-                </svg>
-              </span>
-            </div>
+              <div class="relative">
+                <select>
+                  id="admin-campus-rows"
+                  v-model.number="rowsPerPage"
+                  class="w-20 rounded border border-gray-300 bg-white px-3 py-1.5 pr-8 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  <option v-for="option in perPageOptions" :key="option" :value="option">
+                    {{ option }}
+                  </option>
+                </select>
+              </div>
           </div>
         </div>
         
-        <table class="min-w-full border border-gray-200 divide-y divide-gray-200">
+        <table class="min-w-full divide-y divide-gray-200 text-sm">
           <thead class="bg-gray-100">
             <tr>
               <SortableTh
@@ -288,7 +315,7 @@ const perPageOptions = [5, 10, 25, 50]
 
               </td>
             </tr>
-            <tr v-if="!campusesList.length">
+            <tr v-if="!filteredCampuses.length">
               <td colspan="5" class="px-4 py-4 text-center text-gray-500">
                 Tidak ada data campus.
               </td>
@@ -305,7 +332,7 @@ const perPageOptions = [5, 10, 25, 50]
               type="button"
               class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
               @click="changePage(1)"
-              :disabled="currentPage === 1 || !campusesList.length"
+              :disabled="currentPage === 1 || !filteredCampuses.length"
             >
               «
             </button>
@@ -313,11 +340,11 @@ const perPageOptions = [5, 10, 25, 50]
               type="button"
               class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
               @click="changePage(currentPage - 1)"
-              :disabled="currentPage === 1 || !campusesList.length"
+              :disabled="currentPage === 1 || !filteredCampuses.length"
             >
               ‹
             </button>
-            <template v-if="campusesList.length">
+            <template v-if="filteredCampuses.length">
               <button
                 v-for="page in pages"
                 :key="`campus-page-${page}`"
@@ -337,7 +364,7 @@ const perPageOptions = [5, 10, 25, 50]
               type="button"
               class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
               @click="changePage(currentPage + 1)"
-              :disabled="currentPage === pages.length || !campusesList.length"
+              :disabled="currentPage === pages.length || !filteredCampuses.length"
             >
               ›
             </button>
@@ -345,7 +372,7 @@ const perPageOptions = [5, 10, 25, 50]
               type="button"
               class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
               @click="changePage(pages.length)"
-              :disabled="currentPage === pages.length || !campusesList.length"
+              :disabled="currentPage === pages.length || !filteredCampuses.length"
             >
               »
             </button>

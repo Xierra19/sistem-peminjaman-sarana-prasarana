@@ -234,15 +234,15 @@ const cancelBorrowing = (borrowing) => {
           </div>
           <div class="flex flex-col gap-2 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-end">
             <label class="font-medium text-slate-700" for="item-borrowings-rows">Rows per page</label>
-            <select
-              id="item-borrowings-rows"
-              v-model.number="rowsPerPage"
-              class="w-24 appearance-none rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            >
-              <option v-for="option in perPageOptions" :key="`item-borrowings-rows-${option}`" :value="option">
-                {{ option }}
-              </option>
-            </select>
+              <select
+                id="item-borrowings-rows"
+                v-model.number="rowsPerPage"
+                class="w-24 rounded-xl border border-slate-200 bg-white px-3 py-1.5 pr-9 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              >
+                <option v-for="option in perPageOptions" :key="`item-borrowings-rows-${option}`" :value="option">
+                  {{ option }}
+                </option>
+              </select>
           </div>
         </div>
 
