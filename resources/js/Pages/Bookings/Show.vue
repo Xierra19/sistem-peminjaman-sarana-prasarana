@@ -2,6 +2,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import { Head, Link, useForm } from '@inertiajs/vue3'
 import { computed } from 'vue'
+import { formatDateTimeToDDMMYY } from '@/Composables/useDateFormatter'
 
 const props = defineProps({
   booking: {
@@ -33,16 +34,7 @@ const normalizeStatus = (status) => {
   return status === 'pending' || status === 'requested' ? 'waiting' : status
 }
 
-const formatDateTime = (value) => {
-  if (!value) return '-'
-  return new Date(value).toLocaleString('id-ID', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
+const formatDateTime = (value) => formatDateTimeToDDMMYY(value)
 
 const normalizedStatus = computed(() => normalizeStatus(props.booking?.status))
 

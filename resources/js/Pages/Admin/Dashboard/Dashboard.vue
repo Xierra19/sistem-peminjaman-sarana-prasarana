@@ -5,6 +5,7 @@ import { usePagination } from '@/Composables/usePagination'
 import { useTableSort } from '@/Composables/useTableSort'
 import { Head, Link, usePage } from '@inertiajs/vue3'
 import { computed, ref } from 'vue'
+import { formatDateTimeToDDMMYY } from '@/Composables/useDateFormatter'
 import { Bar, Pie } from 'vue-chartjs'
 import {
   Chart as ChartJS,
@@ -210,21 +211,7 @@ const summary = computed(() => ({
   cancelled: props.statusSummary?.cancelled ?? 0,
 }))
 
-const formatDateTime = (value) => {
-  if (!value) return '-'
-  const parsed = new Date(value)
-  if (Number.isNaN(parsed.getTime())) {
-    return value
-  }
-
-  return parsed.toLocaleString('id-ID', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
+const formatDateTime = (value) => formatDateTimeToDDMMYY(value)
 
 // ==========================================
 // CHART DATA: STATUS DISTRIBUTION (PIE)

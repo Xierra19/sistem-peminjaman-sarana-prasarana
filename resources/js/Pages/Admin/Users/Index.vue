@@ -5,6 +5,7 @@ import { usePagination } from '@/Composables/usePagination'
 import { useTableSort } from '@/Composables/useTableSort'
 import { Head, Link, useForm } from '@inertiajs/vue3'
 import { computed } from 'vue'
+import { formatDateTimeToDDMMYY } from '@/Composables/useDateFormatter'
 
 const props = defineProps({
   users: {
@@ -108,21 +109,7 @@ const handleDelete = (user) => {
   })
 }
 
-const formatDate = (value) => {
-  if (!value) return '-'
-
-  try {
-    return new Date(value).toLocaleString('id-ID', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-  } catch (error) {
-    return value
-  }
-}
+const formatDate = (value) => formatDateTimeToDDMMYY(value)
 </script>
 
 <template>

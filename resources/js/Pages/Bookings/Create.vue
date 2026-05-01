@@ -1,7 +1,10 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import { Head, useForm } from '@inertiajs/vue3'
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import flatpickr from 'flatpickr'
+import 'flatpickr/dist/flatpickr.css'
+import { formatToDDMMYY } from '@/Composables/useDateFormatter'
 
 // Definisikan props untuk menerima data dari controller
 const props = defineProps({
@@ -29,11 +32,14 @@ const bookedIntervals = ref([])
 const availabilityDate = ref('')
 const availabilityMessage = ref('')
 const isAvailabilityLoading = ref(false)
+const datePickers = ref({}) // Menyimpan instance flatpickr
 
 const formatDateForInput = (date) => {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
+  if (!date) return ''
+  const d = new Date(date)
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
 }
 
@@ -341,6 +347,59 @@ const submit = () => {
       },
     })
 }
+
+// Inisialisasi Flatpickr
+onMounted(() => {
+  // Flatpickr untuk Tanggal Mulai
+  const startInput = document.getElementById('start_date_input')
+  if (startInput) {
+    datePickers.value.start = flatpickr(startInput, {
+      dateFormat: 'Y-m-d',
+      altInput: true,
+      altFormat: 'd-m-y',
+      minDate: minBookingDate.value,
+      onChange: (selectedDates, dateStr) => {
+        form.start_date = dateStr
+        if (datePickers.value.end) {
+          datePickers.value.end.set('minDate', dateStr || minBookingDate.value)
+        }
+      }
+    })
+  }
+
+  // Flatpickr untuk Tanggal Selesai
+  const endInput = document.getElementById('end_date_input')
+  if (endInput) {
+    datePickers.value.end = flatpickr(endInput, {
+      dateFormat: 'Y-m-d',
+      altInput: true,
+      altFormat: 'd-m-y',
+      minDate: minEndDate.value,
+      onChange: (selectedDates, dateStr) => {
+        form.end_date = dateStr
+      }
+    })
+  }
+
+  // Flatpickr untuk Tanggal Cek Ketersediaan
+  const availInput = document.getElementById('availability_date_input')
+  if (availInput) {
+    datePickers.value.avail = flatpickr(availInput, {
+      dateFormat: 'Y-m-d',
+      altInput: true,
+      altFormat: 'd-m-y',
+      minDate: form.start_date || minBookingDate.value,
+      maxDate: form.end_date || undefined,
+      onChange: (selectedDates, dateStr) => {
+        availabilityDate.value = dateStr
+      }
+    })
+  }
+})
+
+onBeforeUnmount(() => {
+  Object.values(datePickers.value).forEach(picker => picker?.destroy())
+})
 </script>
 
 <template>
@@ -477,20 +536,22 @@ const submit = () => {
             <div class="space-y-2">
               <label class="block text-sm font-medium text-slate-700">Tanggal Mulai</label>
               <input
-                v-model="form.start_date"
-                type="date"
-                :min="minBookingDate"
-                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                id="start_date_input"
+                type="text"
+                readonly
+                placeholder="Pilih tanggal mulai"
+                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
               />
               <p class="text-xs text-slate-500">Tanggal minimal peminjaman: {{ minBookingDate }} (H+3)</p>
             </div>
             <div class="space-y-2">
               <label class="block text-sm font-medium text-slate-700">Tanggal Selesai</label>
               <input
-                v-model="form.end_date"
-                type="date"
-                :min="minEndDate"
-                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                id="end_date_input"
+                type="text"
+                readonly
+                placeholder="Pilih tanggal selesai"
+                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
               />
               <p class="text-xs text-slate-500">Samakan dengan tanggal mulai bila booking hanya satu hari.</p>
             </div>
@@ -500,12 +561,11 @@ const submit = () => {
             <div class="space-y-2">
               <label class="block text-sm font-medium text-slate-700">Tanggal Cek Ketersediaan</label>
               <input
-                v-model="availabilityDate"
-                type="date"
-                :min="form.start_date || minBookingDate"
-                :max="form.end_date || undefined"
+                id="availability_date_input"
+                type="text"
+                readonly
                 :disabled="!form.start_date"
-                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-slate-100 cursor-pointer"
               />
               <p class="text-xs text-slate-500">
                 Gunakan untuk mengecek setiap hari dalam rentang booking apabila perlu.

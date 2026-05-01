@@ -6,6 +6,7 @@ import { usePagination } from '@/Composables/usePagination'
 import { useTableSort } from '@/Composables/useTableSort'
 import { Head, router } from '@inertiajs/vue3'
 import { computed, reactive, watch } from 'vue'
+import { formatToDDMMYY, formatDateTimeToDDMMYY } from '@/Composables/useDateFormatter'
 import { Bar, Pie } from 'vue-chartjs'
 import {
   Chart as ChartJS,
@@ -115,37 +116,9 @@ const statusBadgeClasses = {
   returned: 'bg-blue-100 text-blue-700 border border-blue-200',
 }
 
-const formatDate = (value) => {
-  if (!value) return '-'
+const formatDate = (value) => formatToDDMMYY(value)
 
-  const parsed = new Date(value)
-  if (Number.isNaN(parsed.getTime())) {
-    return value
-  }
-
-  return parsed.toLocaleDateString('id-ID', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  })
-}
-
-const formatDateTime = (value) => {
-  if (!value) return '-'
-
-  const parsed = new Date(value)
-  if (Number.isNaN(parsed.getTime())) {
-    return value
-  }
-
-  return parsed.toLocaleString('id-ID', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
+const formatDateTime = (value) => formatDateTimeToDDMMYY(value)
 
 const buildQuery = () => {
   const payload = {}

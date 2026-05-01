@@ -5,6 +5,7 @@ import { Head, Link, useForm } from '@inertiajs/vue3'
 import { computed, ref } from 'vue'
 import { usePagination } from '@/Composables/usePagination'
 import { useTableSort } from '@/Composables/useTableSort'
+import { formatDateTimeToDDMMYY } from '@/Composables/useDateFormatter'
 
 const props = defineProps({
   bookings: {
@@ -85,16 +86,7 @@ const {
   changePage,
 } = usePagination(sortedBookings)
 
-const formatDateTime = (value) => {
-  if (!value) return '-'
-  return new Date(value).toLocaleString('id-ID', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
+const formatDateTime = (value) => formatDateTimeToDDMMYY(value)
 
 const cancelForm = useForm({})
 const cancellingId = ref(null)

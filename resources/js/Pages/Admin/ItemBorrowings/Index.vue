@@ -5,6 +5,7 @@ import { Head, Link } from '@inertiajs/vue3'
 import { computed, reactive, ref } from 'vue'
 import { usePagination } from '@/Composables/usePagination'
 import { useTableSort } from '@/Composables/useTableSort'
+import { formatToDDMMYY } from '@/Composables/useDateFormatter'
 import { Bar, Pie } from 'vue-chartjs'
 import {
   Chart as ChartJS,
@@ -208,14 +209,7 @@ const {
 
 const perPageOptions = [5, 10, 25, 50]
 
-const formatDate = (value) => {
-  if (!value) return '-'
-  return new Date(value).toLocaleDateString('id-ID', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  })
-}
+const formatDate = (value) => formatToDDMMYY(value)
 
 // ==========================================
 // CHART DATA: STATUS DISTRIBUTION (PIE)

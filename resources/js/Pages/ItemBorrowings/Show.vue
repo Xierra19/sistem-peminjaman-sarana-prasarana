@@ -2,6 +2,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import { Head, Link, useForm } from '@inertiajs/vue3'
 import { computed } from 'vue'
+import { formatToDDMMYY, formatDateTimeToDDMMYY } from '@/Composables/useDateFormatter'
 
 const props = defineProps({
   itemBorrowing: {
@@ -41,25 +42,9 @@ const logLabels = {
   returned: 'Dikembalikan',
 }
 
-const formatDate = (value) => {
-  if (!value) return '-'
-  return new Date(value).toLocaleDateString('id-ID', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  })
-}
+const formatDate = (value) => formatToDDMMYY(value)
 
-const formatDateTime = (value) => {
-  if (!value) return '-'
-  return new Date(value).toLocaleString('id-ID', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
+const formatDateTime = (value) => formatDateTimeToDDMMYY(value)
 
 const normalizedStatus = computed(() =>
   props.itemBorrowing.status === 'requested' ? 'waiting' : props.itemBorrowing.status,

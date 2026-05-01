@@ -3,6 +3,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import SortableTh from '@/Components/SortableTh.vue'
 import { Head, Link, usePage } from '@inertiajs/vue3'
 import { computed, ref, watch } from 'vue'
+import { formatDateTimeToDDMMYY, formatToDDMMYY } from '@/Composables/useDateFormatter'
 import { useTableSort } from '@/Composables/useTableSort'
 
 const page = usePage()
@@ -51,21 +52,7 @@ const statusBadgeClasses = {
   cancelled: 'bg-slate-100 text-slate-700 border border-slate-200',
 }
 
-const formatDateTime = (value) => {
-  if (!value) return '-'
-  const parsed = new Date(value)
-  if (Number.isNaN(parsed.getTime())) {
-    return value
-  }
-
-  return parsed.toLocaleString('id-ID', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
+const formatDateTime = (value) => formatDateTimeToDDMMYY(value)
 
 const extractFeatures = (features) => {
   if (Array.isArray(features)) {
@@ -150,18 +137,7 @@ const findBuildingById = (id) => {
   return null
 }
 
-const formatDateLabel = (value) => {
-  if (!value) return ''
-  const parsed = new Date(value)
-  if (Number.isNaN(parsed.getTime())) {
-    return value
-  }
-  return parsed.toLocaleDateString('id-ID', {
-    weekday: 'short',
-    day: '2-digit',
-    month: 'short',
-  })
-}
+const formatDateLabel = (value) => formatToDDMMYY(value)
 
 const generateTimeSlots = (startHour = 7, endHour = 21, stepMinutes = 30) => {
   const slots = []

@@ -7,26 +7,17 @@ use App\Models\ItemBorrowing;
 use App\Models\ItemBorrowingItem;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 
 class ItemAvailabilityService
 {
     /**
-     * @return array{
-     *     available: bool,
-     *     total_quantity: int,
-     *     reserved_quantity: int,
-     *     remaining_quantity: int,
-     *     borrowings: array<int, array<string, mixed>>
-     * }
-     */
-    /**
      * Get availability for item - support both legacy ItemBorrowing & new ItemBorrowingItem
      */
     public function getAvailability(
-        Item $item, 
-        Carbon $borrowDate, 
-        Carbon $returnDate, 
+        Item $item,
+        Carbon $borrowDate,
+        Carbon $returnDate,
         mixed $excludeRecord = null
     ): array {
         $overlaps = $this->overlappingRecords($item, $borrowDate, $returnDate, $excludeRecord);
@@ -40,23 +31,32 @@ class ItemAvailabilityService
             'reserved_quantity' => (int) $reservedQuantity,
             'remaining_quantity' => $remainingQuantity,
             'borrowings' => $overlaps->map(function ($record) {
+                // Pastikan tanggal tidak null dan format dengan benar
+                $borrowDate = $record->borrow_date instanceof Carbon
+                    ? $record->borrow_date
+                    : ($record->borrow_date ? Carbon::parse($record->borrow_date) : null);
+
+                $returnDate = $record->return_date instanceof Carbon
+                    ? $record->return_date
+                    : ($record->return_date ? Carbon::parse($record->return_date) : null);
+
                 return [
                     'id' => $record->id,
                     'title' => $record->borrowing?->title ?? $record->title ?? 'Unknown',
                     'status' => $record->borrowing?->status ?? $record->status ?? 'unknown',
                     'quantity' => $record->quantity,
-                    'borrow_date' => $record->borrow_date->format('Y-m-d'),
-                    'return_date' => $record->return_date->format('Y-m-d'),
+                    'borrow_date' => $borrowDate ? $borrowDate->format('Y-m-d') : null,
+                    'return_date' => $returnDate ? $returnDate->format('Y-m-d') : null,
                 ];
             })->values()->all(),
         ];
     }
 
     public function hasEnoughStock(
-        Item $item, 
-        Carbon $borrowDate, 
-        Carbon $returnDate, 
-        int $requestedQuantity, 
+        Item $item,
+        Carbon $borrowDate,
+        Carbon $returnDate,
+        int $requestedQuantity,
         mixed $excludeRecord = null
     ): bool {
         $availability = $this->getAvailability($item, $borrowDate, $returnDate, $excludeRecord);
@@ -69,11 +69,13 @@ class ItemAvailabilityService
     public function overlappingRecords(Item $item, Carbon $borrowDate, Carbon $returnDate, mixed $excludeRecord = null): Collection
     {
         $legacyQuery = ItemBorrowing::overlappingPeriod($item->id, $borrowDate, $returnDate);
+        
         $pivotQuery = ItemBorrowingItem::where('item_id', $item->id)
-            ->where('borrow_date', '<=', $returnDate->copy()->endOfDay())
-            ->where('return_date', '>=', $borrowDate->copy()->startOfDay())
+            // Bandingkan hanya bagian tanggal (tanpa waktu) untuk menghindari masalah timezone
+            ->whereDate('borrow_date', '<=', $returnDate->toDateString())
+            ->whereDate('return_date', '>=', $borrowDate->toDateString())
             ->whereExists(function ($q) {
-                $q->select(\Illuminate\Support\Facades\DB::raw(1))
+                $q->select(DB::raw(1))
                   ->from('item_borrowings')
                   ->whereColumn('item_borrowings.id', 'item_borrowing_items.item_borrowing_id')
                   ->whereNotIn('item_borrowings.status', ['rejected', 'cancelled', 'returned']);

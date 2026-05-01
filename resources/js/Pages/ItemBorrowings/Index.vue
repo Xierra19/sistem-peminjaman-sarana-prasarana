@@ -5,6 +5,7 @@ import { Head, Link, useForm } from '@inertiajs/vue3'
 import { computed, ref } from 'vue'
 import { usePagination } from '@/Composables/usePagination'
 import { useTableSort } from '@/Composables/useTableSort'
+import { formatToDDMMYY } from '@/Composables/useDateFormatter'
 
 const props = defineProps({
   itemBorrowings: {
@@ -141,14 +142,7 @@ const {
   changePage,
 } = usePagination(sortedBorrowings)
 
-const formatDate = (value) => {
-  if (!value) return '-'
-  return new Date(value).toLocaleDateString('id-ID', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  })
-}
+const formatDate = (value) => formatToDDMMYY(value)
 
 const cancelForm = useForm({})
 const cancellingId = ref(null)

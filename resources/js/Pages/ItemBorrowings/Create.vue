@@ -2,7 +2,10 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import { Head, useForm } from '@inertiajs/vue3'
-import { computed, ref, watch, nextTick } from 'vue'
+import { computed, ref, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import flatpickr from 'flatpickr'
+import 'flatpickr/dist/flatpickr.css'
+import { formatToDDMMYY } from '@/Composables/useDateFormatter'
 
 const props = defineProps({
   items: {
@@ -21,6 +24,7 @@ const form = useForm({
 const itemAvailabilities = ref({})
 const isLoadingAvailability = ref({})
 const formErrors = ref({})
+const datePickers = ref({}) // Menyimpan instance flatpickr
 
 const formatDateForInput = (date) => {
   if (!date) return ''
@@ -42,64 +46,99 @@ const addItem = () => {
   form.items.push({
     item_id: '',
     quantity: 1,
-    borrow_date: getMinBorrowDate(),
-    return_date: getMinBorrowDate(),
+    borrow_date: '', // Tidak mengisi otomatis agar user memilih sendiri
+    return_date: '', // Tidak mengisi otomatis agar user memilih sendiri
   })
-  nextTick(() => {
-    updateAvailability(form.items.length - 1)
-  })
+  const newIndex = form.items.length - 1
+  initFlatpickr(newIndex)
 }
 
 const removeItem = (index) => {
+  // Hapus instance flatpickr sebelum menghapus item
+  if (datePickers.value[index]) {
+    datePickers.value[index].borrow?.destroy()
+    datePickers.value[index].return?.destroy()
+    delete datePickers.value[index]
+  }
+  
   form.items.splice(index, 1)
   // Clear availability
   delete itemAvailabilities.value[index]
+  delete isLoadingAvailability.value[index]
+  
+  // Re-index datePickers
+  const newDatePickers = {}
+  Object.keys(datePickers.value).forEach(key => {
+    const idx = parseInt(key)
+    if (idx > index) {
+      newDatePickers[idx - 1] = datePickers.value[idx]
+    } else if (idx < index) {
+      newDatePickers[idx] = datePickers.value[idx]
+    }
+  })
+  datePickers.value = newDatePickers
 }
 
 const getItemById = (itemId) => props.items.find(i => String(i.id) === String(itemId)) || null
 
+// Debounce sederhana untuk mencegah terlalu banyak request
+let availabilityTimeouts = {}
 const updateAvailability = async (index) => {
-  const itemRow = form.items[index]
-  if (!itemRow.item_id || !itemRow.borrow_date || !itemRow.return_date) return
-
-  // Basic date format validation
-  const borrowDate = new Date(itemRow.borrow_date)
-  const returnDate = new Date(itemRow.return_date)
-  if (isNaN(borrowDate.getTime()) || isNaN(returnDate.getTime()) || returnDate <= borrowDate) {
-    return
+  // Clear timeout sebelumnya
+  if (availabilityTimeouts[index]) {
+    clearTimeout(availabilityTimeouts[index])
   }
-
-  const item = getItemById(itemRow.item_id)
-  if (!item) return
-
-  isLoadingAvailability.value[index] = true
-
-  try {
-    const response = await fetch(route('items.availability', {
-      item: itemRow.item_id,
-      borrow_date: itemRow.borrow_date,
-      return_date: itemRow.return_date,
-    }), {
-      headers: { Accept: 'application/json' },
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      throw new Error(`HTTP ${response.status}: ${errorText}`)
+  
+  availabilityTimeouts[index] = setTimeout(async () => {
+    const itemRow = form.items[index]
+    if (!itemRow.item_id || !itemRow.borrow_date || !itemRow.return_date) {
+      // Reset availability jika tanggal belum lengkap
+      delete itemAvailabilities.value[index]
+      return
     }
 
-    const data = await response.json()
-    itemAvailabilities.value[index] = data
-  } catch (error) {
-    console.error(`Availability fetch failed for item ${itemRow.item_id} (${itemRow.borrow_date} to ${itemRow.return_date}):`, error)
-    itemAvailabilities.value[index] = { 
-      remaining_quantity: 0,
-      total_quantity: item?.quantity || 0,
-      reserved_quantity: 'Error'
+    // Basic date format validation
+    const borrowDate = new Date(itemRow.borrow_date)
+    const returnDate = new Date(itemRow.return_date)
+    // Mengizinkan tanggal kembali sama dengan tanggal pinjam (peminjaman hari yang sama)
+    if (isNaN(borrowDate.getTime()) || isNaN(returnDate.getTime()) || returnDate < borrowDate) {
+      // Reset availability jika tanggal tidak valid (tanggal kembali harus sama atau setelah tanggal pinjam)
+      delete itemAvailabilities.value[index]
+      return
     }
-  } finally {
-    isLoadingAvailability.value[index] = false
-  }
+
+    const item = getItemById(itemRow.item_id)
+    if (!item) return
+
+    isLoadingAvailability.value[index] = true
+
+    try {
+      const response = await fetch(route('items.availability', {
+        item: itemRow.item_id,
+        borrow_date: itemRow.borrow_date,
+        return_date: itemRow.return_date,
+      }), {
+        headers: { Accept: 'application/json' },
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`HTTP ${response.status}: ${errorText}`)
+      }
+
+      const data = await response.json()
+      itemAvailabilities.value[index] = data
+    } catch (error) {
+      console.error(`Availability fetch failed for item ${itemRow.item_id} (${itemRow.borrow_date} to ${itemRow.return_date}):`, error)
+      itemAvailabilities.value[index] = { 
+        remaining_quantity: 0,
+        total_quantity: item?.quantity || 0,
+        reserved_quantity: 'Error'
+      }
+    } finally {
+      isLoadingAvailability.value[index] = false
+    }
+  }, 300) // Debounce 300ms
 }
 
 const isRowValid = (index) => {
@@ -114,21 +153,65 @@ watch(() => form.items, () => {
   formErrors.value = {}
 }, { deep: true })
 
-watch(() => form.items, (newItems) => {
-  newItems.forEach((row, index) => {
-    // Only update if all required fields are set and valid
-    if (row.item_id && row.borrow_date && row.return_date) {
-      updateAvailability(index)
+// Inisialisasi Flatpickr setelah DOM update
+const initFlatpickr = (index) => {
+  nextTick(() => {
+    const borrowInput = document.querySelector(`#borrow_date_${index}`)
+    const returnInput = document.querySelector(`#return_date_${index}`)
+    
+    if (!borrowInput || !returnInput) return
+    
+    // Destroy existing instances if any
+    if (datePickers.value[index]?.borrow) {
+      datePickers.value[index].borrow.destroy()
+    }
+    if (datePickers.value[index]?.return) {
+      datePickers.value[index].return.destroy()
+    }
+    
+    const minDate = getMinBorrowDate()
+    
+    // Inisialisasi Flatpickr untuk tanggal pinjam
+    const borrowPicker = flatpickr(borrowInput, {
+      dateFormat: 'Y-m-d',      // Nilai untuk backend (ISO)
+      altInput: true,           // Tampilkan input alternatif ke pengguna
+      altFormat: 'd-m-y',       // Format tampilan DD-MM-YY
+      minDate: minDate,
+      onChange: (selectedDates, dateStr) => {
+        form.items[index].borrow_date = dateStr
+        // Update minDate untuk return date
+        if (datePickers.value[index]?.return) {
+          datePickers.value[index].return.set('minDate', dateStr || minDate)
+        }
+        updateAvailability(index)
+      }
+    })
+    
+    // Inisialisasi Flatpickr untuk tanggal kembali
+    const returnPicker = flatpickr(returnInput, {
+      dateFormat: 'Y-m-d',      // Nilai untuk backend (ISO)
+      altInput: true,           // Tampilkan input alternatif ke pengguna
+      altFormat: 'd-m-y',      // Format tampilan DD-MM-YY
+      minDate: minDate,
+      onChange: (selectedDates, dateStr) => {
+        form.items[index].return_date = dateStr
+        updateAvailability(index)
+      }
+    })
+    
+    datePickers.value[index] = {
+      borrow: borrowPicker,
+      return: returnPicker
     }
   })
-}, { deep: true })
+}
 
 const handleFileChange = (e) => {
   const file = e.target.files[0]
   form.attachment = file || null
 }
 
-const formatDate = (date) => date ? new Date(date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'
+const formatDate = (date) => formatToDDMMYY(date)
 
 const submit = () => {
   if (form.items.length === 0) {
@@ -143,7 +226,17 @@ const submit = () => {
   form.post(route('item-borrowings.store'))
 }
 
-addItem() // Start with 1 row
+onMounted(() => {
+  addItem() // Start with 1 row
+})
+
+onBeforeUnmount(() => {
+  // Cleanup semua instance flatpickr
+  Object.values(datePickers.value).forEach(pickers => {
+    pickers.borrow?.destroy()
+    pickers.return?.destroy()
+  })
+})
 </script>
 
 <template>
@@ -231,19 +324,37 @@ addItem() // Start with 1 row
                   <!-- Quantity -->
                   <div class="space-y-2">
                     <label class="block text-sm font-medium text-slate-700">Jumlah</label>
-                    <input v-model.number="itemRow.quantity" type="number" min="1" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+                    <input 
+                      v-model.number="itemRow.quantity" 
+                      type="number" 
+                      min="1" 
+                      @input="updateAvailability(index)"
+                      class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500" 
+                    />
                   </div>
 
                   <!-- Borrow Date -->
                   <div class="space-y-2">
                     <label class="block text-sm font-medium text-slate-700">Tanggal Pinjam</label>
-                    <input v-model="itemRow.borrow_date" type="date" :min="getMinBorrowDate()" @change="updateAvailability(index)" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+                    <input 
+                      :id="`borrow_date_${index}`"
+                      type="text" 
+                      placeholder="Pilih tanggal pinjam"
+                      class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer" 
+                      readonly
+                    />
                   </div>
 
                   <!-- Return Date -->
                   <div class="space-y-2">
                     <label class="block text-sm font-medium text-slate-700">Tanggal Kembali</label>
-                    <input v-model="itemRow.return_date" type="date" :min="itemRow.borrow_date || getMinBorrowDate()" @change="updateAvailability(index)" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+                    <input 
+                      :id="`return_date_${index}`"
+                      type="text" 
+                      placeholder="Pilih tanggal kembali"
+                      class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer" 
+                      readonly
+                    />
                   </div>
                 </div>
 
