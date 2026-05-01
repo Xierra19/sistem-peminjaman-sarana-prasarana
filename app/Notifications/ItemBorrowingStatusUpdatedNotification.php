@@ -4,12 +4,13 @@ namespace App\Notifications;
 
 use App\Models\ItemBorrowing;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
-class ItemBorrowingStatusUpdatedNotification extends Notification
+class ItemBorrowingStatusUpdatedNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 

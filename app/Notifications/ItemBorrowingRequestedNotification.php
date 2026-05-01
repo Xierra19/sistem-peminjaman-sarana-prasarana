@@ -6,6 +6,7 @@ use App\Models\ItemBorrowing;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 class ItemBorrowingRequestedNotification extends Notification
@@ -14,7 +15,8 @@ class ItemBorrowingRequestedNotification extends Notification
 
     public function __construct(protected ItemBorrowing $itemBorrowing)
     {
-        $this->itemBorrowing->loadMissing(['user', 'item']);
+        // Relationships will be loaded by the controller before passing to notification
+        // This prevents "undefined relationship" errors
     }
 
     public function via(object $notifiable): array
@@ -25,24 +27,43 @@ class ItemBorrowingRequestedNotification extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         $borrowing = $this->itemBorrowing;
-        $item = $borrowing->item;
+        $items = $borrowing->items instanceof Collection ? $borrowing->items : collect();
 
         $mail = (new MailMessage())
-            ->subject('Pengajuan Peminjaman Barang Baru: '.$borrowing->title)
+            ->subject('Pengajuan Peminjaman Barang Baru: ' . $borrowing->title)
             ->greeting('Halo Tim Sarpras,')
             ->line('Ada pengajuan peminjaman barang baru yang menunggu tindak lanjut Sarpras.')
-            ->line('Pemohon: '.$borrowing->user?->name.' ('.$borrowing->user?->email.')');
+            ->line('Pemohon: ' . $borrowing->user?->name . ' (' . $borrowing->user?->email . ')');
 
-        if ($item?->name) {
-            $mail->line('Barang: '.$item->name.' ('.$item->code.')');
+        // Tampilkan daftar barang (schema baru - multiple items)
+        if ($items->isNotEmpty()) {
+            $mail->line('Barang: ' . $items->map(function ($borrowingItem) {
+                $item = $borrowingItem->item;
+
+                if (! $item) {
+                    return null;
+                }
+
+                return $item->name . ' (' . $item->code . ') x' . $borrowingItem->quantity;
+            })->filter()->implode(', '));
+
+            $mail->line('Total jenis barang: ' . $items->count());
+        } elseif ($borrowing->singleItem?->name) {
+            // Fallback ke schema lama (legacy)
+            $mail->line('Barang: ' . $borrowing->singleItem->name . ' (' . $borrowing->singleItem->code . ')');
+            $mail->line('Jumlah: ' . $borrowing->quantity);
         }
 
-        $mail
-            ->line('Jumlah: '.$borrowing->quantity)
-            ->line('Periode: '.$borrowing->borrow_date?->format('d M Y').' - '.$borrowing->return_date?->format('d M Y'));
+        // Periode peminjaman
+        $startDate = $items->map->borrow_date->filter()->sort()->first() ?? $borrowing->borrow_date;
+        $endDate = $items->map->return_date->filter()->sortDesc()->first() ?? $borrowing->return_date;
+
+        if ($startDate && $endDate) {
+            $mail->line('Periode: ' . $startDate->format('d M Y') . ' - ' . $endDate->format('d M Y'));
+        }
 
         if ($borrowing->description) {
-            $mail->line('Keperluan: '.Str::limit($borrowing->description, 200));
+            $mail->line('Keperluan: ' . Str::limit($borrowing->description, 200));
         }
 
         $fromAddress = config('mail.from.address');
@@ -53,7 +74,7 @@ class ItemBorrowingRequestedNotification extends Notification
         }
 
         return $mail
-            ->salutation("Hormat kami,\n".$fromName)
+            ->salutation("Hormat kami,\n" . $fromName)
             ->action('Tinjau Pengajuan', route('admin.item-borrowings.show', $borrowing))
             ->line('Terima kasih telah mengelola permintaan inventaris barang dengan tertib.');
     }

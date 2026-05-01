@@ -15,6 +15,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -173,12 +174,26 @@ class ItemBorrowingController extends Controller
             ->whereNotNull('email')
             ->get();
 
+        \Log::info('ItemBorrowing: Preparing to send notification', [
+            'admins_count' => $admins->count(),
+            'admins_emails' => $admins->pluck('email')->toArray(),
+            'item_borrowing_id' => $itemBorrowing->id,
+        ]);
+
         if ($admins->isNotEmpty()) {
             try {
+                \Log::info('ItemBorrowing: Sending notification now...');
                 Notification::send($admins, new ItemBorrowingRequestedNotification($itemBorrowing));
+                \Log::info('ItemBorrowing: Notification sent successfully.');
             } catch (\Throwable $e) {
+                \Log::error('ItemBorrowing: Failed to send notification', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
                 report($e);
             }
+        } else {
+            \Log::warning('ItemBorrowing: No admins found with valid email. Notification not sent.');
         }
 
         return redirect()
