@@ -83,6 +83,11 @@ class BookingStatusUpdatedNotification extends Notification
             $mail->line('Catatan: '.$this->notes);
         }
 
+        // Tambahkan nomor surat jika booking disetujui
+        if ($this->status === 'approved' && $booking->letter_number) {
+            $mail->line('Nomor Surat: '.$booking->letter_number);
+        }
+
         $fromAddress = config('mail.from.address');
         $fromName = config('mail.from.name', config('app.name'));
 

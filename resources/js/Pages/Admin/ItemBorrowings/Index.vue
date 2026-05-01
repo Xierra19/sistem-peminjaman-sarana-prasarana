@@ -6,19 +6,6 @@ import { computed, reactive, ref } from 'vue'
 import { usePagination } from '@/Composables/usePagination'
 import { useTableSort } from '@/Composables/useTableSort'
 import { formatToDDMMYY } from '@/Composables/useDateFormatter'
-import { Bar, Pie } from 'vue-chartjs'
-import {
-  Chart as ChartJS,
-  Title,
-  Tooltip,
-  Legend,
-  BarElement,
-  CategoryScale,
-  LinearScale,
-  ArcElement,
-} from 'chart.js'
-
-ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, ArcElement)
 
 const props = defineProps({
   itemBorrowings: {
@@ -210,138 +197,6 @@ const {
 const perPageOptions = [5, 10, 25, 50]
 
 const formatDate = (value) => formatToDDMMYY(value)
-
-// ==========================================
-// CHART DATA: STATUS DISTRIBUTION (PIE)
-// ==========================================
-const statusChartData = computed(() => {
-  const borrowings = props.itemBorrowings ?? []
-  const counts = {
-    requested: 0,
-    waiting: 0,
-    approved: 0,
-    rejected: 0,
-    cancelled: 0,
-    returned: 0,
-  }
-  
-  borrowings.forEach(b => {
-    const s = normalizeStatus(b.status) || ''
-    if (counts[s] !== undefined) {
-      counts[s]++
-    }
-  })
-
-  return {
-    labels: ['Menunggu', 'Disetujui', 'Dikembalikan', 'Ditolak', 'Dibatalkan'],
-    datasets: [{
-      data: [counts.waiting + counts.requested, counts.approved, counts.returned, counts.rejected, counts.cancelled],
-      backgroundColor: [
-        '#f59e0b', // amber-500
-        '#10b981', // emerald-500
-        '#3b82f6', // blue-500
-        '#f43f5e', // rose-500
-        '#8b5cf6', // violet-500
-      ],
-      borderWidth: 1,
-    }],
-  }
-})
-
-// ==========================================
-// CHART DATA: ITEMS BY CATEGORY (PIE)
-// ==========================================
-const categoryChartData = computed(() => {
-  const borrowings = props.itemBorrowings ?? []
-  const categoryCounts = {}
-  
-  borrowings.forEach(b => {
-    let categories = []
-    if (b.items && b.items.length > 0) {
-      categories = b.items.map(p => p.item?.category).filter(Boolean)
-    } else if (b.singleItem?.category) {
-      categories = [b.singleItem.category]
-    }
-    
-    if (categories.length === 0) {
-      categoryCounts['Uncategorized'] = (categoryCounts['Uncategorized'] || 0) + 1
-    } else {
-      categories.forEach(cat => {
-        categoryCounts[cat] = (categoryCounts[cat] || 0) + 1
-      })
-    }
-  })
-  
-  const colors = [
-    '#3b82f6', // blue-500
-    '#10b981', // emerald-500
-    '#f59e0b', // amber-500
-    '#f43f5e', // rose-500
-    '#8b5cf6', // violet-500
-    '#06b6d4', // cyan-500
-  ]
-  
-  const labels = Object.keys(categoryCounts)
-  const data = labels.map(cat => categoryCounts[cat])
-  
-  return {
-    labels,
-    datasets: [{
-      data,
-      backgroundColor: colors.slice(0, labels.length),
-      borderWidth: 1,
-    }],
-  }
-})
-
-// ==========================================
-// CHART DATA: MONTHLY TREND (BAR)
-// ==========================================
-const monthlyChartData = computed(() => {
-  const borrowings = props.itemBorrowings ?? []
-  const monthCounts = {}
-
-  borrowings.forEach(b => {
-    if (!b.created_at) return
-    const d = new Date(b.created_at)
-    if (isNaN(d.getTime())) return
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-    monthCounts[key] = (monthCounts[key] || 0) + 1
-  })
-
-  // Sort months and take last 6
-  const sortedMonths = Object.keys(monthCounts).sort()
-  const last6 = sortedMonths.slice(-6)
-
-  const labels = last6.map(m => {
-    const [year, month] = m.split('-')
-    const date = new Date(year, month - 1, 1)
-    return date.toLocaleString('id-ID', { month: 'short', year: 'numeric' })
-  })
-
-  const data = last6.map(m => monthCounts[m])
-
-  return {
-    labels,
-    datasets: [{
-      label: 'Jumlah Peminjaman Barang',
-      data,
-      backgroundColor: '#3b82f6', // blue-500
-      borderColor: '#2563eb', // blue-600
-      borderWidth: 1,
-    }],
-  }
-})
-
-const chartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      position: 'bottom',
-    },
-  },
-}
 </script>
 
 <template>
@@ -383,28 +238,6 @@ const chartOptions = {
         </div>
       </div>
       <!-- End Summary Cards -->
-
-      <!-- Charts Section -->
-      <div class="grid gap-6 md:grid-cols-2 mb-6">
-        <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-          <h3 class="text-lg font-semibold text-gray-800 mb-4">Distribusi Status Peminjaman</h3>
-          <div class="h-64">
-            <Pie :data="statusChartData" :options="chartOptions" />
-          </div>
-        </div>
-        <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-          <h3 class="text-lg font-semibold text-gray-800 mb-4">Tren Peminjaman 6 Bulan Terakhir</h3>
-          <div class="h-64">
-            <Bar :data="monthlyChartData" :options="chartOptions" />
-          </div>
-        </div>
-        <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-          <h3 class="text-lg font-semibold text-gray-800 mb-4">Distribusi Kategori Barang</h3>
-          <div class="h-64">
-            <Pie :data="categoryChartData" :options="chartOptions" />
-          </div>
-        </div>
-      </div>
 
       <!-- Filter Panel -->
       <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">

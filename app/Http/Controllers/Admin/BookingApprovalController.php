@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class BookingApprovalController extends Controller
 {
@@ -92,6 +94,11 @@ class BookingApprovalController extends Controller
             $booking->update([
                 'status' => $data['status'],
             ]);
+
+            // Generate nomor surat jika booking disetujui
+            if ($data['status'] === 'approved' && !$booking->letter_number) {
+                $this->generateLetterNumber($booking);
+            }
         }
 
         $description = match ($data['status']) {
@@ -149,5 +156,56 @@ class BookingApprovalController extends Controller
         ])->setPaper('a4', 'landscape');
 
         return $pdf->download('data-booking-ruangan.pdf');
-    }    
+    }
+
+    /**
+     * Generate nomor surat untuk booking yang disetujui.
+     * Menggunakan transaksi database dengan lock untuk mencegah duplikasi nomor surat.
+     */
+    private function generateLetterNumber(Booking $booking): void
+    {
+        // Pengaman tambahan: cek jika nomor surat sudah ada
+        if ($booking->letter_number) {
+            return;
+        }
+
+        DB::transaction(function () use ($booking): void {
+            // Refresh data booking untuk memastikan konsistensi
+            $booking->refresh();
+
+            if ($booking->letter_number) {
+                return;
+            }
+
+            $issuedAt = now();
+            $year = (int) $issuedAt->format('Y');
+            $month = (int) $issuedAt->format('m');
+
+            // Ambil urutan terakhir di bulan dan tahun yang sama dengan lock untuk mencegah race condition
+            $latestSequence = Booking::whereYear('letter_generated_at', $year)
+                ->whereMonth('letter_generated_at', $month)
+                ->lockForUpdate()
+                ->orderByDesc('letter_sequence')
+                ->value('letter_sequence');
+
+            $nextSequence = ((int) $latestSequence) + 1;
+
+            // Format nomor surat: {sequence}/BAP-Bekasi/Booking/{bulan}/{tahun}
+            $formattedNumber = sprintf(
+                '%d/BAP-Bekasi/Booking/%s/%s',
+                $nextSequence,
+                $issuedAt->format('m'),
+                $issuedAt->format('Y')
+            );
+
+            // Simpan informasi surat ke database
+            $booking->letter_sequence = $nextSequence;
+            $booking->letter_number = $formattedNumber;
+            $booking->letter_generated_at = $issuedAt;
+            $booking->save();
+        });
+
+        // Refresh booking setelah transaksi selesai
+        $booking->refresh();
+    }
 }

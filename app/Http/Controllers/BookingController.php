@@ -310,7 +310,6 @@ class BookingController extends Controller
             ->latest('created_at')
             ->value('created_at');
         $approvedAt = $approvedAt ? Carbon::parse($approvedAt) : null;
-        $this->ensureLetterNumber($booking);
 
         $pdf = Pdf::loadView('pdf.booking-letter', [
             'booking' => $booking,
@@ -323,44 +322,4 @@ class BookingController extends Controller
         return $pdf->download($filename);
     }
 
-    private function ensureLetterNumber(Booking $booking): void
-    {
-        if ($booking->letter_number) {
-            return;
-        }
-
-        DB::transaction(function () use ($booking): void {
-            $booking->refresh();
-
-            if ($booking->letter_number) {
-                return;
-            }
-
-            $issuedAt = now();
-            $year = (int) $issuedAt->format('Y');
-            $month = (int) $issuedAt->format('m');
-
-            $latestSequence = Booking::whereYear('letter_generated_at', $year)
-                ->whereMonth('letter_generated_at', $month)
-                ->lockForUpdate()
-                ->orderByDesc('letter_sequence')
-                ->value('letter_sequence');
-
-            $nextSequence = ((int) $latestSequence) + 1;
-
-            $formattedNumber = sprintf(
-                '%d/BAP-Bekasi/Booking/%s/%s',
-                $nextSequence,
-                $issuedAt->format('m'),
-                $issuedAt->format('Y')
-            );
-
-            $booking->letter_sequence = $nextSequence;
-            $booking->letter_number = $formattedNumber;
-            $booking->letter_generated_at = $issuedAt;
-            $booking->save();
-        });
-
-        $booking->refresh();
-    }
 }
