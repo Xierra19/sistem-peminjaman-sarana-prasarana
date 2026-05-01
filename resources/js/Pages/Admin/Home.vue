@@ -20,6 +20,24 @@ const permissions = computed(() => page.props.auth?.permissions ?? {})
 const canManageHistory = computed(() => Boolean(permissions.value?.can_manage_history))
 const canManageRoomModule = computed(() => Boolean(permissions.value?.can_manage_room_module))
 const canManageItemModule = computed(() => Boolean(permissions.value?.can_manage_item_module))
+
+const visibleModuleCount = computed(() => {
+  let count = 0
+  if (canManageRoomModule.value) count++
+  if (canManageItemModule.value) count++
+  return count
+})
+
+const dynamicSubtitle = computed(() => {
+  if (visibleModuleCount.value === 2) {
+    return 'Anda mengelola seluruh modul'
+  } else if (canManageRoomModule.value) {
+    return 'Anda mengelola Modul Ruangan'
+  } else if (canManageItemModule.value) {
+    return 'Anda mengelola Modul Barang'
+  }
+  return ''
+})
 </script>
 
 <template>
@@ -29,12 +47,12 @@ const canManageItemModule = computed(() => Boolean(permissions.value?.can_manage
     <div class="space-y-6">
       <div>
         <h1 class="text-2xl font-semibold text-slate-900">Dashboard Admin</h1>
-        <p class="text-sm text-slate-500">
-          Ringkasan akses modul berdasarkan hak kelola akun Anda.
-        </p>
+<p class="text-sm text-slate-500">
+  {{ dynamicSubtitle }}
+</p>
       </div>
 
-      <div class="grid gap-6 lg:grid-cols-2">
+      <div class="grid gap-6" :class="visibleModuleCount === 1 ? 'grid-cols-1 max-w-2xl mx-auto' : 'lg:grid-cols-2'">
         <section
           v-if="canManageRoomModule"
           class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"

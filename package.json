@@ -25,6 +25,7 @@
         "flatpickr": "^4.6.13",
         "lucide-vue-next": "^0.544.0",
         "sweetalert2": "^11.23.0",
-        "vue-chartjs": "^5.3.3"
+        "vue-chartjs": "^5.3.3",
+        "ziggy-js": "^2.6.2"
     }
 }

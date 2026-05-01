@@ -22,10 +22,10 @@ const statusLabels = {
 }
 
 const statusClasses = {
-  waiting: 'bg-amber-100 text-amber-700 border-amber-200',
-  approved: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-  rejected: 'bg-rose-100 text-rose-700 border-rose-200',
-  cancelled: 'bg-slate-100 text-slate-700 border-slate-200',
+  waiting: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
+  approved: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800',
+  rejected: 'bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-800',
+  cancelled: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600',
 }
 
 const normalizeStatus = (status) => {
@@ -120,8 +120,8 @@ const cancelBooking = (booking) => {
     <div class="space-y-6">
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 class="text-2xl font-semibold text-slate-900">Request Booking Ruangan</h1>
-          <p class="text-sm text-slate-500">
+          <h1 class="text-2xl font-semibold text-slate-900 dark:text-slate-100">Request Booking Ruangan</h1>
+          <p class="text-sm text-slate-500 dark:text-slate-400">
             Pantau status persetujuan booking ruangan yang telah kamu ajukan.
           </p>
         </div>
@@ -134,15 +134,15 @@ const cancelBooking = (booking) => {
       </div>
 
       <div class="card-surface overflow-hidden">
-        <div class="space-y-4 border-b border-slate-100 px-5 py-4">
+        <div class="space-y-4 border-b border-slate-100 px-5 py-4 dark:border-slate-700">
           <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div class="flex flex-1 flex-col gap-3 md:flex-row md:items-center">
               <div class="w-full md:max-w-sm">
-                <label class="mb-1 block text-sm font-medium text-slate-700" for="user-bookings-search">Pencarian</label>
+                <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300" for="user-bookings-search">Pencarian</label>
                 <div class="relative">
                   <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35M10 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16Z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35M10 18a8 8 0 1 0-8-8 8 8 0 0 0 8 8z" />
                     </svg>
                   </span>
                   <input
@@ -150,17 +150,17 @@ const cancelBooking = (booking) => {
                     v-model="searchQuery"
                     type="text"
                     placeholder="Cari judul, ruangan, atau kampus..."
-                    class="w-full rounded-xl border border-slate-200 bg-white py-2 pl-10 pr-3 text-sm text-slate-700 placeholder-slate-400 transition focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    class="w-full rounded-xl border border-slate-200 bg-white py-2 pl-10 pr-3 text-sm text-slate-700 placeholder-slate-400 transition focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
                   />
                 </div>
               </div>
               <div class="w-full md:w-60">
-                <label class="mb-1 block text-sm font-medium text-slate-700" for="user-bookings-status">Status</label>
+                <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300" for="user-bookings-status">Status</label>
                 <div class="relative">
                   <select
                     id="user-bookings-status"
                     v-model="statusFilter"
-                    class="w-full appearance-none rounded-xl border border-slate-200 bg-white px-3 py-2 pr-9 text-sm leading-5 text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    class="w-full appearance-none rounded-xl border border-slate-200 bg-white px-3 py-2 pr-9 text-sm leading-5 text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
                   >
                     <option value="">Semua Status</option>
                     <option value="waiting">Menunggu Persetujuan</option>
@@ -172,7 +172,7 @@ const cancelBooking = (booking) => {
                     <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                       <path
                         fill-rule="evenodd"
-                        d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z"
+                        d="M5.23 7.21a.75.75 0 0 1 1.06-1.06l4.24 4.24a.75.75 0 0 1 0 1.06 0l4.24-4.24a.75.75 0 0 1 1.06 1.06l-5.3 5.3a.75.75 0 0 1-1.06 0l-5.3-5.3z"
                         clip-rule="evenodd"
                       />
                     </svg>
@@ -180,20 +180,20 @@ const cancelBooking = (booking) => {
                 </div>
               </div>
             </div>
-            <div class="flex items-center gap-3 rounded-2xl bg-slate-50 px-3 py-2 text-sm text-slate-600">
+            <div class="flex items-center gap-3 rounded-2xl bg-slate-50 px-3 py-2 text-sm text-slate-600 dark:bg-slate-700 dark:text-slate-300">
               <span class="font-medium">Total data</span>
-              <span class="inline-flex h-8 w-12 items-center justify-center rounded-xl bg-white text-sm font-semibold text-slate-900 shadow-sm">
+              <span class="inline-flex h-8 w-12 items-center justify-center rounded-xl bg-white text-sm font-semibold text-slate-900 shadow-sm dark:bg-slate-600 dark:text-slate-100">
                 {{ paginatedBookings.length }}
               </span>
             </div>
           </div>
-          <div class="flex flex-col gap-2 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-end">
-            <label class="font-medium text-slate-700" for="user-bookings-rows">Rows per page</label>
+          <div class="flex flex-col gap-2 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-end dark:text-slate-400">
+            <label class="font-medium text-slate-700 dark:text-slate-300" for="user-bookings-rows">Rows per page</label>
             <div class="relative">
               <select
                 id="user-bookings-rows"
                 v-model.number="rowsPerPage"
-                class="w-24 rounded-xl border border-slate-200 bg-white px-3 py-1.5 pr-9 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                class="w-24 rounded-xl border border-slate-200 bg-white px-3 py-1.5 pr-9 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
               >
                 <option v-for="option in perPageOptions" :key="`bookings-rows-${option}`" :value="option">
                   {{ option }}
@@ -204,11 +204,11 @@ const cancelBooking = (booking) => {
         </div>
 
         <div class="overflow-x-auto">
-          <table class="mobile-friendly-table min-w-full divide-y divide-slate-200 text-sm text-slate-700">
-            <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <table class="mobile-friendly-table min-w-full divide-y divide-slate-200 text-sm text-slate-700 dark:divide-slate-700 dark:text-slate-300">
+            <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-700 dark:text-slate-400">
               <tr>
                 <SortableTh
-                  class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  class="px-4 py-3 text-left"
                   column="number"
                   label="#"
                   :direction="bookingSortDirection('number')"
@@ -216,7 +216,7 @@ const cancelBooking = (booking) => {
                   @toggle="toggleBookingSort"
                 />
                 <SortableTh
-                  class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  class="px-4 py-3 text-left"
                   column="title"
                   label="Judul"
                   :direction="bookingSortDirection('title')"
@@ -224,7 +224,7 @@ const cancelBooking = (booking) => {
                   @toggle="toggleBookingSort"
                 />
                 <SortableTh
-                  class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  class="px-4 py-3 text-left"
                   column="room"
                   label="Ruangan"
                   :direction="bookingSortDirection('room')"
@@ -232,7 +232,7 @@ const cancelBooking = (booking) => {
                   @toggle="toggleBookingSort"
                 />
                 <SortableTh
-                  class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  class="px-4 py-3 text-left"
                   column="start_time"
                   label="Mulai"
                   :direction="bookingSortDirection('start_time')"
@@ -240,7 +240,7 @@ const cancelBooking = (booking) => {
                   @toggle="toggleBookingSort"
                 />
                 <SortableTh
-                  class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  class="px-4 py-3 text-left"
                   column="end_time"
                   label="Selesai"
                   :direction="bookingSortDirection('end_time')"
@@ -248,7 +248,7 @@ const cancelBooking = (booking) => {
                   @toggle="toggleBookingSort"
                 />
                 <SortableTh
-                  class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  class="px-4 py-3 text-left"
                   column="status"
                   label="Status"
                   :direction="bookingSortDirection('status')"
@@ -258,29 +258,27 @@ const cancelBooking = (booking) => {
                 <th class="px-4 py-3 text-left">Aksi</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-slate-100">
-              <tr v-for="(booking, index) in paginatedBookings" :key="booking.id" class="hover:bg-slate-50">
-                <td class="px-4 py-3 text-slate-500" data-title="#">
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+              <tr v-for="(booking, index) in paginatedBookings" :key="booking.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                <td class="px-4 py-3 text-slate-500 dark:text-slate-400" data-title="#">
                   {{ pageMeta.from + index }}
                 </td>
                 <td class="px-4 py-3" data-title="Judul">
-                  <div class="font-semibold text-slate-900">{{ booking.title }}</div>
-                  <div class="mt-1 text-xs text-slate-500">
-                    {{ booking.description || 'Tidak ada deskripsi tambahan.' }}
-                  </div>
+                  <div class="font-semibold text-slate-900 dark:text-slate-100">{{ booking.title }}</div>
+                  <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ booking.description || 'Tidak ada deskripsi tambahan.' }}</div>
                 </td>
                 <td class="px-4 py-3" data-title="Ruangan">
-                  <div class="font-medium text-slate-900">{{ booking.room?.name ?? '-' }}</div>
-                  <div class="text-xs text-slate-500">
+                  <div class="font-medium text-slate-900 dark:text-slate-100">{{ booking.room?.name ?? '-' }}</div>
+                  <div class="text-xs text-slate-500 dark:text-slate-400">
                     {{ booking.room?.building?.name ?? '-' }} - {{ booking.room?.building?.campus?.name ?? '-' }}
                   </div>
                 </td>
-                <td class="px-4 py-3 text-slate-700" data-title="Mulai">{{ formatDateTime(booking.start_time) }}</td>
-                <td class="px-4 py-3 text-slate-700" data-title="Selesai">{{ formatDateTime(booking.end_time) }}</td>
+                <td class="px-4 py-3 text-slate-700 dark:text-slate-300" data-title="Mulai">{{ formatDateTime(booking.start_time) }}</td>
+                <td class="px-4 py-3 text-slate-700 dark:text-slate-300" data-title="Selesai">{{ formatDateTime(booking.end_time) }}</td>
                 <td class="px-4 py-3" data-title="Status">
                   <span
                     class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold"
-                    :class="statusClasses[normalizeStatus(booking.status)] ?? 'bg-slate-100 text-slate-600 border-slate-200'"
+                    :class="statusClasses[normalizeStatus(booking.status)] ?? 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600'"
                   >
                     {{ statusLabels[normalizeStatus(booking.status)] ?? booking.status }}
                   </span>
@@ -289,7 +287,7 @@ const cancelBooking = (booking) => {
                   <div class="flex flex-col gap-2">
                     <Link
                       :href="route('bookings.show', booking.id)"
-                      class="inline-flex items-center justify-center rounded-xl border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:border-blue-300 hover:text-blue-800"
+                      class="inline-flex items-center justify-center rounded-xl border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:border-blue-300 hover:text-blue-800 dark:border-blue-800 dark:text-blue-300 dark:hover:border-blue-700 dark:hover:text-blue-200"
                     >
                       Lihat Detail
                     </Link>
@@ -303,35 +301,30 @@ const cancelBooking = (booking) => {
                         Download Surat
                       </a>
                     </template>
-                    <template v-else-if="normalizeStatus(booking.status) === 'waiting'">
+                    <template v-else-if="canCancelBooking(booking)">
                       <button
                         type="button"
-                        class="inline-flex items-center justify-center rounded-xl border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        class="inline-flex items-center justify-center rounded-xl border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-rose-800 dark:text-rose-300 dark:hover:border-rose-700 dark:hover:bg-rose-900/30"
                         :disabled="cancelForm.processing && cancellingId === booking.id"
                         @click="cancelBooking(booking)"
                       >
-                        {{
-                          cancelForm.processing && cancellingId === booking.id ? 'Membatalkan...' : 'Batalkan Permintaan'
-                        }}
+                        {{ cancellingId === booking.id ? 'Membatalkan...' : 'Batalkan Permintaan' }}
                       </button>
-                      <span class="text-xs text-slate-400">Menunggu persetujuan admin</span>
                     </template>
                     <template v-else-if="normalizeStatus(booking.status) === 'rejected'">
-                      <span class="text-xs font-semibold text-rose-500">Permintaan ditolak</span>
+                      <span class="text-xs font-semibold text-rose-500 dark:text-rose-400">Permintaan ditolak</span>
                     </template>
                     <template v-else-if="normalizeStatus(booking.status) === 'cancelled'">
-                      <span class="text-xs text-slate-400">Booking telah dibatalkan</span>
+                      <span class="text-xs text-slate-400 dark:text-slate-500">Booking telah dibatalkan</span>
                     </template>
                     <template v-else>
-                      <span class="text-xs text-slate-400">
-                        {{ statusLabels[normalizeStatus(booking.status)] ?? booking.status }}
-                      </span>
+                      <span class="text-xs text-slate-400 dark:text-slate-500">Menunggu persetujuan admin</span>
                     </template>
                   </div>
                 </td>
               </tr>
               <tr v-if="!paginatedBookings.length">
-                <td colspan="7" class="px-4 py-10 text-center text-sm text-slate-500" data-title="Info">
+                <td colspan="7" class="px-4 py-10 text-center text-sm text-slate-400 dark:text-slate-500">
                   Tidak ada data booking yang cocok dengan filter saat ini.
                 </td>
               </tr>
@@ -339,23 +332,23 @@ const cancelBooking = (booking) => {
           </table>
         </div>
 
-        <div
-          class="flex flex-col gap-3 border-t border-slate-100 px-5 py-4 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between"
-        >
+        <div class="flex flex-col gap-3 border-t border-slate-100 px-5 py-4 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:text-slate-400">
           <div>
             <span v-if="pageMeta.of">Menampilkan {{ pageMeta.from }}-{{ pageMeta.to }} dari {{ pageMeta.of }} data</span>
             <span v-else>Menampilkan 0 data</span>
           </div>
-          <div class="flex items-center gap-1">
+          <div class="flex items-center gap-2">
             <button
-              class="inline-flex items-center rounded-xl border border-slate-300 px-2 py-1 text-slate-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+              type="button"
+              class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400"
               @click="changePage(1)"
               :disabled="currentPage === 1 || !pageMeta.of"
             >
               «
             </button>
             <button
-              class="inline-flex items-center rounded-xl border border-slate-300 px-2 py-1 text-slate-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+              type="button"
+              class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400"
               @click="changePage(currentPage - 1)"
               :disabled="currentPage === 1 || !pageMeta.of"
             >
@@ -365,22 +358,29 @@ const cancelBooking = (booking) => {
               <button
                 v-for="page in pages"
                 :key="`bookings-page-${page}`"
-                class="inline-flex items-center rounded-xl border px-3 py-1 text-sm transition"
-                :class="currentPage === page ? 'border-blue-500 bg-blue-500 text-white' : 'border-slate-300 text-slate-600 hover:border-blue-400 hover:text-blue-600'"
+                type="button"
+                class="rounded border px-3 py-1 text-sm transition"
+                :class="
+                  currentPage === page
+                    ? 'border-blue-500 bg-blue-500 text-white'
+                    : 'border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400'
+                "
                 @click="changePage(page)"
               >
                 {{ page }}
               </button>
             </template>
             <button
-              class="inline-flex items-center rounded-xl border border-slate-300 px-2 py-1 text-slate-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+              type="button"
+              class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400"
               @click="changePage(currentPage + 1)"
               :disabled="currentPage === pages.length || !pageMeta.of"
             >
               ›
             </button>
             <button
-              class="inline-flex items-center rounded-xl border border-slate-300 px-2 py-1 text-slate-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+              type="button"
+              class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400"
               @click="changePage(pages.length)"
               :disabled="currentPage === pages.length || !pageMeta.of"
             >

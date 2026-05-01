@@ -73,7 +73,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     });
 
     Route::middleware('role:super_admin')->group(function () {
-        Route::resource('users', AdminUserController::class)->only(['index', 'edit', 'update', 'destroy']);
+        Route::resource('users', AdminUserController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
     });
 
     Route::middleware('role:super_admin,admin_bap')->group(function () {

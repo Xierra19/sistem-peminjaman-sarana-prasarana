@@ -48,7 +48,7 @@ const buttonClass = computed(() => {
 
 const iconWrapperClass = computed(() =>
   props.direction === 'none'
-    ? 'text-gray-400'
+    ? 'text-gray-400 dark:text-gray-500'
     : 'text-blue-600 dark:text-blue-400',
 )
 

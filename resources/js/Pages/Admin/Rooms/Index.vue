@@ -71,7 +71,7 @@ const confirmCreate = () => {
     cancelButtonColor: '#6b7280',
     confirmButtonText: 'Ya, Simpan',
     cancelButtonText: 'Periksa Lagi',
-    target: getSwalTarget(), // Agar muncul di atas modal
+    target: getSwalTarget(),
     customClass: {
       container: 'swal-z-top-force'
     }
@@ -130,7 +130,7 @@ const confirmEdit = () => {
     cancelButtonColor: '#6b7280',
     confirmButtonText: 'Ya, Update',
     cancelButtonText: 'Batal',
-    target: getSwalTarget(), // Agar muncul di atas modal
+    target: getSwalTarget(),
     customClass: {
       container: 'swal-z-top-force'
     }
@@ -143,6 +143,7 @@ const confirmEdit = () => {
 
 const submitEdit = () => {
   if (!selectedRoom.value) return
+  
   editForm.put(route('admin.rooms.update', selectedRoom.value.id), {
     preserveState: true,
     preserveScroll: true,
@@ -226,8 +227,8 @@ const perPageOptions = [5, 10, 25, 50]
     <div class="space-y-6">
       <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 class="text-2xl font-semibold text-gray-800">Master Room</h1>
-          <p class="text-sm text-gray-500">Kelola ruangan berdasarkan gedung dan kampus.</p>
+          <h1 class="text-2xl font-semibold text-gray-800 dark:text-gray-200">Master Room</h1>
+          <p class="text-sm text-gray-500 dark:text-gray-400">Kelola ruangan berdasarkan gedung dan kampus.</p>
         </div>
 
         <button
@@ -239,11 +240,11 @@ const perPageOptions = [5, 10, 25, 50]
         </button>
       </div>
 
-        <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+      <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
         <div class="flex flex-col gap-4 px-5 py-4 md:flex-row md:items-end md:justify-between">
           <div class="flex flex-1 flex-col gap-3 md:flex-row md:items-center">
             <div class="w-full md:max-w-sm">
-              <label class="mb-1 block text-sm font-medium text-gray-700" for="admin-rooms-search">Pencarian</label>
+              <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300" for="admin-rooms-search">Pencarian</label>
               <div class="relative">
                 <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">
                   <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -255,101 +256,63 @@ const perPageOptions = [5, 10, 25, 50]
                   v-model="searchQuery"
                   type="text"
                   placeholder="Cari nama ruangan, gedung, atau kampus..."
-                  class="w-full rounded-xl border border-slate-200 bg-white py-2 pl-10 pr-3 text-sm text-slate-700 placeholder-slate-400 transition focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  class="w-full rounded-xl border border-slate-200 bg-white py-2 pl-10 pr-3 text-sm text-slate-700 placeholder-slate-400 transition focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
                 />
               </div>
             </div>
           </div>
-          <div class="flex items-center justify-end gap-3 text-sm text-gray-600">
-            <label class="font-medium text-gray-700" for="admin-rooms-rows">Rows per page</label>
+          <div class="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
+            <label class="font-medium text-gray-700 dark:text-gray-300" for="admin-rooms-rows">Rows per page</label>
               <div class="relative">
-                <select>
+                <select
                   id="admin-rooms-rows"
                   v-model.number="rowsPerPage"
-                  class="w-20 rounded border border-gray-300 bg-white px-3 py-1.5 pr-8 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  class="w-20 rounded border border-gray-300 bg-white px-3 py-1.5 pr-8 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
                 >
-                  <option v-for="option in perPageOptions" :key="option" :value="option">
+                  <option v-for="option in perPageOptions" :key="`rooms-rows-${option}`" :value="option">
                     {{ option }}
                   </option>
                 </select>
               </div>
           </div>
         </div>
-        
-        <table class="min-w-full divide-y divide-gray-200 text-sm">
-          <thead class="bg-gray-100">
+
+        <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-slate-700">
+          <thead class="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:bg-slate-700 dark:text-slate-400">
             <tr>
-              <SortableTh
-                class="px-4 py-2 text-sm font-semibold text-gray-600"
-                column="number"
-                label="#"
-                :direction="roomSortDirection('number')"
-                :aria-sort="roomAriaSortValue('number')"
-                @toggle="toggleRoomSort"
-              />
-              <SortableTh
-                class="px-4 py-2 text-sm font-semibold text-gray-600"
-                column="name"
-                label="Nama Ruangan"
-                :direction="roomSortDirection('name')"
-                :aria-sort="roomAriaSortValue('name')"
-                @toggle="toggleRoomSort"
-              />
-              <SortableTh
-                class="px-4 py-2 text-sm font-semibold text-gray-600"
-                column="building"
-                label="Gedung"
-                :direction="roomSortDirection('building')"
-                :aria-sort="roomAriaSortValue('building')"
-                @toggle="toggleRoomSort"
-              />
-              <SortableTh
-                class="px-4 py-2 text-sm font-semibold text-gray-600"
-                column="campus"
-                label="Campus"
-                :direction="roomSortDirection('campus')"
-                :aria-sort="roomAriaSortValue('campus')"
-                @toggle="toggleRoomSort"
-              />
-              <SortableTh
-                class="px-4 py-2 text-sm font-semibold text-gray-600"
-                column="capacity"
-                label="Kapasitas"
-                :direction="roomSortDirection('capacity')"
-                :aria-sort="roomAriaSortValue('capacity')"
-                @toggle="toggleRoomSort"
-              />
-              <SortableTh
-                class="px-4 py-2 text-sm font-semibold text-gray-600"
-                column="availability"
-                label="Ketersediaan"
-                :direction="roomSortDirection('availability')"
-                :aria-sort="roomAriaSortValue('availability')"
-                @toggle="toggleRoomSort"
-              />
-              <th class="px-4 py-2 text-left text-sm font-semibold text-gray-600">Aksi</th>
+              <SortableTh class="px-4 py-2 text-left" column="number" label="#" :direction="roomSortDirection('number')" :aria-sort="roomAriaSortValue('number')" @toggle="toggleRoomSort" />
+              <SortableTh class="px-4 py-2 text-left" column="name" label="Nama Ruangan" :direction="roomSortDirection('name')" :aria-sort="roomAriaSortValue('name')" @toggle="toggleRoomSort" />
+              <SortableTh class="px-4 py-2 text-left" column="building" label="Gedung" :direction="roomSortDirection('building')" :aria-sort="roomAriaSortValue('building')" @toggle="toggleRoomSort" />
+              <SortableTh class="px-4 py-2 text-left" column="campus" label="Campus" :direction="roomSortDirection('campus')" :aria-sort="roomAriaSortValue('campus')" @toggle="toggleRoomSort" />
+              <SortableTh class="px-4 py-2 text-left" column="capacity" label="Kapasitas" :direction="roomSortDirection('capacity')" :aria-sort="roomAriaSortValue('capacity')" @toggle="toggleRoomSort" />
+              <SortableTh class="px-4 py-2 text-left" column="availability" label="Ketersediaan" :direction="roomSortDirection('availability')" :aria-sort="roomAriaSortValue('availability')" @toggle="toggleRoomSort" />
+              <th class="px-4 py-2 text-left">Aksi</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-100">
-            <tr v-for="(room, index) in paginatedRooms" :key="room.id">
-              <td class="px-4 py-2 text-sm text-gray-700">{{ pageMeta.from ? pageMeta.from + index : index + 1 }}</td>
-              <td class="px-4 py-2 text-sm text-gray-700">{{ room.name }}</td>
-              <td class="px-4 py-2 text-sm text-gray-700">{{ room.building?.name ?? '-' }}</td>
-              <td class="px-4 py-2 text-sm text-gray-700">{{ room.building?.campus?.name ?? '-' }}</td>
-              <td class="px-4 py-2 text-sm text-gray-700">{{ room.capacity }}</td>
+          <tbody class="divide-y divide-gray-100 text-gray-700 dark:divide-slate-700 dark:text-slate-300">
+            <tr v-for="(room, index) in paginatedRooms" :key="room.id" class="transition hover:bg-gray-50 dark:hover:bg-slate-700/50">
+              <td class="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">{{ pageMeta.from ? pageMeta.from + index : index + 1 }}</td>
+              <td class="px-4 py-2">
+                <div class="font-semibold text-gray-900 dark:text-slate-100">{{ room.name }}</div>
+              </td>
+              <td class="px-4 py-2 text-sm">{{ room.building?.name ?? '-' }}</td>
+              <td class="px-4 py-2 text-sm">{{ room.building?.campus?.name ?? '-' }}</td>
+              <td class="px-4 py-2 text-sm">{{ room.capacity }}</td>
               <td class="px-4 py-2 text-sm">
                 <span
                   class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium"
-                  :class="room.is_available ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-rose-100 text-rose-700 border border-rose-200'"
+                  :class="room.is_available 
+                    ? 'bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800' 
+                    : 'bg-rose-100 text-rose-700 border border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-800'"
                 >
                   {{ room.is_available ? 'Tersedia' : 'Tidak Tersedia' }}
                 </span>
               </td>
               <td class="px-4 py-2 text-sm">
-                <div class="flex gap-2">
+                <div class="flex items-center gap-2">
                   <button
                     type="button"
-                    class="px-3 py-1 bg-yellow-400 text-white rounded hover:bg-yellow-500"
+                    class="px-3 py-1 bg-yellow-400 text-white rounded hover:bg-yellow-500 mr-2"
                     @click="openEditModal(room)"
                   >
                     ✏️ Edit
@@ -365,92 +328,63 @@ const perPageOptions = [5, 10, 25, 50]
               </td>
             </tr>
             <tr v-if="filteredRooms.length === 0">
-              <td colspan="6" class="px-4 py-4 text-center text-gray-500">
-                Belum ada data ruangan.
+              <td colspan="7" class="px-4 py-10 text-center text-sm text-gray-400 dark:text-slate-500">
+                Tidak ada data ruangan.
               </td>
             </tr>
           </tbody>
         </table>
-        <div class="flex flex-col gap-3 pt-4 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-between">
+
+        <div class="flex flex-col gap-3 border-t border-gray-100 px-5 py-4 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:text-slate-400">
           <div>
             <span v-if="pageMeta.of">Menampilkan {{ pageMeta.from }}-{{ pageMeta.to }} dari {{ pageMeta.of }} data</span>
             <span v-else>Menampilkan 0 data</span>
           </div>
-          <div class="flex items-center gap-1">
-            <button
-              type="button"
-              class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
-              @click="changePage(1)"
-              :disabled="currentPage === 1 || !filteredRooms.length"
-            >
-              «
-            </button>
-            <button
-              type="button"
-              class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
-              @click="changePage(currentPage - 1)"
-              :disabled="currentPage === 1 || !filteredRooms.length"
-            >
-              ‹
-            </button>
+          <div class="flex items-center gap-2">
+            <button type="button" class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(1)" :disabled="currentPage === 1 || !filteredRooms.length">«</button>
+            <button type="button" class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(currentPage - 1)" :disabled="currentPage === 1 || !filteredRooms.length">‹</button>
             <template v-if="filteredRooms.length">
               <button
                 v-for="page in pages"
-                :key="`rooms-page-${page}`"
+                :key="`room-page-${page}`"
                 type="button"
-                class="rounded border px-3 py-1 text-sm"
-                :class="
-                  currentPage === page
-                    ? 'border-blue-500 bg-blue-500 text-white'
-                    : 'border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600'
-                "
+                class="rounded border px-2 py-1 text-sm transition"
+                :class="currentPage === page 
+                  ? 'border-blue-500 bg-blue-500 text-white' 
+                  : 'border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400'"
                 @click="changePage(page)"
               >
                 {{ page }}
               </button>
             </template>
-            <button
-              type="button"
-              class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
-              @click="changePage(currentPage + 1)"
-              :disabled="currentPage === pages.length || !filteredRooms.length"
-            >
-              ›
-            </button>
-            <button
-              type="button"
-              class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
-              @click="changePage(pages.length)"
-              :disabled="currentPage === pages.length || !filteredRooms.length"
-            >
-              »
-            </button>
+            <button type="button" class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(currentPage + 1)" :disabled="currentPage === pages.length || !filteredRooms.length">›</button>
+            <button type="button" class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(pages.length)" :disabled="currentPage === pages.length || !filteredRooms.length">»</button>
           </div>
         </div>        
       </div>
     </div>
 
-    <!-- CREATE MODAL (Diperbesar ke 3xl) -->
+    <!-- CREATE MODAL -->
     <Modal :show="showCreateModal" maxWidth="3xl" @close="closeCreateModal">
       <div class="p-6">
-        <h2 class="text-lg font-semibold text-gray-800 mb-4">➕ Tambah Ruangan</h2>
+        <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">➕ Tambah Ruangan</h2>
 
         <form @submit.prevent="confirmCreate" class="space-y-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700">Nama Ruangan</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nama Ruangan</label>
             <input
               v-model="createForm.name"
               type="text"
-              class="w-full border rounded px-3 py-2 mt-1"
+              class="w-full border rounded px-3 py-2 mt-1 text-gray-700 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200"
             />
-            <div v-if="createForm.errors.name" class="text-red-500 text-sm">{{ createForm.errors.name }}</div>
+            <div v-if="createForm.errors.name" class="text-red-500 text-sm mt-1">{{ createForm.errors.name }}</div>
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700">Gedung</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Gedung</label>
             <select
               v-model="createForm.building_id"
-              class="w-full border rounded px-3 py-2 mt-1"
+              class="w-full border rounded px-3 py-2 mt-1 text-gray-700 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200"
               :disabled="buildingOptions.length === 0"
             >
               <option value="" disabled>
@@ -460,32 +394,34 @@ const perPageOptions = [5, 10, 25, 50]
                 {{ option.label }}
               </option>
             </select>
-            <div v-if="createForm.errors.building_id" class="text-red-500 text-sm">{{ createForm.errors.building_id }}</div>
+            <div v-if="createForm.errors.building_id" class="text-red-500 text-sm mt-1">{{ createForm.errors.building_id }}</div>
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700">Kapasitas</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Kapasitas</label>
             <input
               v-model.number="createForm.capacity"
               type="number"
               min="1"
-              class="w-full border rounded px-3 py-2 mt-1"
+              class="w-full border rounded px-3 py-2 mt-1 text-gray-700 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200"
             />
-            <div v-if="createForm.errors.capacity" class="text-red-500 text-sm">{{ createForm.errors.capacity }}</div>
+            <div v-if="createForm.errors.capacity" class="text-red-500 text-sm mt-1">{{ createForm.errors.capacity }}</div>
           </div>
+
           <div>
-            <span class="block text-sm font-medium text-gray-700">Ketersediaan</span>
-            <label class="mt-1 inline-flex items-center gap-2 text-sm text-gray-600">
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300">Ketersediaan</span>
+            <label class="mt-1 inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
               <input
                 type="checkbox"
                 v-model="createForm.is_available"
-                class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700"
               />
               Ruangan dapat dipilih oleh pengguna
             </label>
-            <p class="mt-1 text-xs text-gray-400">Nonaktifkan bila ruangan tidak dapat digunakan sementara.</p>
-            <div v-if="createForm.errors.is_available" class="text-red-500 text-sm">{{ createForm.errors.is_available }}</div>
+            <p class="mt-1 text-xs text-gray-400 dark:text-slate-500">Nonaktifkan bila ruangan tidak dapat digunakan sementara.</p>
+            <div v-if="createForm.errors.is_available" class="text-red-500 text-sm mt-1">{{ createForm.errors.is_available }}</div>
           </div>
+
           <div class="flex justify-end gap-2">
             <button
               type="button"
@@ -506,27 +442,27 @@ const perPageOptions = [5, 10, 25, 50]
       </div>
     </Modal>
 
-    <!-- EDIT MODAL (Diperbesar ke 3xl) -->
+    <!-- EDIT MODAL -->
     <Modal :show="showEditModal" maxWidth="3xl" @close="closeEditModal">
       <div class="p-6">
-        <h2 class="text-lg font-semibold text-gray-800 mb-4">✏️ Edit Ruangan</h2>
+        <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">✏️ Edit Ruangan</h2>
 
         <form @submit.prevent="confirmEdit" class="space-y-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700">Nama Ruangan</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nama Ruangan</label>
             <input
               v-model="editForm.name"
               type="text"
-              class="w-full border rounded px-3 py-2 mt-1"
+              class="w-full border rounded px-3 py-2 mt-1 text-gray-700 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200"
             />
-            <div v-if="editForm.errors.name" class="text-red-500 text-sm">{{ editForm.errors.name }}</div>
+            <div v-if="editForm.errors.name" class="text-red-500 text-sm mt-1">{{ editForm.errors.name }}</div>
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700">Gedung</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Gedung</label>
             <select
               v-model="editForm.building_id"
-              class="w-full border rounded px-3 py-2 mt-1"
+              class="w-full border rounded px-3 py-2 mt-1 text-gray-700 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200"
               :disabled="buildingOptions.length === 0"
             >
               <option value="" disabled>
@@ -536,31 +472,32 @@ const perPageOptions = [5, 10, 25, 50]
                 {{ option.label }}
               </option>
             </select>
-            <div v-if="editForm.errors.building_id" class="text-red-500 text-sm">{{ editForm.errors.building_id }}</div>
+            <div v-if="editForm.errors.building_id" class="text-red-500 text-sm mt-1">{{ editForm.errors.building_id }}</div>
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700">Kapasitas</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Kapasitas</label>
             <input
               v-model.number="editForm.capacity"
               type="number"
               min="1"
-              class="w-full border rounded px-3 py-2 mt-1"
+              class="w-full border rounded px-3 py-2 mt-1 text-gray-700 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200"
             />
-            <div v-if="editForm.errors.capacity" class="text-red-500 text-sm">{{ editForm.errors.capacity }}</div>
+            <div v-if="editForm.errors.capacity" class="text-red-500 text-sm mt-1">{{ editForm.errors.capacity }}</div>
           </div>
+
           <div>
-            <span class="block text-sm font-medium text-gray-700">Ketersediaan</span>
-            <label class="mt-1 inline-flex items-center gap-2 text-sm text-gray-600">
+            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300">Ketersediaan</span>
+            <label class="mt-1 inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
               <input
                 type="checkbox"
                 v-model="editForm.is_available"
-                class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700"
               />
               Ruangan dapat dipilih oleh pengguna
             </label>
-            <p class="mt-1 text-xs text-gray-400">Matikan ketika ruangan dinonaktifkan atau sedang perawatan.</p>
-            <div v-if="editForm.errors.is_available" class="text-red-500 text-sm">{{ editForm.errors.is_available }}</div>
+            <p class="mt-1 text-xs text-gray-400 dark:text-slate-500">Matikan ketika ruangan dinonaktifkan atau sedang perawatan.</p>
+            <div v-if="editForm.errors.is_available" class="text-red-500 text-sm mt-1">{{ editForm.errors.is_available }}</div>
           </div>
 
           <div class="flex justify-end gap-2">

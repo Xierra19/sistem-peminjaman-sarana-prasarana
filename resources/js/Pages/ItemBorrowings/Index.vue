@@ -24,12 +24,12 @@ const statusLabels = {
 }
 
 const statusClasses = {
-  requested: 'bg-amber-100 text-amber-700 border-amber-200',
-  waiting: 'bg-amber-100 text-amber-700 border-amber-200',
-  approved: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-  rejected: 'bg-rose-100 text-rose-700 border-rose-200',
-  cancelled: 'bg-slate-100 text-slate-700 border-slate-200',
-  returned: 'bg-blue-100 text-blue-700 border-blue-200',
+  requested: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
+  waiting: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
+  approved: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800',
+  rejected: 'bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-800',
+  cancelled: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600',
+  returned: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800',
 }
 
 const perPageOptions = [5, 10, 25, 50]
@@ -110,6 +110,7 @@ const filteredBorrowings = computed(() => {
 
     const matchesSearch = !q || searchable.includes(q)
     const normalizedStatus = borrowing.status === 'requested' ? 'waiting' : borrowing.status
+
     const matchesStatus = !status || normalizedStatus === status
 
     return matchesSearch && matchesStatus
@@ -176,8 +177,8 @@ const cancelBorrowing = (borrowing) => {
     <div class="space-y-6">
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 class="text-2xl font-semibold text-slate-900">Peminjaman Barang</h1>
-          <p class="text-sm text-slate-500">
+          <h1 class="text-2xl font-semibold text-slate-900 dark:text-slate-100">Peminjaman Barang</h1>
+          <p class="text-sm text-slate-500 dark:text-slate-400">
             Pantau status pengajuan peminjaman barang yang telah kamu ajukan.
           </p>
         </div>
@@ -190,25 +191,25 @@ const cancelBorrowing = (borrowing) => {
       </div>
 
       <div class="card-surface overflow-hidden">
-        <div class="space-y-4 border-b border-slate-100 px-5 py-4">
+        <div class="space-y-4 border-b border-slate-100 px-5 py-4 dark:border-slate-700">
           <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div class="flex flex-1 flex-col gap-3 md:flex-row md:items-center">
               <div class="w-full md:max-w-sm">
-                <label class="mb-1 block text-sm font-medium text-slate-700" for="item-borrowings-search">Pencarian</label>
+                <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300" for="item-borrowings-search">Pencarian</label>
                 <input
                   id="item-borrowings-search"
                   v-model="searchQuery"
                   type="text"
                   placeholder="Cari judul, barang, atau kategori..."
-                  class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 placeholder-slate-400 transition focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 placeholder-slate-400 transition focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
                 />
               </div>
               <div class="w-full md:w-60">
-                <label class="mb-1 block text-sm font-medium text-slate-700" for="item-borrowings-status">Status</label>
+                <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300" for="item-borrowings-status">Status</label>
                 <select
                   id="item-borrowings-status"
                   v-model="statusFilter"
-                  class="w-full appearance-none rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm leading-5 text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  class="w-full appearance-none rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm leading-5 text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
                 >
                   <option value="">Semua Status</option>
                   <option value="waiting">Menunggu Persetujuan</option>
@@ -219,19 +220,19 @@ const cancelBorrowing = (borrowing) => {
                 </select>
               </div>
             </div>
-            <div class="flex items-center gap-3 rounded-2xl bg-slate-50 px-3 py-2 text-sm text-slate-600">
+            <div class="flex items-center gap-3 rounded-2xl bg-slate-50 px-3 py-2 text-sm text-slate-600 dark:bg-slate-700 dark:text-slate-300">
               <span class="font-medium">Total data</span>
-              <span class="inline-flex h-8 w-12 items-center justify-center rounded-xl bg-white text-sm font-semibold text-slate-900 shadow-sm">
+              <span class="inline-flex h-8 w-12 items-center justify-center rounded-xl bg-white text-sm font-semibold text-slate-900 shadow-sm dark:bg-slate-600 dark:text-slate-100">
                 {{ filteredBorrowings.length }}
               </span>
             </div>
           </div>
-          <div class="flex flex-col gap-2 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-end">
-            <label class="font-medium text-slate-700" for="item-borrowings-rows">Rows per page</label>
+          <div class="flex flex-col gap-2 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-end dark:text-slate-400">
+            <label class="font-medium text-slate-700 dark:text-slate-300" for="item-borrowings-rows">Rows per page</label>
               <select
                 id="item-borrowings-rows"
                 v-model.number="rowsPerPage"
-                class="w-24 rounded-xl border border-slate-200 bg-white px-3 py-1.5 pr-9 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                class="w-24 rounded-xl border border-slate-200 bg-white px-3 py-1.5 pr-9 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
               >
                 <option v-for="option in perPageOptions" :key="`item-borrowings-rows-${option}`" :value="option">
                   {{ option }}
@@ -241,8 +242,8 @@ const cancelBorrowing = (borrowing) => {
         </div>
 
         <div class="overflow-x-auto">
-          <table class="mobile-friendly-table min-w-full divide-y divide-slate-200 text-sm text-slate-700">
-            <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <table class="mobile-friendly-table min-w-full divide-y divide-slate-200 text-sm text-slate-700 dark:divide-slate-700 dark:text-slate-300">
+            <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-700 dark:text-slate-400">
               <tr>
                 <SortableTh
                   class="px-4 py-3 text-left"
@@ -303,28 +304,28 @@ const cancelBorrowing = (borrowing) => {
                 <th class="px-4 py-3 text-left">Aksi</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-slate-100">
-              <tr v-for="(borrowing, index) in paginatedItems" :key="borrowing.id" class="hover:bg-slate-50">
-                <td class="px-4 py-3 text-slate-500" data-title="#">
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+              <tr v-for="(borrowing, index) in paginatedItems" :key="borrowing.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                <td class="px-4 py-3 text-slate-500 dark:text-slate-400" data-title="#">
                   {{ pageMeta.from + index }}
                 </td>
                 <td class="px-4 py-3" data-title="Keperluan">
-                  <div class="font-semibold text-slate-900">{{ borrowing.title }}</div>
-                  <div class="mt-1 text-xs text-slate-500">{{ borrowing.description || 'Tidak ada deskripsi tambahan.' }}</div>
+                  <div class="font-semibold text-slate-900 dark:text-slate-100">{{ borrowing.title }}</div>
+                  <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ borrowing.description || 'Tidak ada deskripsi tambahan.' }}</div>
                 </td>
                 <td class="px-4 py-3" data-title="Barang">
-                  <div class="font-medium text-slate-900">{{ getItemNames(borrowing) }}</div>
-                  <div v-if="borrowing.items && borrowing.items.length > 1" class="text-xs text-slate-500">
+                  <div class="font-medium text-slate-900 dark:text-slate-100">{{ getItemNames(borrowing) }}</div>
+                  <div v-if="borrowing.items && borrowing.items.length > 1" class="text-xs text-slate-500 dark:text-slate-400">
                     {{ borrowing.items.length }} jenis barang
                   </div>
                 </td>
-                <td class="px-4 py-3 text-slate-700" data-title="Qty">{{ getTotalQuantity(borrowing) }}</td>
-                <td class="px-4 py-3 text-slate-700" data-title="Pinjam">{{ formatDate(getBorrowDates(borrowing)) }}</td>
-                <td class="px-4 py-3 text-slate-700" data-title="Kembali">{{ formatDate(getReturnDates(borrowing)) }}</td>
+                <td class="px-4 py-3 text-slate-700 dark:text-slate-300" data-title="Qty">{{ getTotalQuantity(borrowing) }}</td>
+                <td class="px-4 py-3 text-slate-700 dark:text-slate-300" data-title="Pinjam">{{ formatDate(getBorrowDates(borrowing)) }}</td>
+                <td class="px-4 py-3 text-slate-700 dark:text-slate-300" data-title="Kembali">{{ formatDate(getReturnDates(borrowing)) }}</td>
                 <td class="px-4 py-3" data-title="Status">
                   <span
                     class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold"
-                    :class="statusClasses[borrowing.status] ?? 'bg-slate-100 text-slate-600 border-slate-200'"
+                    :class="statusClasses[borrowing.status] ?? 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600'"
                   >
                     {{ statusLabels[borrowing.status] ?? borrowing.status }}
                   </span>
@@ -333,14 +334,14 @@ const cancelBorrowing = (borrowing) => {
                   <div class="flex flex-col gap-2">
                     <Link
                       :href="route('item-borrowings.show', borrowing.id)"
-                      class="inline-flex items-center justify-center rounded-xl border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:border-blue-300 hover:text-blue-800"
+                      class="inline-flex items-center justify-center rounded-xl border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:border-blue-300 hover:text-blue-800 dark:border-blue-800 dark:text-blue-300 dark:hover:border-blue-700 dark:hover:text-blue-200"
                     >
                       Lihat Detail
                     </Link>
                     <button
                       v-if="canCancel(borrowing)"
                       type="button"
-                      class="inline-flex items-center justify-center rounded-xl border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      class="inline-flex items-center justify-center rounded-xl border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-rose-800 dark:text-rose-300 dark:hover:border-rose-700 dark:hover:bg-rose-900/30"
                       :disabled="cancellingId === borrowing.id"
                       @click="cancelBorrowing(borrowing)"
                     >
@@ -350,7 +351,7 @@ const cancelBorrowing = (borrowing) => {
                 </td>
               </tr>
               <tr v-if="!filteredBorrowings.length">
-                <td colspan="8" class="px-4 py-10 text-center text-sm text-slate-400">
+                <td colspan="8" class="px-4 py-10 text-center text-sm text-slate-400 dark:text-slate-500">
                   Belum ada data peminjaman barang.
                 </td>
               </tr>
@@ -358,7 +359,7 @@ const cancelBorrowing = (borrowing) => {
           </table>
         </div>
 
-        <div class="flex flex-col gap-3 border-t border-slate-100 px-5 py-4 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex flex-col gap-3 border-t border-slate-100 px-5 py-4 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:text-slate-400">
           <div>
             <span v-if="pageMeta.of">Menampilkan {{ pageMeta.from }}-{{ pageMeta.to }} dari {{ pageMeta.of }} data</span>
             <span v-else>Menampilkan 0 data</span>
@@ -366,7 +367,7 @@ const cancelBorrowing = (borrowing) => {
           <div class="flex items-center gap-2">
             <button
               type="button"
-              class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+              class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400"
               @click="changePage(1)"
               :disabled="currentPage === 1 || !filteredBorrowings.length"
             >
@@ -374,7 +375,7 @@ const cancelBorrowing = (borrowing) => {
             </button>
             <button
               type="button"
-              class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+              class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400"
               @click="changePage(currentPage - 1)"
               :disabled="currentPage === 1 || !filteredBorrowings.length"
             >
@@ -389,7 +390,7 @@ const cancelBorrowing = (borrowing) => {
                 :class="
                   currentPage === page
                     ? 'border-blue-500 bg-blue-500 text-white'
-                    : 'border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600'
+                    : 'border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400'
                 "
                 @click="changePage(page)"
               >
@@ -398,7 +399,7 @@ const cancelBorrowing = (borrowing) => {
             </template>
             <button
               type="button"
-              class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+              class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400"
               @click="changePage(currentPage + 1)"
               :disabled="currentPage === pages.length || !filteredBorrowings.length"
             >
@@ -406,7 +407,7 @@ const cancelBorrowing = (borrowing) => {
             </button>
             <button
               type="button"
-              class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+              class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400"
               @click="changePage(pages.length)"
               :disabled="currentPage === pages.length || !filteredBorrowings.length"
             >

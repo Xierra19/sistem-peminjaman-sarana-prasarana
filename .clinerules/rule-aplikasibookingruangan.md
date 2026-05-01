@@ -22,3 +22,39 @@
 - Lakukan perencanaan (step-by-step thinking) secara menyeluruh sebelum melakukan pengeditan atau pembuatan file secara massal.
 - Jika ada dependensi yang kurang atau terjadi error pada Vue atau Laravel, berikan solusi perbaikan melalui terminal secara otomatis (dengan izin).
 - Implementasikan penanganan kesalahan (error handling) yang ketat, termasuk pesan peringatan yang jelas kepada pengguna (misalnya: "Ruangan telah dipesan pada jam tersebut").
+
+## 5. Keamanan & Perlindungan Proyek (WAJIB DIPATUHI)
+
+### Sebelum Melakukan Perubahan
+- SELALU baca dan pahami file yang akan diubah secara menyeluruh sebelum melakukan modifikasi apapun.
+- JANGAN pernah menghapus atau menimpa kode yang sudah ada tanpa menunjukkan perbandingan (before/after) terlebih dahulu.
+- Jika perubahan memengaruhi lebih dari 1 file, tampilkan rencana lengkap dan minta konfirmasi sebelum eksekusi.
+
+### File yang Tidak Boleh Diubah Tanpa Konfirmasi Eksplisit
+- `.env`
+- `database/migrations/` (file yang sudah pernah di-migrate)
+- `routes/web.php` dan `routes/api.php`
+- `app/Models/`
+- `composer.json` dan `package.json`
+
+### Aturan Migration
+- JANGAN pernah mengubah file migration yang sudah ada.
+- Jika perlu mengubah struktur tabel, SELALU buat migration baru.
+- Sebelum menjalankan `migrate`, tampilkan isi migration dan minta konfirmasi.
+
+### Aturan Git
+- Ingatkan pengguna untuk melakukan `git commit` sebelum perubahan massal dilakukan.
+- Jika belum ada Git, sarankan untuk menginisialisasi dengan `git init` sebagai langkah pertama.
+
+### Aturan Perintah Terminal Berbahaya
+- DILARANG menjalankan perintah berikut tanpa konfirmasi eksplisit:
+  - `migrate:fresh`, `migrate:reset`, `migrate:rollback`
+  - `db:seed` pada environment selain local
+  - `storage:link` jika sudah pernah dijalankan
+  - `npm install` versi baru yang dapat mengubah `package-lock.json`
+
+## 6. Protokol Debugging
+- Saat terjadi error, analisis root cause terlebih dahulu sebelum menawarkan solusi.
+- Berikan maksimal 2 solusi alternatif dengan trade-off yang jelas.
+- JANGAN mengubah lebih dari yang diperlukan untuk memperbaiki bug (minimal fix principle).
+- Setelah fix diterapkan, sebutkan file apa saja yang berubah dan mengapa.

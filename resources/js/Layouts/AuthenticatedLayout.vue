@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import ApplicationLogo from '@/Components/ApplicationLogo.vue'
+import DarkModeSwitch from '@/Components/DarkModeSwitch.vue'
 import Dropdown from '@/Components/Dropdown.vue'
 import DropdownLink from '@/Components/DropdownLink.vue'
 import { Link, usePage } from '@inertiajs/vue3'
@@ -194,7 +195,7 @@ watch(
 </script>
 
 <template>
-  <div class="relative min-h-screen bg-slate-100 lg:flex">
+    <div class="relative min-h-screen bg-slate-100 dark:bg-slate-900 lg:flex">
     <transition name="fade">
       <div
         v-if="isMobileMenuOpen"
@@ -203,13 +204,13 @@ watch(
       />
     </transition>
 
-    <aside
-      id="sidebar-navigation"
-      class="fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-slate-100 bg-white px-4 pb-6 pt-5 shadow-xl transition-transform duration-300 ease-in-out lg:translate-x-0 lg:shadow-none"
-      :class="isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
-      aria-label="Navigasi utama"
-    >
-      <div class="flex items-center justify-between gap-3 border-b border-slate-100 pb-4">
+      <aside
+        id="sidebar-navigation"
+        class="fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-slate-100 bg-white px-4 pb-6 pt-5 shadow-xl transition-transform duration-300 ease-in-out dark:border-slate-700 dark:bg-slate-800 lg:translate-x-0 lg:shadow-none"
+        :class="isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
+        aria-label="Navigasi utama"
+      >
+          <div class="flex items-center justify-between gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
         <Link
           :href="route('dashboard')"
           class="flex items-center gap-3 rounded-2xl border border-slate-100 px-3 py-2 text-left transition hover:border-blue-200 hover:bg-blue-50/40"
@@ -222,18 +223,18 @@ watch(
               <ApplicationLogo class="!h-8 !w-8 object-contain" />
             </div>
           </div>
-          <div class="flex flex-col leading-tight">
-            <span class="text-[10px] font-semibold uppercase tracking-[0.45em] text-blue-500">Esa Unggul</span>
-            <span class="text-sm font-semibold text-slate-900">Sistem Booking</span>
-            <span class="text-xs text-slate-500">Universitas Esa Unggul</span>
-          </div>
+              <div class="flex flex-col leading-tight">
+                <span class="text-[10px] font-semibold uppercase tracking-[0.45em] text-blue-500">Esa Unggul</span>
+                <span class="text-sm font-semibold text-slate-900 dark:text-slate-100">Sistem Booking</span>
+                <span class="text-xs text-slate-500 dark:text-slate-400">Universitas Esa Unggul</span>
+              </div>
         </Link>
-        <button
-          type="button"
-          class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition hover:border-slate-300 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 lg:hidden"
-          @click="closeMobileMenu"
-          aria-label="Tutup menu navigasi"
-        >
+          <button
+            type="button"
+            class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition hover:border-slate-300 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-600 dark:text-slate-400 dark:hover:border-slate-500 dark:hover:text-slate-300 lg:hidden"
+            @click="closeMobileMenu"
+            aria-label="Tutup menu navigasi"
+          >
           <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
           </svg>
@@ -241,7 +242,7 @@ watch(
       </div>
 
       <div class="flex-1 overflow-y-auto">
-        <h2 class="mt-4 text-xs font-semibold uppercase tracking-[0.45em] text-slate-400">Menu</h2>
+        <h2 class="mt-4 text-xs font-semibold uppercase tracking-[0.45em] text-slate-400 dark:text-slate-500">Menu</h2>
         <nav class="mt-3 space-y-2">
           <div>
             <Link :href="route('dashboard')" :class="navLinkClasses(isRouteActive('dashboard'))">
@@ -417,12 +418,12 @@ watch(
     </aside>
 
     <div class="flex min-h-screen flex-1 flex-col lg:ml-64">
-      <nav class="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
+      <nav class="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur dark:border-slate-700 dark:bg-slate-800/95">
         <div class="page-shell flex h-16 items-center justify-between">
           <div class="flex flex-1 items-center gap-3">
             <button
               type="button"
-              class="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 lg:hidden"
+              class="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:bg-slate-600 lg:hidden"
               @click="toggleMobileMenu"
               :aria-expanded="isMobileMenuOpen"
               aria-controls="sidebar-navigation"
@@ -445,31 +446,32 @@ watch(
               </div>
               <div class="hidden flex-col leading-tight sm:flex">
                 <span class="text-[10px] font-semibold uppercase tracking-[0.45em] text-blue-500">Esa Unggul</span>
-                <span class="text-sm font-semibold text-slate-900">Sistem Booking Ruangan</span>
-                <span class="text-xs text-slate-500">Universitas Esa Unggul</span>
+                <span class="text-sm font-semibold text-slate-900 dark:text-slate-100">Sistem Booking Ruangan</span>
+                <span class="text-xs text-slate-500 dark:text-slate-400">Universitas Esa Unggul</span>
               </div>
             </Link>
           </div>
 
           <div class="flex items-center gap-4">
             <div class="hidden flex-col text-right sm:flex">
-              <span class="text-sm font-semibold text-slate-900">{{ user.name }}</span>
-              <span class="text-xs text-slate-500">{{ roleLabel }}</span>
+              <span class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ user.name }}</span>
+              <span class="text-xs text-slate-500 dark:text-slate-400">{{ roleLabel }}</span>
             </div>
+            <DarkModeSwitch />
             <Dropdown align="right" width="56">
               <template #trigger>
                 <button
                   type="button"
                   :aria-label="'Buka menu akun ' + (user.name || '')"
-                  class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:bg-slate-600"
                 >
                   <span
                     class="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 text-sm font-semibold text-white shadow-inner"
                   >
                     {{ userInitials }}
                   </span>
-                  <span class="text-sm font-semibold text-slate-900 sm:hidden">{{ user.name }}</span>
-                  <svg class="h-4 w-4 text-slate-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <span class="text-sm font-semibold text-slate-900 sm:hidden dark:text-slate-100">{{ user.name }}</span>
+                  <svg class="h-4 w-4 text-slate-500 dark:text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
@@ -483,7 +485,7 @@ watch(
         </div>
       </nav>
 
-      <main class="flex-1 bg-slate-100/60 py-6">
+      <main class="flex-1 bg-slate-100/60 py-6 dark:bg-slate-900/60">
         <div class="page-shell space-y-6">
           <header v-if="$slots.header">
             <slot name="header" />

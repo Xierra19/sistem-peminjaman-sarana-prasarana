@@ -11,11 +11,19 @@
   body {
     @apply bg-slate-100 text-slate-900 antialiased;
   }
+
+  html.dark body {
+    @apply bg-slate-900 text-slate-100;
+  }
 }
 
 @layer components {
   .card-surface {
     @apply rounded-2xl border border-gray-100 bg-white shadow-sm;
+  }
+
+  html.dark .card-surface {
+    @apply border-slate-700 bg-slate-800;
   }
 
   .section-heading {

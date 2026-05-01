@@ -83,7 +83,7 @@ const confirmCreate = () => {
 }
 
 const submitCreate = () => {
-  createForm.post(route('admin.campus.store'), {
+  createForm.post(route('admin.campuses.store'), {
     onSuccess: () => {
       closeCreateModal()
     }
@@ -133,8 +133,8 @@ const confirmEdit = () => {
 
 const submitEdit = () => {
   if (!selectedCampus.value) return
-
-  editForm.put(route('admin.campus.update', selectedCampus.value.id), {
+  
+  editForm.put(route('admin.campuses.update', selectedCampus.value.id), {
     onSuccess: () => {
       closeEditModal()
     }
@@ -158,7 +158,7 @@ const confirmDelete = (id, name) => {
   }).then((result) => {
     if (result.isConfirmed) {
       // Mengirim request DELETE menggunakan router Inertia
-      router.delete(route('admin.campus.destroy', id))
+      router.delete(route('admin.campuses.destroy', id))
     }
   })
 }
@@ -193,108 +193,81 @@ const perPageOptions = [5, 10, 25, 50]
 </script>
 
 <template>
-  <Head title="Master Campus" />
-
   <AuthenticatedLayout>
+    <Head title="Master Campus" />
+
     <div class="space-y-6">
       <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 class="text-2xl font-semibold text-gray-800">Master Campus</h1>
-          <p class="text-sm text-gray-500">Kelola data kampus yang tersedia dalam sistem.</p>
+          <h1 class="text-2xl font-semibold text-gray-800 dark:text-gray-200">Master Campus</h1>
+          <p class="text-sm text-gray-500 dark:text-gray-400">Kelola data kampus yang tersedia dalam sistem.</p>
         </div>
 
         <button
           type="button"
-          class="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700"
+          class="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
           @click="openCreateModal"
         >
           + Tambah Campus
         </button>
       </div>
 
-      <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+      <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
         <div class="flex flex-col gap-4 px-5 py-4 md:flex-row md:items-end md:justify-between">
           <div class="flex flex-1 flex-col gap-3 md:flex-row md:items-center">
             <div class="w-full md:max-w-sm">
-              <label class="mb-1 block text-sm font-medium text-gray-700" for="admin-campus-search">Pencarian</label>
+              <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300" for="admin-campuses-search">Pencarian</label>
               <div class="relative">
                 <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">
                   <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35M10 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16Z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35M10 18a8 8 0 0 1-1.06-1.06L12.94 10l3.71-3.71a.75.75 0 0 1 1.06-1.06Z" />
                   </svg>
                 </span>
                 <input
-                  id="admin-campus-search"
+                  id="admin-campuses-search"
                   v-model="searchQuery"
                   type="text"
                   placeholder="Cari nama campus, alamat, telepon..."
-                  class="w-full rounded-xl border border-slate-200 bg-white py-2 pl-10 pr-3 text-sm text-slate-700 placeholder-slate-400 transition focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  class="w-full rounded-xl border border-slate-200 bg-white py-2 pl-10 pr-3 text-sm text-slate-700 placeholder-slate-400 transition focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
                 />
               </div>
             </div>
           </div>
-          <div class="flex items-center justify-end gap-3 text-sm text-gray-600">
-            <label class="font-medium text-gray-700" for="admin-campus-rows">Rows per page</label>
+          <div class="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
+            <label class="font-medium text-gray-700 dark:text-gray-300" for="admin-campuses-rows">Rows per page</label>
               <div class="relative">
-                <select>
-                  id="admin-campus-rows"
+                <select
+                  id="admin-campuses-rows"
                   v-model.number="rowsPerPage"
-                  class="w-20 rounded border border-gray-300 bg-white px-3 py-1.5 pr-8 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  class="w-20 rounded border border-gray-300 bg-white px-3 py-1.5 pr-8 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
                 >
-                  <option v-for="option in perPageOptions" :key="option" :value="option">
+                  <option v-for="option in perPageOptions" :key="`campuses-rows-${option}`" :value="option">
                     {{ option }}
                   </option>
                 </select>
               </div>
           </div>
         </div>
-        
-        <table class="min-w-full divide-y divide-gray-200 text-sm">
-          <thead class="bg-gray-100">
+
+        <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-slate-700">
+          <thead class="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:bg-slate-700 dark:text-slate-400">
             <tr>
-              <SortableTh
-                class="px-4 py-2 text-left text-sm font-semibold text-gray-600"
-                column="number"
-                label="#"
-                :direction="campusSortDirection('number')"
-                :aria-sort="campusAriaSortValue('number')"
-                @toggle="toggleCampusSort"
-              />
-              <SortableTh
-                class="px-4 py-2 text-left text-sm font-semibold text-gray-600"
-                column="name"
-                label="Nama Campus"
-                :direction="campusSortDirection('name')"
-                :aria-sort="campusAriaSortValue('name')"
-                @toggle="toggleCampusSort"
-              />
-              <SortableTh
-                class="px-4 py-2 text-left text-sm font-semibold text-gray-600"
-                column="address"
-                label="Alamat"
-                :direction="campusSortDirection('address')"
-                :aria-sort="campusAriaSortValue('address')"
-                @toggle="toggleCampusSort"
-              />
-              <SortableTh
-                class="px-4 py-2 text-left text-sm font-semibold text-gray-600"
-                column="phone"
-                label="Telepon"
-                :direction="campusSortDirection('phone')"
-                :aria-sort="campusAriaSortValue('phone')"
-                @toggle="toggleCampusSort"
-              />
-              <th class="px-4 py-2 text-left text-sm font-semibold text-gray-600">Aksi</th>
+              <SortableTh class="px-4 py-2 text-left" column="number" label="#" :direction="campusSortDirection('number')" :aria-sort="campusAriaSortValue('number')" @toggle="toggleCampusSort" />
+              <SortableTh class="px-4 py-2 text-left" column="name" label="Nama Campus" :direction="campusSortDirection('name')" :aria-sort="campusAriaSortValue('name')" @toggle="toggleCampusSort" />
+              <SortableTh class="px-4 py-2 text-left" column="address" label="Alamat" :direction="campusSortDirection('address')" :aria-sort="campusAriaSortValue('address')" @toggle="toggleCampusSort" />
+              <SortableTh class="px-4 py-2 text-left" column="phone" label="Telepon" :direction="campusSortDirection('phone')" :aria-sort="campusAriaSortValue('phone')" @toggle="toggleCampusSort" />
+              <th class="px-4 py-2 text-left">Aksi</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-100">
-            <tr v-for="(campus, index) in paginatedCampuses" :key="campus.id">
-              <td class="px-4 py-2 text-sm text-gray-700">{{ pageMeta.from ? pageMeta.from + index : index + 1 }}</td>
-              <td class="px-4 py-2 text-sm text-gray-700">{{ campus.name }}</td>
-              <td class="px-4 py-2 text-sm text-gray-700">{{ campus.address }}</td>
-              <td class="px-4 py-2 text-sm text-gray-700">{{ campus.phone }}</td>
+          <tbody class="divide-y divide-gray-100 text-gray-700 dark:divide-slate-700 dark:text-slate-300">
+            <tr v-for="(campus, index) in paginatedCampuses" :key="campus.id" class="transition hover:bg-gray-50 dark:hover:bg-slate-700/50">
+              <td class="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">{{ pageMeta.from ? pageMeta.from + index : index + 1 }}</td>
+              <td class="px-4 py-2">
+                <div class="font-semibold text-gray-900 dark:text-slate-100">{{ campus.name }}</div>
+              </td>
+              <td class="px-4 py-2 text-sm">{{ campus.address }}</td>
+              <td class="px-4 py-2 text-sm">{{ campus.phone }}</td>
               <td class="px-4 py-2 text-sm">
-
                 <!-- Tombol Edit -->
                 <button
                   type="button"
@@ -304,7 +277,7 @@ const perPageOptions = [5, 10, 25, 50]
                   ✏️ Edit
                 </button>
 
-                <!-- Tombol Delete yang sudah diperbarui memanggil confirmDelete -->
+                <!-- Tombol Delete yang sudah diperbaiki memanggil confirmDelete -->
                 <button
                   type="button"
                   class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
@@ -312,109 +285,77 @@ const perPageOptions = [5, 10, 25, 50]
                 >
                   🗑 Hapus
                 </button>
-
               </td>
             </tr>
             <tr v-if="!filteredCampuses.length">
-              <td colspan="5" class="px-4 py-4 text-center text-gray-500">
+              <td colspan="5" class="px-4 py-10 text-center text-sm text-gray-400 dark:text-slate-500">
                 Tidak ada data campus.
               </td>
             </tr>
           </tbody>
         </table>
-        <div class="flex flex-col gap-3 pt-4 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-between">
+
+        <div class="flex flex-col gap-3 border-t border-gray-100 px-5 py-4 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:text-slate-400">
           <div>
             <span v-if="pageMeta.of">Menampilkan {{ pageMeta.from }}-{{ pageMeta.to }} dari {{ pageMeta.of }} data</span>
             <span v-else>Menampilkan 0 data</span>
           </div>
-          <div class="flex items-center gap-1">
-            <button
-              type="button"
-              class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
-              @click="changePage(1)"
-              :disabled="currentPage === 1 || !filteredCampuses.length"
-            >
-              «
-            </button>
-            <button
-              type="button"
-              class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
-              @click="changePage(currentPage - 1)"
-              :disabled="currentPage === 1 || !filteredCampuses.length"
-            >
-              ‹
-            </button>
+          <div class="flex items-center gap-2">
+            <button type="button" class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(1)" :disabled="currentPage === 1 || !filteredCampuses.length">«</button>
+            <button type="button" class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(currentPage - 1)" :disabled="currentPage === 1 || !filteredCampuses.length">‹</button>
             <template v-if="filteredCampuses.length">
               <button
                 v-for="page in pages"
                 :key="`campus-page-${page}`"
                 type="button"
-                class="rounded border px-3 py-1 text-sm"
-                :class="
-                  currentPage === page
-                    ? 'border-blue-500 bg-blue-500 text-white'
-                    : 'border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600'
-                "
+                class="rounded border px-2 py-1 text-sm transition"
+                :class="currentPage === page ? 'border-blue-500 bg-blue-500 text-white' : 'border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400'"
                 @click="changePage(page)"
               >
                 {{ page }}
               </button>
             </template>
-            <button
-              type="button"
-              class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
-              @click="changePage(currentPage + 1)"
-              :disabled="currentPage === pages.length || !filteredCampuses.length"
-            >
-              ›
-            </button>
-            <button
-              type="button"
-              class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
-              @click="changePage(pages.length)"
-              :disabled="currentPage === pages.length || !filteredCampuses.length"
-            >
-              »
-            </button>
+            <button type="button" class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(currentPage + 1)" :disabled="currentPage === pages.length || !filteredCampuses.length">›</button>
+            <button type="button" class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(pages.length)" :disabled="currentPage === pages.length || !filteredCampuses.length">»</button>
           </div>
         </div>
       </div>
     </div>
-    
+
     <!-- MODAL CREATE -->
     <Modal :show="showCreateModal" maxWidth="3xl" @close="closeCreateModal">
       <div class="p-6">
-        <h2 class="text-lg font-semibold text-gray-800 mb-4">➕ Tambah Campus</h2>
+        <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">➕ Tambah Campus</h2>
 
         <form @submit.prevent="confirmCreate" class="space-y-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700">Nama Campus</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nama Campus</label>
             <input
               v-model="createForm.name"
               type="text"
-              class="w-full border rounded px-3 py-2 mt-1"
+              class="w-full border rounded px-3 py-2 mt-1 text-gray-700 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200"
             />
-            <div v-if="createForm.errors.name" class="text-red-500 text-sm">{{ createForm.errors.name }}</div>
+            <div v-if="createForm.errors.name" class="text-red-500 text-sm mt-1">{{ createForm.errors.name }}</div>
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700">Alamat</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Alamat</label>
             <input
               v-model="createForm.address"
               type="text"
-              class="w-full border rounded px-3 py-2 mt-1"
+              class="w-full border rounded px-3 py-2 mt-1 text-gray-700 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200"
             />
-            <div v-if="createForm.errors.address" class="text-red-500 text-sm">{{ createForm.errors.address }}</div>
+            <div v-if="createForm.errors.address" class="text-red-500 text-sm mt-1">{{ createForm.errors.address }}</div>
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700">Telepon</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Telepon</label>
             <input
               v-model="createForm.phone"
               type="text"
-              class="w-full border rounded px-3 py-2 mt-1"
+              class="w-full border rounded px-3 py-2 mt-1 text-gray-700 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200"
             />
-            <div v-if="createForm.errors.phone" class="text-red-500 text-sm">{{ createForm.errors.phone }}</div>
+            <div v-if="createForm.errors.phone" class="text-red-500 text-sm mt-1">{{ createForm.errors.phone }}</div>
           </div>
 
           <div class="flex justify-end gap-2">
@@ -440,37 +381,37 @@ const perPageOptions = [5, 10, 25, 50]
     <!-- MODAL EDIT -->
     <Modal :show="showEditModal" maxWidth="3xl" @close="closeEditModal">
       <div class="p-6">
-        <h2 class="text-lg font-semibold text-gray-800 mb-4">✏️ Edit Campus</h2>
+        <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">✏️ Edit Campus</h2>
 
         <form @submit.prevent="confirmEdit" class="space-y-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700">Nama Campus</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nama Campus</label>
             <input
               v-model="editForm.name"
               type="text"
-              class="w-full border rounded px-3 py-2 mt-1"
+              class="w-full border rounded px-3 py-2 mt-1 text-gray-700 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200"
             />
-            <div v-if="editForm.errors.name" class="text-red-500 text-sm">{{ editForm.errors.name }}</div>
+            <div v-if="editForm.errors.name" class="text-red-500 text-sm mt-1">{{ editForm.errors.name }}</div>
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700">Alamat</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Alamat</label>
             <input
               v-model="editForm.address"
               type="text"
-              class="w-full border rounded px-3 py-2 mt-1"
+              class="w-full border rounded px-3 py-2 mt-1 text-gray-700 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200"
             />
-            <div v-if="editForm.errors.address" class="text-red-500 text-sm">{{ editForm.errors.address }}</div>
+            <div v-if="editForm.errors.address" class="text-red-500 text-sm mt-1">{{ editForm.errors.address }}</div>
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700">Telepon</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Telepon</label>
             <input
               v-model="editForm.phone"
               type="text"
-              class="w-full border rounded px-3 py-2 mt-1"
+              class="w-full border rounded px-3 py-2 mt-1 text-gray-700 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200"
             />
-            <div v-if="editForm.errors.phone" class="text-red-500 text-sm">{{ editForm.errors.phone }}</div>
+            <div v-if="editForm.errors.phone" class="text-red-500 text-sm mt-1">{{ editForm.errors.phone }}</div>
           </div>
 
           <div class="flex justify-end gap-2">

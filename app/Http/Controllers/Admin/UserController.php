@@ -46,6 +46,38 @@ class UserController extends Controller
     }
 
     /**
+     * Show the form for creating a new user.
+     */
+    public function create(): Response
+    {
+        return Inertia::render('Admin/Users/Create', [
+            'roles' => [
+                ['label' => 'Super Admin', 'value' => User::ROLE_SUPER_ADMIN],
+                ['label' => 'Admin BAP', 'value' => User::ROLE_ADMIN_BAP],
+                ['label' => 'Admin Sarpras', 'value' => User::ROLE_ADMIN_SARPRAS],
+                ['label' => 'User (Mahasiswa)', 'value' => User::ROLE_USER],
+            ],
+        ]);
+    }
+
+    /**
+     * Store a newly created user in storage.
+     */
+    public function store(\App\Http\Requests\Admin\UpdateUserRequest $request): RedirectResponse
+    {
+        $validated = $request->validated();
+        
+        // Hash password for new user
+        $validated['password'] = bcrypt($validated['password']);
+        
+        User::create($validated);
+
+        return redirect()
+            ->route('admin.users.index')
+            ->with('success', 'User berhasil ditambahkan.');
+    }
+
+    /**
      * Show the form for editing the specified user.
      */
     public function edit(User $user): Response
