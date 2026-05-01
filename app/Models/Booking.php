@@ -8,6 +8,26 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property int $id
+ * @property int $room_id
+ * @property int $user_id
+ * @property string $title
+ * @property string|null $description
+ * @property string $start_time
+ * @property string $end_time
+ * @property string $status
+ * @property string $type
+ * @property string|null $attachment
+ * @property int|null $letter_sequence
+ * @property string|null $letter_number
+ * @property \Illuminate\Support\Carbon|null $letter_generated_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\Room $room
+ * @property-read \App\Models\User $user
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\LogHistory[] $logs
+ */
 class Booking extends Model
 {
     use HasFactory;
