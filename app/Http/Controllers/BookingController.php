@@ -164,7 +164,7 @@ class BookingController extends Controller
         $booking->load(['user', 'room.building.campus']);
 
         $admins = User::query()
-            ->whereIn('role', User::roomAdminRoles())
+            ->where('role', User::ROLE_ADMIN_BAP)
             ->whereNotNull('email')
             ->get();
 

@@ -62,14 +62,14 @@ class BookingRequestedNotification extends Notification
         }
 
         $fromAddress = config('mail.from.address');
-        $fromName = config('mail.from.name', config('app.name'));
+        $fromName = 'Aplikasi Booking Ruangan';
 
         if ($fromAddress) {
             $mail->from($fromAddress, $fromName);
         }
 
         return $mail
-            ->salutation("Hormat kami,\n".$fromName)
+            ->salutation("Hormat kami,\nTim Aplikasi Booking Ruangan")
             ->action('Tinjau Booking', route('admin.bookings.show', $booking))
             ->line('Terima kasih telah mengelola jadwal kampus dengan baik.');
     }

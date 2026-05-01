@@ -170,7 +170,7 @@ class ItemBorrowingController extends Controller
         $itemBorrowing->load(['user', 'items.item']);
 
         // Notify admins
-        $admins = User::whereIn('role', User::itemAdminRoles())
+        $admins = User::where('role', User::ROLE_ADMIN_SARPRAS)
             ->whereNotNull('email')
             ->get();
 
