@@ -34,10 +34,10 @@ class BookingRequestedNotification extends Notification
         $end = $booking->end_time ? Carbon::parse($booking->end_time) : null;
 
         $mail = (new MailMessage())
-            ->subject('New Booking Request: '.$booking->title)
-            ->greeting('Hello Admin,')
-            ->line('A new room booking request was submitted and needs your review.')
-            ->line('Requester: '.$booking->user?->name.' ('.$booking->user?->email.')');
+            ->subject('Pengajuan Booking Ruangan Baru: '.$booking->title)
+            ->greeting('Halo Admin,')
+            ->line('Terdapat pengajuan booking ruangan baru yang memerlukan tinjauan Anda.')
+            ->line('Pemohon: '.$booking->user?->name.' ('.$booking->user?->email.')');
 
         if ($room?->name) {
             $location = $room->name;
@@ -50,15 +50,15 @@ class BookingRequestedNotification extends Notification
                 $location .= ' · '.$campus->name;
             }
 
-            $mail->line('Room: '.$location);
+            $mail->line('Ruangan: '.$location);
         }
 
         if ($start && $end) {
-            $mail->line('Schedule: '.$start->format('d M Y H:i').' - '.$end->format('d M Y H:i'));
+            $mail->line('Jadwal: '.$start->format('d M Y H:i').' - '.$end->format('d M Y H:i'));
         }
 
         if ($booking->description) {
-            $mail->line('Purpose: '.Str::limit($booking->description, 200));
+            $mail->line('Keperluan: '.Str::limit($booking->description, 200));
         }
 
         $fromAddress = config('mail.from.address');
@@ -69,8 +69,8 @@ class BookingRequestedNotification extends Notification
         }
 
         return $mail
-            ->salutation("Regards,\n".$fromName)
-            ->action('Review Booking', route('admin.bookings.show', $booking))
-            ->line('Thank you for keeping our campus schedule running smoothly.');
+            ->salutation("Hormat kami,\n".$fromName)
+            ->action('Tinjau Booking', route('admin.bookings.show', $booking))
+            ->line('Terima kasih telah mengelola jadwal kampus dengan baik.');
     }
 }

@@ -39,14 +39,22 @@ class BookingStatusUpdatedNotification extends Notification
         $start = $booking->start_time ? Carbon::parse($booking->start_time) : null;
         $end = $booking->end_time ? Carbon::parse($booking->end_time) : null;
 
+        // Ubah status ke bahasa Indonesia
+        $statusIndo = match($this->status) {
+            'approved' => 'Disetujui',
+            'rejected' => 'Ditolak',
+            'cancelled' => 'Dibatalkan',
+            default => $status
+        };
+
         $mail = (new MailMessage())
-            ->subject($status.' Booking: '.$booking->title)
-            ->greeting('Hello '.$booking->user?->name.',');
+            ->subject($statusIndo.' Booking: '.$booking->title)
+            ->greeting('Halo '.$booking->user?->name.',');
 
         if ($this->status === 'cancelled') {
-            $mail->line('We regret to inform you that your previously approved booking has been cancelled by the admin due to a higher-priority event.');
+            $mail->line('Dengan menyesal kami informasikan bahwa booking ruangan Anda yang sebelumnya disetujui telah dibatalkan oleh admin karena terdapat kegiatan dengan prioritas lebih tinggi.');
         } else {
-            $mail->line('Your room booking request has been '.$status.'.');
+            $mail->line('Pengajuan booking ruangan Anda telah '.$statusIndo.'.');
         }
 
         if ($room?->name) {
@@ -60,19 +68,19 @@ class BookingStatusUpdatedNotification extends Notification
                 $location .= ' · '.$campus->name;
             }
 
-            $mail->line('Room: '.$location);
+            $mail->line('Ruangan: '.$location);
         }
 
         if ($start && $end) {
-            $mail->line('Schedule: '.$start->format('d M Y H:i').' - '.$end->format('d M Y H:i'));
+            $mail->line('Jadwal: '.$start->format('d M Y H:i').' - '.$end->format('d M Y H:i'));
         }
 
         if ($this->moderatorName) {
-            $mail->line('Reviewed by: '.$this->moderatorName);
+            $mail->line('Diproses oleh: '.$this->moderatorName);
         }
 
         if ($this->notes) {
-            $mail->line('Notes: '.$this->notes);
+            $mail->line('Catatan: '.$this->notes);
         }
 
         $fromAddress = config('mail.from.address');
@@ -83,8 +91,8 @@ class BookingStatusUpdatedNotification extends Notification
         }
 
         return $mail
-            ->salutation("Regards,\n".$fromName)
-            ->action('View your bookings', route('bookings.index'))
-            ->line('Thank you for using '.$fromName.'.');
+            ->salutation("Hormat kami,\n".$fromName)
+            ->action('Lihat Booking Anda', route('bookings.index'))
+            ->line('Terima kasih telah menggunakan '.$fromName.'.');
     }
 }
