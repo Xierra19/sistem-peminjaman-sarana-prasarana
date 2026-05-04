@@ -294,9 +294,9 @@ const aboutBadges = [
 
                 <!-- Copyright -->
                 <div class="mt-8 border-t border-slate-200 pt-6 text-center dark:border-white/10">
-                    <p class="font-medium text-slate-600 dark:text-indigo-100/90">© {{ currentYear }} {{ campusName }}. All rights reserved.</p>
+                    <p class="font-medium text-slate-600 dark:text-indigo-100/90">&copy; {{ currentYear }} {{ campusName }}. All rights reserved.</p>
                     <p class="mt-2 text-xs text-indigo-600 dark:text-indigo-300">
-                        Sistem Reservasi Ruangan & Barang • Laravel v{{ props.laravelVersion }} · PHP v{{ props.phpVersion }}
+                        Sistem Reservasi Ruangan & Barang &bull; Laravel v{{ props.laravelVersion }} &middot; PHP v{{ props.phpVersion }}
                     </p>
                     <p class="mt-1 text-xs text-indigo-600 dark:text-indigo-400">
                         Dikembangkan untuk memenuhi tugas skripsi - Universitas Esa Unggul

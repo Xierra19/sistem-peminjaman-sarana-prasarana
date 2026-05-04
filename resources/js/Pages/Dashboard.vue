@@ -377,19 +377,19 @@ const {
 
     <div class="py-8 sm:py-10">
       <div class="mx-auto space-y-8 px-4 sm:px-6 lg:max-w-7xl lg:px-8">
-        <section class="card-surface bg-gradient-to-br from-blue-50 via-white to-blue-100 p-6">
+        <section class="card-surface bg-gradient-to-br from-blue-50 via-white to-blue-100 p-6 dark:from-slate-800 dark:via-slate-900 dark:to-slate-800">
           <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div class="space-y-3">
-              <p class="text-sm font-semibold text-blue-700">Halo, {{ greetingName }}!</p>
-              <h1 class="text-3xl font-semibold text-slate-900">Temukan Ruangan untuk Kebutuhanmu</h1>
-              <p class="text-sm text-slate-600">
+              <p class="text-sm font-semibold text-blue-700 dark:text-blue-300">Halo, {{ greetingName }}!</p>
+              <h1 class="text-3xl font-semibold text-slate-900 dark:text-white">Temukan Ruangan untuk Kebutuhanmu</h1>
+              <p class="text-sm text-slate-600 dark:text-slate-300">
                 Cari ruangan yang sesuai dengan kapasitas, lokasi, dan jadwal kegiatanmu lalu ajukan booking secara cepat.
               </p>
-              <div class="flex flex-wrap gap-2 text-xs text-slate-600">
-                <span class="inline-flex items-center gap-1 rounded-full bg-white/90 px-3 py-1 font-semibold text-blue-700 shadow-sm">
+              <div class="flex flex-wrap gap-2 text-xs text-slate-600 dark:text-slate-300">
+                <span class="inline-flex items-center gap-1 rounded-full bg-white/90 px-3 py-1 font-semibold text-blue-700 shadow-sm dark:bg-slate-700 dark:text-blue-300">
                   🏢 {{ totalRooms }} Ruangan terdaftar
                 </span>
-                <span class="inline-flex items-center gap-1 rounded-full bg-white/90 px-3 py-1 font-semibold text-blue-700 shadow-sm">
+                <span class="inline-flex items-center gap-1 rounded-full bg-white/90 px-3 py-1 font-semibold text-blue-700 shadow-sm dark:bg-slate-700 dark:text-blue-300">
                   🕑 {{ recentBookingsList.length }} Booking terbaru
                 </span>
               </div>
@@ -403,7 +403,7 @@ const {
               </Link>
               <Link
                 :href="route('bookings.index')"
-                class="inline-flex w-full items-center justify-center rounded-2xl border border-blue-200 bg-white px-5 py-3 text-sm font-semibold text-blue-700 transition hover:border-blue-300 hover:bg-blue-50 sm:w-auto"
+                class="inline-flex w-full items-center justify-center rounded-2xl border border-blue-200 bg-white px-5 py-3 text-sm font-semibold text-blue-700 transition hover:border-blue-300 hover:bg-blue-50 sm:w-auto dark:border-slate-600 dark:bg-slate-700 dark:text-blue-300 dark:hover:border-slate-500 dark:hover:bg-slate-600"
               >
                 Lihat Request Saya
               </Link>
@@ -412,24 +412,24 @@ const {
         </section>
 
         <section class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          <article class="rounded-2xl border border-blue-100 bg-blue-50 p-4 text-blue-900">
-            <p class="text-xs font-semibold uppercase tracking-wide text-blue-500">Total Pengajuan</p>
+          <article class="rounded-2xl border border-blue-100 bg-blue-50 p-4 text-blue-900 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-100">
+            <p class="text-xs font-semibold uppercase tracking-wide text-blue-500 dark:text-blue-300">Total Pengajuan</p>
             <p class="mt-2 text-3xl font-semibold">{{ bookingSummaryData.total }}</p>
           </article>
-          <article class="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-emerald-800">
-            <p class="text-xs font-semibold uppercase tracking-wide text-emerald-500">Disetujui</p>
+          <article class="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-100">
+            <p class="text-xs font-semibold uppercase tracking-wide text-emerald-500 dark:text-emerald-300">Disetujui</p>
             <p class="mt-2 text-3xl font-semibold">{{ bookingSummaryData.approved }}</p>
           </article>
-          <article class="rounded-2xl border border-amber-100 bg-amber-50 p-4 text-amber-800">
-            <p class="text-xs font-semibold uppercase tracking-wide text-amber-500">Menunggu</p>
+          <article class="rounded-2xl border border-amber-100 bg-amber-50 p-4 text-amber-800 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-100">
+            <p class="text-xs font-semibold uppercase tracking-wide text-amber-500 dark:text-amber-300">Menunggu</p>
             <p class="mt-2 text-3xl font-semibold">{{ bookingSummaryData.waiting }}</p>
           </article>
-          <article class="rounded-2xl border border-rose-100 bg-rose-50 p-4 text-rose-800">
-            <p class="text-xs font-semibold uppercase tracking-wide text-rose-500">Ditolak</p>
+          <article class="rounded-2xl border border-rose-100 bg-rose-50 p-4 text-rose-800 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-100">
+            <p class="text-xs font-semibold uppercase tracking-wide text-rose-500 dark:text-rose-300">Ditolak</p>
             <p class="mt-2 text-3xl font-semibold">{{ bookingSummaryData.rejected }}</p>
           </article>
-          <article class="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-slate-800">
-            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Dibatalkan</p>
+          <article class="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-slate-800 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-200">
+            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Dibatalkan</p>
             <p class="mt-2 text-3xl font-semibold">{{ bookingSummaryData.cancelled }}</p>
           </article>
         </section>
@@ -645,7 +645,7 @@ const {
 
           <div
             v-if="!hasSearched"
-            class="mt-6 rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500"
+            class="mt-6 rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800"
           >
             Gunakan filter di atas dan klik tombol Search untuk melihat daftar ruangan yang cocok.
           </div>
@@ -654,13 +654,13 @@ const {
             <article
               v-for="room in sortedRooms"
               :key="room.id"
-              class="flex h-full flex-col justify-between rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"
+              class="flex h-full flex-col justify-between rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg dark:border-slate-700 dark:bg-slate-800"
             >
               <div class="space-y-4">
                 <div class="flex items-start justify-between gap-3">
                   <div>
-                    <h3 class="text-lg font-semibold text-slate-900">{{ room.name }}</h3>
-                    <p class="text-sm text-slate-500">
+                    <h3 class="text-lg font-semibold text-slate-900 dark:text-white">{{ room.name }}</h3>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">
                       {{ room.building?.campus?.name ?? '-' }} - {{ room.building?.name ?? '-' }}
                     </p>
                   </div>
@@ -668,34 +668,34 @@ const {
                     class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide"
                     :class="
                       room.is_available
-                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                        : 'border-rose-200 bg-rose-50 text-rose-700'
+                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
+                        : 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-300'
                     "
                   >
                     {{ room.is_available ? 'Tersedia' : 'Tidak tersedia' }}
                   </span>
                 </div>
 
-                <dl class="grid gap-3 text-sm text-slate-600">
+                <dl class="grid gap-3 text-sm text-slate-600 dark:text-slate-300">
                   <div>
-                    <dt class="font-medium text-slate-700">Kapasitas</dt>
-                    <dd class="mt-1 text-base font-semibold text-slate-900">
+                    <dt class="font-medium text-slate-700 dark:text-slate-200">Kapasitas</dt>
+                    <dd class="mt-1 text-base font-semibold text-slate-900 dark:text-white">
                       {{ room.capacity ?? '-' }} orang
                     </dd>
                   </div>
                   <div>
-                    <dt class="font-medium text-slate-700">Fasilitas</dt>
+                    <dt class="font-medium text-slate-700 dark:text-slate-200">Fasilitas</dt>
                     <dd class="mt-2 flex flex-wrap gap-2">
                       <template v-if="extractFeatures(room.features).length">
                         <span
                           v-for="feature in extractFeatures(room.features)"
                           :key="feature"
-                          class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600"
+                          class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-200"
                         >
                           {{ feature }}
                         </span>
                       </template>
-                      <span v-else class="text-xs text-slate-400">Informasi fasilitas belum tersedia.</span>
+                      <span v-else class="text-xs text-slate-400 dark:text-slate-500">Informasi fasilitas belum tersedia.</span>
                     </dd>
                   </div>
                 </dl>
@@ -704,18 +704,18 @@ const {
               <div class="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <Link
                   :href="route('bookings.create')"
-                  class="inline-flex items-center justify-center rounded-xl border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-50"
+                  class="inline-flex items-center justify-center rounded-xl border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-50 dark:border-slate-600 dark:text-blue-300 dark:hover:bg-slate-700"
                 >
                   Ajukan Booking
                 </Link>
-                <span class="text-xs text-slate-400">Pilih ruangan ini pada formulir booking.</span>
+                <span class="text-xs text-slate-400 dark:text-slate-500">Pilih ruangan ini pada formulir booking.</span>
               </div>
             </article>
           </div>
 
           <div
             v-else
-            class="mt-6 rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500"
+            class="mt-6 rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800"
           >
             Tidak ada ruangan yang cocok dengan filter saat ini. Coba ubah kombinasi filter untuk melihat opsi lainnya.
           </div>

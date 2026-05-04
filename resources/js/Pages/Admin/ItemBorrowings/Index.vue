@@ -2,10 +2,12 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import SortableTh from '@/Components/SortableTh.vue'
 import { Head, Link } from '@inertiajs/vue3'
-import { computed, reactive, ref } from 'vue'
+import { computed, reactive, ref, onMounted, onBeforeUnmount } from 'vue'
 import { usePagination } from '@/Composables/usePagination'
 import { useTableSort } from '@/Composables/useTableSort'
 import { formatToDDMMYY } from '@/Composables/useDateFormatter'
+import flatpickr from 'flatpickr'
+import 'flatpickr/dist/flatpickr.css'
 
 const props = defineProps({
   itemBorrowings: {
@@ -34,13 +36,15 @@ const badgeClasses = {
 
 const statusOptions = ['waiting', 'approved', 'returned', 'rejected', 'cancelled']
 
-// ── Filter state ──────────────────────────────────────────────────────────────
+// ── Filter state ──────────────────────────────────────────────────────
 const filterForm = reactive({
   search: '',
   status: '',
   start_date: '',
   end_date: '',
 })
+
+const datePickers = ref({})
 
 // Applied filters (only updated when user clicks "Terapkan Filter")
 const appliedFilters = reactive({
@@ -59,7 +63,7 @@ const resetFilters = () => {
   Object.assign(appliedFilters, { search: '', status: '', start_date: '', end_date: '' })
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────
 const getItemNames = (borrowing) => {
   if (borrowing.items && borrowing.items.length > 0) {
     return borrowing.items.map((pivot) => pivot.item?.name).filter(Boolean).join(', ')
@@ -165,7 +169,7 @@ const summary = computed(() => {
   }
 })
 
-// ── Sort & pagination ─────────────────────────────────────────────────────────
+// ── Sort & pagination ─────────────────────────────────────────────────
 const {
   sortedItems,
   toggleSort,
@@ -197,6 +201,39 @@ const {
 const perPageOptions = [5, 10, 25, 50]
 
 const formatDate = (value) => formatToDDMMYY(value)
+
+// Inisialisasi Flatpickr
+onMounted(() => {
+  // Flatpickr untuk Tanggal Pengajuan (Dari)
+  const startInput = document.getElementById('item-report-start-date')
+  if (startInput) {
+    datePickers.value.start = flatpickr(startInput, {
+      dateFormat: 'Y-m-d',
+      altInput: true,
+      altFormat: 'd-m-y',
+      onChange: (selectedDates, dateStr) => {
+        filterForm.start_date = dateStr
+      }
+    })
+  }
+
+  // Flatpickr untuk Tanggal Pengajuan (Sampai)
+  const endInput = document.getElementById('item-report-end-date')
+  if (endInput) {
+    datePickers.value.end = flatpickr(endInput, {
+      dateFormat: 'Y-m-d',
+      altInput: true,
+      altFormat: 'd-m-y',
+      onChange: (selectedDates, dateStr) => {
+        filterForm.end_date = dateStr
+      }
+    })
+  }
+})
+
+onBeforeUnmount(() => {
+  Object.values(datePickers.value).forEach(picker => picker?.destroy())
+})
 </script>
 
 <template>
@@ -205,59 +242,59 @@ const formatDate = (value) => formatToDDMMYY(value)
 
     <div class="space-y-6">
       <div>
-        <h1 class="text-2xl font-semibold text-gray-800">Approval Peminjaman Barang</h1>
-        <p class="text-sm text-gray-500">Kelola permintaan peminjaman barang yang masuk.</p>
+        <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Approval Peminjaman Barang</h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400">Kelola permintaan peminjaman barang yang masuk.</p>
       </div>
 
       <!-- Summary Cards -->
       <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Total Data</p>
-          <p class="mt-2 text-2xl font-semibold text-slate-900">{{ summary.total }}</p>
-          <p class="text-xs text-slate-500">Seluruh hasil sesuai filter aktif</p>
+        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+          <p class="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Total Data</p>
+          <p class="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">{{ summary.total }}</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Seluruh hasil sesuai filter aktif</p>
         </div>
-        <div class="rounded-xl border border-amber-200 bg-white p-5 shadow-sm">
-          <p class="text-xs font-medium uppercase tracking-wide text-amber-500">Menunggu</p>
-          <p class="mt-2 text-2xl font-semibold text-amber-600">{{ summary.waiting }}</p>
-          <p class="text-xs text-amber-500">Booking belum diputuskan</p>
+        <div class="rounded-xl border border-amber-200 bg-white p-5 shadow-sm dark:border-amber-800 dark:bg-amber-900/30">
+          <p class="text-xs font-medium uppercase tracking-wide text-amber-500 dark:text-amber-300">Menunggu</p>
+          <p class="mt-2 text-2xl font-semibold text-amber-600 dark:text-amber-400">{{ summary.waiting }}</p>
+          <p class="text-xs text-amber-500 dark:text-amber-400">Booking belum diputuskan</p>
         </div>
-        <div class="rounded-xl border border-emerald-200 bg-white p-5 shadow-sm">
-          <p class="text-xs font-medium uppercase tracking-wide text-emerald-500">Disetujui</p>
-          <p class="mt-2 text-2xl font-semibold text-emerald-600">{{ summary.approved }}</p>
-          <p class="text-xs text-emerald-500">Booking aktif</p>
+        <div class="rounded-xl border border-emerald-200 bg-white p-5 shadow-sm dark:border-emerald-800 dark:bg-emerald-900/30">
+          <p class="text-xs font-medium uppercase tracking-wide text-emerald-500 dark:text-emerald-300">Disetujui</p>
+          <p class="mt-2 text-2xl font-semibold text-emerald-600 dark:text-emerald-400">{{ summary.approved }}</p>
+          <p class="text-xs text-emerald-500 dark:text-emerald-400">Booking aktif</p>
         </div>
-        <div class="rounded-xl border border-blue-200 bg-white p-5 shadow-sm">
-          <p class="text-xs font-medium uppercase tracking-wide text-blue-500">Dikembalikan</p>
-          <p class="mt-2 text-2xl font-semibold text-blue-600">{{ summary.returned }}</p>
-          <p class="text-xs text-blue-500">Barang yang sudah dikembalikan</p>
+        <div class="rounded-xl border border-blue-200 bg-white p-5 shadow-sm dark:border-blue-800 dark:bg-blue-900/30">
+          <p class="text-xs font-medium uppercase tracking-wide text-blue-500 dark:text-blue-300">Dikembalikan</p>
+          <p class="mt-2 text-2xl font-semibold text-blue-600 dark:text-blue-400">{{ summary.returned }}</p>
+          <p class="text-xs text-blue-500 dark:text-blue-400">Barang yang sudah dikembalikan</p>
         </div>
-        <div class="rounded-xl border border-rose-200 bg-white p-5 shadow-sm">
-          <p class="text-xs font-medium uppercase tracking-wide text-rose-500">Ditolak / Batal</p>
-          <p class="mt-2 text-2xl font-semibold text-rose-600">{{ summary.rejected + summary.cancelled }}</p>
-          <p class="text-xs text-rose-500">Termasuk pembatalan admin</p>
+        <div class="rounded-xl border border-rose-200 bg-white p-5 shadow-sm dark:border-rose-800 dark:bg-rose-900/30">
+          <p class="text-xs font-medium uppercase tracking-wide text-rose-500 dark:text-rose-300">Ditolak / Batal</p>
+          <p class="mt-2 text-2xl font-semibold text-rose-600 dark:text-rose-400">{{ summary.rejected + summary.cancelled }}</p>
+          <p class="text-xs text-rose-500 dark:text-rose-400">Termasuk pembatalan admin</p>
         </div>
       </div>
       <!-- End Summary Cards -->
 
       <!-- Filter Panel -->
-      <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+      <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
         <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <div class="flex flex-col gap-2">
-            <label class="text-sm font-medium text-gray-700" for="item-report-search">Pencarian bebas</label>
+            <label class="text-sm font-medium text-slate-700 dark:text-slate-200" for="item-report-search">Pencarian bebas</label>
             <input
               id="item-report-search"
               v-model="filterForm.search"
               type="text"
               placeholder="Nama pemohon, barang, kode…"
-              class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
             />
           </div>
           <div class="flex flex-col gap-2">
-            <label class="text-sm font-medium text-gray-700" for="item-report-status">Status peminjaman</label>
+            <label class="text-sm font-medium text-slate-700 dark:text-slate-200" for="item-report-status">Status peminjaman</label>
             <select
               id="item-report-status"
               v-model="filterForm.status"
-              class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
             >
               <option value="">Semua status</option>
               <option v-for="status in statusOptions" :key="`item-status-${status}`" :value="status">
@@ -266,28 +303,32 @@ const formatDate = (value) => formatToDDMMYY(value)
             </select>
           </div>
           <div class="flex flex-col gap-2">
-            <label class="text-sm font-medium text-gray-700" for="item-report-start-date">Tanggal pengajuan (dari)</label>
+            <label class="text-sm font-medium text-slate-700 dark:text-slate-200" for="item-report-start-date">Tanggal pengajuan (dari)</label>
             <input
               id="item-report-start-date"
               v-model="filterForm.start_date"
-              type="date"
-              class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              type="text"
+              readonly
+              placeholder="Pilih tanggal mulai"
+              class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white cursor-pointer"
             />
           </div>
           <div class="flex flex-col gap-2">
-            <label class="text-sm font-medium text-gray-700" for="item-report-end-date">Tanggal pengajuan (sampai)</label>
+            <label class="text-sm font-medium text-slate-700 dark:text-slate-200" for="item-report-end-date">Tanggal pengajuan (sampai)</label>
             <input
               id="item-report-end-date"
               v-model="filterForm.end_date"
-              type="date"
-              class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              type="text"
+              readonly
+              placeholder="Pilih tanggal selesai"
+              class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white cursor-pointer"
             />
           </div>
         </div>
         <div class="mt-4 flex flex-wrap items-center justify-end gap-3">
           <button
             type="button"
-            class="rounded-md border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 transition hover:border-gray-300 hover:text-gray-800"
+            class="rounded-md border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-800 dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-200"
             @click="resetFilters"
           >
             Reset
@@ -303,32 +344,32 @@ const formatDate = (value) => formatToDDMMYY(value)
       </div>
       <!-- End Filter Panel -->
 
-      <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+      <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
 
         <!-- Card Header -->
-        <div class="flex flex-col gap-3 border-b border-gray-100 px-5 py-4 md:flex-row md:items-center md:justify-between">
-          <div class="text-sm font-semibold text-gray-700">Daftar Permintaan Masuk</div>
-          <div class="flex items-center justify-end gap-3 text-sm text-gray-600">
-            <label class="font-medium text-gray-700" for="admin-item-borrowings-rows">Rows per page</label>
-              <select
-                id="admin-item-borrowings-rows"
-                v-model.number="rowsPerPage"
-                class="w-20 rounded border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              >
-                <option v-for="option in perPageOptions" :key="option" :value="option">
-                  {{ option }}
-                </option>
-              </select>
+        <div class="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 md:flex-row md:items-center md:justify-between dark:border-slate-700">
+          <div class="text-sm font-semibold text-slate-700 dark:text-slate-200">Daftar Permintaan Masuk</div>
+          <div class="flex items-center justify-end gap-3 text-sm text-slate-600 dark:text-slate-300">
+            <label class="font-medium text-slate-700 dark:text-slate-200" for="admin-item-borrowings-rows">Rows per page</label>
+            <select
+              id="admin-item-borrowings-rows"
+              v-model.number="rowsPerPage"
+              class="w-20 rounded border border-slate-300 bg-white px-3 py-1.5 pr-8 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+            >
+              <option v-for="option in perPageOptions" :key="option" :value="option">
+                {{ option }}
+              </option>
+            </select>
           </div>
         </div>
         <!-- End Card Header -->
 
         <!-- Table -->
-        <table class="min-w-full divide-y divide-gray-200 text-sm">
-          <thead class="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
+        <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-700">
+          <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-700 dark:text-slate-300">
             <tr>
               <SortableTh
-                class="px-5 py-3 text-left"
+                class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300"
                 column="title"
                 label="Keperluan"
                 :direction="sortDirection('title')"
@@ -336,7 +377,7 @@ const formatDate = (value) => formatToDDMMYY(value)
                 @toggle="toggleSort"
               />
               <SortableTh
-                class="px-5 py-3 text-left"
+                class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300"
                 column="applicant"
                 label="Pemohon"
                 :direction="sortDirection('applicant')"
@@ -344,7 +385,7 @@ const formatDate = (value) => formatToDDMMYY(value)
                 @toggle="toggleSort"
               />
               <SortableTh
-                class="px-5 py-3 text-left"
+                class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300"
                 column="item"
                 label="Barang"
                 :direction="sortDirection('item')"
@@ -352,7 +393,7 @@ const formatDate = (value) => formatToDDMMYY(value)
                 @toggle="toggleSort"
               />
               <SortableTh
-                class="px-5 py-3 text-left"
+                class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300"
                 column="quantity"
                 label="Qty"
                 :direction="sortDirection('quantity')"
@@ -360,43 +401,43 @@ const formatDate = (value) => formatToDDMMYY(value)
                 @toggle="toggleSort"
               />
               <SortableTh
-                class="px-5 py-3 text-left"
+                class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300"
                 column="borrow_date"
                 label="Periode"
                 :direction="sortDirection('borrow_date')"
                 :aria-sort="ariaSortValue('borrow_date')"
                 @toggle="toggleSort"
               />
-              <th class="px-5 py-3 text-center">Status</th>
+              <th class="px-5 py-3 text-center text-slate-500 dark:text-slate-300">Status</th>
               <th class="px-5 py-3"></th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-100 text-gray-700">
-            <tr v-for="borrowing in paginatedItems" :key="borrowing.id" class="hover:bg-gray-50">
+          <tbody class="divide-y divide-slate-100 text-slate-700 dark:divide-slate-700 dark:text-slate-300">
+            <tr v-for="borrowing in paginatedItems" :key="borrowing.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
               <td class="px-5 py-4">
-                <div class="font-medium text-gray-900">{{ borrowing.title }}</div>
-                <div class="text-xs text-gray-500">{{ borrowing.description || 'Tidak ada deskripsi.' }}</div>
+                <div class="font-medium text-slate-900 dark:text-white">{{ borrowing.title }}</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400">{{ borrowing.description || 'Tidak ada deskripsi.' }}</div>
               </td>
               <td class="px-5 py-4">
-                <div class="font-medium text-gray-800">{{ borrowing.user?.name ?? '-' }}</div>
-                <div class="text-xs text-gray-500">{{ borrowing.user?.email ?? '-' }}</div>
+                <div class="font-medium text-slate-800 dark:text-slate-200">{{ borrowing.user?.name ?? '-' }}</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400">{{ borrowing.user?.email ?? '-' }}</div>
               </td>
               <td class="px-5 py-4">
-                <div class="font-medium text-gray-800">{{ getItemNames(borrowing) }}</div>
-                <div class="text-xs text-gray-500">{{ getItemCodes(borrowing) }} • {{ getItemCategories(borrowing) }}</div>
-                <div v-if="borrowing.items && borrowing.items.length > 1" class="mt-1 text-xs text-gray-400">
+                <div class="font-medium text-slate-800 dark:text-slate-200">{{ getItemNames(borrowing) }}</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400">{{ getItemCodes(borrowing) }} • {{ getItemCategories(borrowing) }}</div>
+                <div v-if="borrowing.items && borrowing.items.length > 1" class="mt-1 text-xs text-slate-400 dark:text-slate-500">
                   {{ borrowing.items.length }} jenis barang
                 </div>
               </td>
               <td class="px-5 py-4 text-sm">{{ getTotalQuantity(borrowing) }}</td>
               <td class="px-5 py-4 text-sm">
-                <div>Pinjam: <span class="font-medium text-gray-800">{{ formatDate(getBorrowDates(borrowing)) }}</span></div>
-                <div>Kembali: <span class="font-medium text-gray-800">{{ formatDate(getReturnDates(borrowing)) }}</span></div>
+                <div>Pinjam: <span class="font-medium text-slate-800 dark:text-slate-200">{{ formatDate(getBorrowDates(borrowing)) }}</span></div>
+                <div>Kembali: <span class="font-medium text-slate-800 dark:text-slate-200">{{ formatDate(getReturnDates(borrowing)) }}</span></div>
               </td>
               <td class="px-5 py-4 text-center">
                 <span
                   class="inline-flex rounded-full px-3 py-1 text-xs font-semibold"
-                  :class="badgeClasses[borrowing.status] ?? 'bg-gray-100 text-gray-600'"
+                  :class="badgeClasses[borrowing.status] ?? 'bg-slate-100 text-slate-600 border-slate-200'"
                 >
                   {{ statusLabels[borrowing.status] ?? borrowing.status }}
                 </span>
@@ -404,14 +445,14 @@ const formatDate = (value) => formatToDDMMYY(value)
               <td class="px-5 py-4 text-right">
                 <Link
                   :href="route('admin.item-borrowings.show', borrowing.id)"
-                  class="inline-flex items-center rounded-md border border-blue-200 px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50"
+                  class="inline-flex items-center rounded-md border border-blue-200 px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 dark:border-slate-600 dark:text-blue-300 dark:hover:border-slate-500 dark:hover:bg-slate-600"
                 >
                   Lihat Detail
                 </Link>
               </td>
             </tr>
             <tr v-if="!borrowingsList.length">
-              <td colspan="7" class="px-5 py-10 text-center text-sm text-gray-400">
+              <td colspan="7" class="px-5 py-10 text-center text-sm text-slate-400 dark:text-slate-500">
                 Belum ada data peminjaman barang.
               </td>
             </tr>
@@ -420,7 +461,7 @@ const formatDate = (value) => formatToDDMMYY(value)
         <!-- End Table -->
 
         <!-- Pagination -->
-        <div class="flex flex-col gap-3 border-t border-gray-100 px-5 py-4 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex flex-col gap-3 border-t border-slate-100 px-5 py-4 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:text-slate-300">
           <div>
             <span v-if="pageMeta.of">Menampilkan {{ pageMeta.from }}-{{ pageMeta.to }} dari {{ pageMeta.of }} data</span>
             <span v-else>Menampilkan 0 data</span>
@@ -428,17 +469,17 @@ const formatDate = (value) => formatToDDMMYY(value)
           <div class="flex items-center gap-2">
             <button
               type="button"
-              class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-              :disabled="currentPage === 1 || !borrowingsList.length"
+              class="rounded border border-slate-300 px-3 py-1 text-sm text-slate-600 transition hover:border-slate-400 hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-200"
               @click="changePage(1)"
+              :disabled="currentPage === 1 || !borrowingsList.length"
             >
               «
             </button>
             <button
               type="button"
-              class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-              :disabled="currentPage === 1 || !borrowingsList.length"
+              class="rounded border border-slate-300 px-3 py-1 text-sm text-slate-600 transition hover:border-slate-400 hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-200"
               @click="changePage(currentPage - 1)"
+              :disabled="currentPage === 1 || !borrowingsList.length"
             >
               ‹
             </button>
@@ -451,8 +492,7 @@ const formatDate = (value) => formatToDDMMYY(value)
                 :class="
                   currentPage === page
                     ? 'border-blue-500 bg-blue-500 text-white'
-                    : 'border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600'
-                "
+                    : 'border-slate-300 text-slate-600 hover:border-slate-400 hover:text-slate-600 dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-200'"
                 @click="changePage(page)"
               >
                 {{ page }}
@@ -460,26 +500,24 @@ const formatDate = (value) => formatToDDMMYY(value)
             </template>
             <button
               type="button"
-              class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-              :disabled="currentPage === pages.length || !borrowingsList.length"
+              class="rounded border border-slate-300 px-3 py-1 text-sm text-slate-600 transition hover:border-slate-400 hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-200"
               @click="changePage(currentPage + 1)"
+              :disabled="currentPage === pages.length || !borrowingsList.length"
             >
               ›
             </button>
             <button
               type="button"
-              class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-              :disabled="currentPage === pages.length || !borrowingsList.length"
+              class="rounded border border-slate-300 px-3 py-1 text-sm text-slate-600 transition hover:border-slate-400 hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-200"
               @click="changePage(pages.length)"
+              :disabled="currentPage === pages.length || !borrowingsList.length"
             >
               »
             </button>
           </div>
         </div>
         <!-- End Pagination -->
-
       </div>
     </div>
-
   </AuthenticatedLayout>
 </template>

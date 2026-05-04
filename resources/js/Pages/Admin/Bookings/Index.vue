@@ -4,8 +4,10 @@ import SortableTh from '@/Components/SortableTh.vue'
 import { usePagination } from '@/Composables/usePagination'
 import { useTableSort } from '@/Composables/useTableSort'
 import { Head, Link } from '@inertiajs/vue3'
-import { computed, reactive } from 'vue'
+import { computed, reactive, ref, onMounted, onBeforeUnmount } from 'vue'
 import { formatDateTimeToDDMMYY } from '@/Composables/useDateFormatter'
+import flatpickr from 'flatpickr'
+import 'flatpickr/dist/flatpickr.css'
 
 const props = defineProps({
   bookings: {
@@ -35,7 +37,7 @@ const normalizeStatus = (status) => {
 
 const formatDateTime = (value) => formatDateTimeToDDMMYY(value)
 
-// ── Filter state ──────────────────────────────────────────────────────────────
+// ── Filter state ──────────────────────────────────────────────────────
 const filterForm = reactive({
   search: '',
   status: '',
@@ -49,6 +51,8 @@ const activeFilter = reactive({
   start_date: '',
   end_date: '',
 })
+
+const datePickers = ref({})
 
 const statusOptions = Object.keys(statusLabels)
 
@@ -81,7 +85,7 @@ const summary = computed(() => {
   }
 })
 
-// ── Filtered list ─────────────────────────────────────────────────────────────
+// ── Filtered list ─────────────────────────────────────────────────────
 const bookingsList = computed(() => {
   let list = allBookings.value
 
@@ -114,7 +118,7 @@ const bookingsList = computed(() => {
   return list
 })
 
-// ── Sort & pagination ─────────────────────────────────────────────────────────
+// ── Sort & pagination ─────────────────────────────────────────────────
 const {
   sortedItems: sortedBookings,
   toggleSort: toggleAdminBookingSort,
@@ -139,6 +143,39 @@ const {
   changePage,
 } = usePagination(sortedBookings)
 
+// Inisialisasi Flatpickr
+onMounted(() => {
+  // Flatpickr untuk Tanggal Pengajuan (Dari)
+  const startInput = document.getElementById('report-start-date')
+  if (startInput) {
+    datePickers.value.start = flatpickr(startInput, {
+      dateFormat: 'Y-m-d',
+      altInput: true,
+      altFormat: 'd-m-y',
+      onChange: (selectedDates, dateStr) => {
+        filterForm.start_date = dateStr
+      }
+    })
+  }
+
+  // Flatpickr untuk Tanggal Pengajuan (Sampai)
+  const endInput = document.getElementById('report-end-date')
+  if (endInput) {
+    datePickers.value.end = flatpickr(endInput, {
+      dateFormat: 'Y-m-d',
+      altInput: true,
+      altFormat: 'd-m-y',
+      onChange: (selectedDates, dateStr) => {
+        filterForm.end_date = dateStr
+      }
+    })
+  }
+})
+
+onBeforeUnmount(() => {
+  Object.values(datePickers.value).forEach(picker => picker?.destroy())
+})
+
 const perPageOptions = [5, 10, 25, 50]
 </script>
 
@@ -148,53 +185,53 @@ const perPageOptions = [5, 10, 25, 50]
 
     <div class="space-y-6">
       <div>
-        <h1 class="text-2xl font-semibold text-gray-800">Approval Booking Ruangan</h1>
-        <p class="text-sm text-gray-500">Kelola permintaan booking ruangan yang masuk.</p>
+        <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Approval Booking Ruangan</h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400">Kelola permintaan booking ruangan yang masuk.</p>
       </div>
 
       <!-- Summary cards -->
       <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Total Data</p>
-          <p class="mt-2 text-2xl font-semibold text-slate-900">{{ summary.total }}</p>
-          <p class="text-xs text-slate-500">Seluruh hasil sesuai filter aktif</p>
+        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+          <p class="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Total Data</p>
+          <p class="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">{{ summary.total }}</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Seluruh hasil sesuai filter aktif</p>
         </div>
-        <div class="rounded-xl border border-amber-200 bg-white p-5 shadow-sm">
-          <p class="text-xs font-medium uppercase tracking-wide text-amber-500">Menunggu</p>
-          <p class="mt-2 text-2xl font-semibold text-amber-600">{{ summary.waiting }}</p>
-          <p class="text-xs text-amber-500">Booking belum diputuskan</p>
+        <div class="rounded-xl border border-amber-200 bg-white p-5 shadow-sm dark:border-amber-800 dark:bg-amber-900/30">
+          <p class="text-xs font-medium uppercase tracking-wide text-amber-500 dark:text-amber-300">Menunggu</p>
+          <p class="mt-2 text-2xl font-semibold text-amber-600 dark:text-amber-400">{{ summary.waiting }}</p>
+          <p class="text-xs text-amber-500 dark:text-amber-400">Booking belum diputuskan</p>
         </div>
-        <div class="rounded-xl border border-emerald-200 bg-white p-5 shadow-sm">
-          <p class="text-xs font-medium uppercase tracking-wide text-emerald-500">Disetujui</p>
-          <p class="mt-2 text-2xl font-semibold text-emerald-600">{{ summary.approved }}</p>
-          <p class="text-xs text-emerald-500">Booking aktif</p>
+        <div class="rounded-xl border border-emerald-200 bg-white p-5 shadow-sm dark:border-emerald-800 dark:bg-emerald-900/30">
+          <p class="text-xs font-medium uppercase tracking-wide text-emerald-500 dark:text-emerald-300">Disetujui</p>
+          <p class="mt-2 text-2xl font-semibold text-emerald-600 dark:text-emerald-400">{{ summary.approved }}</p>
+          <p class="text-xs text-emerald-500 dark:text-emerald-400">Booking aktif</p>
         </div>
-        <div class="rounded-xl border border-rose-200 bg-white p-5 shadow-sm">
-          <p class="text-xs font-medium uppercase tracking-wide text-rose-500">Ditolak / Batal</p>
-          <p class="mt-2 text-2xl font-semibold text-rose-600">{{ summary.rejected + summary.cancelled }}</p>
-          <p class="text-xs text-rose-500">Termasuk pembatalan admin</p>
+        <div class="rounded-xl border border-rose-200 bg-white p-5 shadow-sm dark:border-rose-800 dark:bg-rose-900/30">
+          <p class="text-xs font-medium uppercase tracking-wide text-rose-500 dark:text-rose-300">Ditolak / Batal</p>
+          <p class="mt-2 text-2xl font-semibold text-rose-600 dark:text-rose-400">{{ summary.rejected + summary.cancelled }}</p>
+          <p class="text-xs text-rose-500 dark:text-rose-400">Termasuk pembatalan admin</p>
         </div>
       </div>
 
       <!-- Filter panel -->
-      <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+      <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
         <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <div class="flex flex-col gap-2">
-            <label for="report-search" class="text-sm font-medium text-gray-700">Pencarian bebas</label>
+            <label class="text-sm font-medium text-slate-700 dark:text-slate-200" for="report-search">Pencarian bebas</label>
             <input
               id="report-search"
               v-model="filterForm.search"
               type="text"
               placeholder="Nama pemohon, email, ruangan…"
-              class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
             />
           </div>
           <div class="flex flex-col gap-2">
-            <label for="report-status" class="text-sm font-medium text-gray-700">Status peminjaman</label>
+            <label class="text-sm font-medium text-slate-700 dark:text-slate-200" for="report-status">Status peminjaman</label>
             <select
               id="report-status"
               v-model="filterForm.status"
-              class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
             >
               <option value="">Semua status</option>
               <option v-for="status in statusOptions" :key="`status-${status}`" :value="status">
@@ -203,28 +240,32 @@ const perPageOptions = [5, 10, 25, 50]
             </select>
           </div>
           <div class="flex flex-col gap-2">
-            <label for="report-start-date" class="text-sm font-medium text-gray-700">Tanggal pengajuan (dari)</label>
+            <label class="text-sm font-medium text-slate-700 dark:text-slate-200" for="report-start-date">Tanggal pengajuan (dari)</label>
             <input
               id="report-start-date"
               v-model="filterForm.start_date"
-              type="date"
-              class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              type="text"
+              readonly
+              placeholder="Pilih tanggal mulai"
+              class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white cursor-pointer"
             />
           </div>
           <div class="flex flex-col gap-2">
-            <label for="report-end-date" class="text-sm font-medium text-gray-700">Tanggal pengajuan (sampai)</label>
+            <label class="text-sm font-medium text-slate-700 dark:text-slate-200" for="report-end-date">Tanggal pengajuan (sampai)</label>
             <input
               id="report-end-date"
               v-model="filterForm.end_date"
-              type="date"
-              class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              type="text"
+              readonly
+              placeholder="Pilih tanggal selesai"
+              class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white cursor-pointer"
             />
           </div>
         </div>
         <div class="mt-4 flex flex-wrap items-center justify-end gap-3">
           <button
             type="button"
-            class="rounded-md border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 transition hover:border-gray-300 hover:text-gray-800"
+            class="rounded-md border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-800 dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-200"
             @click="resetFilters"
           >
             Reset
@@ -240,19 +281,19 @@ const perPageOptions = [5, 10, 25, 50]
       </div>
 
       <!-- Table -->
-      <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+      <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
         <div
-          class="flex flex-col gap-3 border-b border-gray-100 px-5 py-4 md:flex-row md:items-center md:justify-between"
+          class="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 md:flex-row md:items-center md:justify-between dark:border-slate-700"
         >
-          <div class="text-sm font-semibold text-gray-700">Daftar Booking Masuk</div>
+          <div class="text-sm font-semibold text-slate-700 dark:text-slate-200">Daftar Booking Masuk</div>
           <div class="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
-            <div class="flex items-center justify-end gap-3 text-sm text-gray-600">
-              <label class="font-medium text-gray-700" for="admin-bookings-rows">Rows per page</label>
+            <div class="flex items-center justify-end gap-3 text-sm text-slate-600 dark:text-slate-300">
+              <label class="font-medium text-slate-700 dark:text-slate-200" for="admin-bookings-rows">Rows per page</label>
               <div class="relative">
                 <select
                   id="admin-bookings-rows"
                   v-model.number="rowsPerPage"
-                  class="w-20 rounded border border-gray-300 bg-white px-3 py-1.5 pr-8 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  class="w-20 rounded border border-slate-300 bg-white px-3 py-1.5 pr-8 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
                 >
                   <option v-for="option in perPageOptions" :key="option" :value="option">
                     {{ option }}
@@ -263,11 +304,11 @@ const perPageOptions = [5, 10, 25, 50]
           </div>
         </div>
 
-        <table class="min-w-full divide-y divide-gray-200 text-sm">
-          <thead class="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
+        <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-700">
+          <thead class="bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500 dark:bg-slate-700 dark:text-slate-300">
             <tr>
               <SortableTh
-                class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
+                class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300"
                 column="title"
                 label="Judul"
                 :direction="adminBookingSortDirection('title')"
@@ -275,7 +316,7 @@ const perPageOptions = [5, 10, 25, 50]
                 @toggle="toggleAdminBookingSort"
               />
               <SortableTh
-                class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
+                class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300"
                 column="applicant"
                 label="Pemohon"
                 :direction="adminBookingSortDirection('applicant')"
@@ -283,7 +324,7 @@ const perPageOptions = [5, 10, 25, 50]
                 @toggle="toggleAdminBookingSort"
               />
               <SortableTh
-                class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
+                class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300"
                 column="room"
                 label="Ruangan"
                 :direction="adminBookingSortDirection('room')"
@@ -291,7 +332,7 @@ const perPageOptions = [5, 10, 25, 50]
                 @toggle="toggleAdminBookingSort"
               />
               <SortableTh
-                class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
+                class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300"
                 column="schedule"
                 label="Jadwal"
                 :direction="adminBookingSortDirection('schedule')"
@@ -299,7 +340,7 @@ const perPageOptions = [5, 10, 25, 50]
                 @toggle="toggleAdminBookingSort"
               />
               <SortableTh
-                class="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500"
+                class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300"
                 column="status"
                 label="Status"
                 :direction="adminBookingSortDirection('status')"
@@ -307,33 +348,33 @@ const perPageOptions = [5, 10, 25, 50]
                 align="center"
                 @toggle="toggleAdminBookingSort"
               />
-              <th class="px-5 py-3"></th>
+              <th class="px-5 py-3 text-slate-500 dark:text-slate-300"></th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-100 text-gray-700">
-            <tr v-for="booking in paginatedBookings" :key="booking.id" class="hover:bg-gray-50">
+          <tbody class="divide-y divide-slate-100 text-slate-700 dark:divide-slate-700 dark:text-slate-300">
+            <tr v-for="booking in paginatedBookings" :key="booking.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
               <td class="px-5 py-4">
-                <div class="font-medium text-gray-900">{{ booking.title }}</div>
-                <div class="text-xs text-gray-500">{{ booking.description || 'Tidak ada deskripsi.' }}</div>
+                <div class="font-medium text-slate-900 dark:text-white">{{ booking.title }}</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400">{{ booking.description || 'Tidak ada deskripsi.' }}</div>
               </td>
               <td class="px-5 py-4 text-sm">
-                <div class="font-medium text-gray-800">{{ booking.user?.name ?? '-' }}</div>
-                <div class="text-xs text-gray-500">{{ booking.user?.email ?? '-' }}</div>
+                <div class="font-medium text-slate-800 dark:text-slate-200">{{ booking.user?.name ?? '-' }}</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400">{{ booking.user?.email ?? '-' }}</div>
               </td>
               <td class="px-5 py-4">
-                <div class="font-medium text-gray-800">{{ booking.room?.name ?? '-' }}</div>
-                <div class="text-xs text-gray-500">
+                <div class="font-medium text-slate-800 dark:text-slate-200">{{ booking.room?.name ?? '-' }}</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400">
                   {{ booking.room?.building?.name ?? '-' }} - {{ booking.room?.building?.campus?.name ?? '-' }}
                 </div>
               </td>
               <td class="px-5 py-4 text-sm">
-                <div>Mulai: <span class="font-medium text-gray-800">{{ formatDateTime(booking.start_time) }}</span></div>
-                <div>Selesai: <span class="font-medium text-gray-800">{{ formatDateTime(booking.end_time) }}</span></div>
+                <div>Mulai: <span class="font-medium text-slate-800 dark:text-slate-200">{{ formatDateTime(booking.start_time) }}</span></div>
+                <div>Selesai: <span class="font-medium text-slate-800 dark:text-slate-200">{{ formatDateTime(booking.end_time) }}</span></div>
               </td>
               <td class="px-5 py-4 text-center">
                 <span
                   class="inline-flex rounded-full px-3 py-1 text-xs font-semibold"
-                  :class="badgeClasses[booking.normalizedStatus] ?? 'bg-gray-100 text-gray-600'"
+                  :class="badgeClasses[booking.normalizedStatus] ?? 'bg-slate-100 text-slate-600 border-slate-200'"
                 >
                   {{ statusLabels[booking.normalizedStatus] ?? (booking.normalizedStatus || booking.status) }}
                 </span>
@@ -341,14 +382,14 @@ const perPageOptions = [5, 10, 25, 50]
               <td class="px-5 py-4 text-right">
                 <Link
                   :href="route('admin.bookings.show', booking.id)"
-                  class="inline-flex items-center rounded-md border border-blue-200 px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50"
+                  class="inline-flex items-center rounded-md border border-blue-200 px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 dark:border-slate-600 dark:text-blue-300 dark:hover:border-slate-500 dark:hover:bg-slate-600"
                 >
                   Lihat Detail
                 </Link>
               </td>
             </tr>
             <tr v-if="!bookingsList.length">
-              <td colspan="6" class="px-5 py-10 text-center text-sm text-gray-400">
+              <td colspan="6" class="px-5 py-10 text-center text-sm text-slate-400 dark:text-slate-500">
                 Belum ada data booking.
               </td>
             </tr>
@@ -356,7 +397,7 @@ const perPageOptions = [5, 10, 25, 50]
         </table>
 
         <div
-          class="flex flex-col gap-3 border-t border-gray-100 px-5 py-4 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-between"
+          class="flex flex-col gap-3 border-t border-slate-100 px-5 py-4 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700"
         >
           <div>
             <span v-if="pageMeta.of">Menampilkan {{ pageMeta.from }}-{{ pageMeta.to }} dari {{ pageMeta.of }} data</span>
@@ -365,7 +406,7 @@ const perPageOptions = [5, 10, 25, 50]
           <div class="flex items-center gap-2">
             <button
               type="button"
-              class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+              class="rounded border border-slate-300 px-3 py-1 text-sm text-slate-600 transition hover:border-slate-400 hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-200"
               @click="changePage(1)"
               :disabled="currentPage === 1 || !bookingsList.length"
             >
@@ -373,7 +414,7 @@ const perPageOptions = [5, 10, 25, 50]
             </button>
             <button
               type="button"
-              class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+              class="rounded border border-slate-300 px-3 py-1 text-sm text-slate-600 transition hover:border-slate-400 hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-200"
               @click="changePage(currentPage - 1)"
               :disabled="currentPage === 1 || !bookingsList.length"
             >
@@ -388,8 +429,7 @@ const perPageOptions = [5, 10, 25, 50]
                 :class="
                   currentPage === page
                     ? 'border-blue-500 bg-blue-500 text-white'
-                    : 'border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600'
-                "
+                    : 'border-slate-300 text-slate-600 hover:border-slate-400 hover:text-slate-600 dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-200'"
                 @click="changePage(page)"
               >
                 {{ page }}
@@ -397,7 +437,7 @@ const perPageOptions = [5, 10, 25, 50]
             </template>
             <button
               type="button"
-              class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+              class="rounded border border-slate-300 px-3 py-1 text-sm text-slate-600 transition hover:border-slate-400 hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-200"
               @click="changePage(currentPage + 1)"
               :disabled="currentPage === pages.length || !bookingsList.length"
             >
@@ -405,7 +445,7 @@ const perPageOptions = [5, 10, 25, 50]
             </button>
             <button
               type="button"
-              class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+              class="rounded border border-slate-300 px-3 py-1 text-sm text-slate-600 transition hover:border-slate-400 hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-200"
               @click="changePage(pages.length)"
               :disabled="currentPage === pages.length || !bookingsList.length"
             >
