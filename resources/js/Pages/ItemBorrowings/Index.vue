@@ -338,6 +338,16 @@ const cancelBorrowing = (borrowing) => {
                     >
                       Lihat Detail
                     </Link>
+                    <template v-if="borrowing.status === 'approved' && borrowing.signed_letter">
+                      <a
+                        :href="route('item-borrowings.signed-letter', borrowing.id)"
+                        target="_blank"
+                        rel="noopener"
+                        class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+                      >
+                        Download Surat
+                      </a>
+                    </template>
                     <button
                       v-if="canCancel(borrowing)"
                       type="button"
