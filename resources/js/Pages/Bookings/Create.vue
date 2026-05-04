@@ -407,33 +407,33 @@ onBeforeUnmount(() => {
     <Head title="Request Booking" />
 
     <div class="mx-auto max-w-5xl space-y-6 px-4 py-6 sm:px-0">
-      <div class="card-surface space-y-6 p-5 sm:p-6">
-        <div class="border-b border-slate-200 pb-5">
-          <h1 class="text-2xl font-semibold text-slate-900">Request Booking Ruangan</h1>
-          <p class="mt-1 text-sm text-slate-500">
-            Pilih kampus, gedung, dan ruangan yang tersedia lalu tentukan jadwal penggunaan.
-          </p>
-        </div>
+        <div class="card-surface space-y-6 p-5 sm:p-6 dark:bg-slate-800 dark:border-slate-700">
+            <div class="border-b border-slate-200 pb-5 dark:border-slate-700">
+                <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Request Booking Ruangan</h1>
+                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    Pilih kampus, gedung, dan ruangan yang tersedia lalu tentukan jadwal penggunaan.
+                </p>
+            </div>
 
-        <div class="grid gap-3 rounded-2xl bg-slate-50 p-4 text-xs text-slate-600 sm:grid-cols-3">
+        <div class="grid gap-3 rounded-2xl bg-slate-50 p-4 text-xs text-slate-600 sm:grid-cols-3 dark:bg-slate-700/50 dark:text-slate-300">
           <div class="flex items-start gap-3">
             <span class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">1</span>
             <div>
-              <p class="font-semibold text-slate-800">Pilih Lokasi</p>
+              <p class="font-semibold text-slate-800 dark:text-slate-200">Pilih Lokasi</p>
               <p>Pilih kampus, gedung, dan ruangan yang tersedia.</p>
             </div>
           </div>
           <div class="flex items-start gap-3">
             <span class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">2</span>
             <div>
-              <p class="font-semibold text-slate-800">Atur Jadwal</p>
+              <p class="font-semibold text-slate-800 dark:text-slate-200">Atur Jadwal</p>
               <p>Tentukan tanggal, jam mulai, dan selesai.</p>
             </div>
           </div>
           <div class="flex items-start gap-3">
             <span class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">3</span>
             <div>
-              <p class="font-semibold text-slate-800">Lengkapi Detail</p>
+              <p class="font-semibold text-slate-800 dark:text-slate-200">Lengkapi Detail</p>
               <p>Isi deskripsi kegiatan dan lampiran jika diperlukan.</p>
             </div>
           </div>
@@ -442,16 +442,17 @@ onBeforeUnmount(() => {
         <form @submit.prevent="submit" class="space-y-8">
           <div class="grid gap-6 md:grid-cols-2">
             <div class="space-y-2">
-              <label class="block text-sm font-medium text-slate-700">Kampus</label>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Kampus</label>
               <select
                 v-model="form.campus_id"
-                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
               >
-                <option value="" disabled>Pilih kampus</option>
+                <option value="" disabled class="dark:bg-slate-700">Pilih kampus</option>
                 <option
                   v-for="campus in props.campuses"
                   :key="campus.id"
                   :value="campus.id"
+                  class="dark:bg-slate-700"
                 >
                   {{ campus.name }}
                 </option>
@@ -460,19 +461,20 @@ onBeforeUnmount(() => {
             </div>
 
             <div class="space-y-2">
-              <label class="block text-sm font-medium text-slate-700">Gedung</label>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Gedung</label>
               <select
                 v-model="form.building_id"
                 :disabled="!filteredBuildings.length"
-                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-slate-100 dark:border-slate-600 dark:bg-slate-700 dark:text-white disabled:dark:bg-slate-600"
               >
-                <option value="" disabled>
+                <option value="" disabled class="dark:bg-slate-700">
                   {{ filteredBuildings.length ? 'Pilih gedung' : 'Pilih kampus terlebih dahulu' }}
                 </option>
                 <option
                   v-for="building in filteredBuildings"
                   :key="building.id"
                   :value="building.id"
+                  class="dark:bg-slate-700"
                 >
                   {{ building.name }}
                 </option>
@@ -481,13 +483,13 @@ onBeforeUnmount(() => {
             </div>
 
             <div class="space-y-2 md:col-span-2">
-              <label class="block text-sm font-medium text-slate-700">Ruangan</label>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Ruangan</label>
               <select
                 v-model="form.room_id"
                 :disabled="!filteredRooms.length"
-                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-slate-100 dark:border-slate-600 dark:bg-slate-700 dark:text-white disabled:dark:bg-slate-600"
               >
-                <option value="" disabled>
+                <option value="" disabled class="dark:bg-slate-700">
                   {{ filteredRooms.length ? 'Pilih ruangan' : 'Pilih gedung untuk melihat ruangan' }}
                 </option>
                 <option
@@ -495,13 +497,14 @@ onBeforeUnmount(() => {
                   :key="room.id"
                   :value="room.id"
                   :disabled="!room.is_available"
+                  class="dark:bg-slate-700"
                 >
                   {{ room.name }} — Kapasitas {{ room.capacity }}
                   {{ room.is_available ? '' : '(Tidak tersedia)' }}
                 </option>
               </select>
               <div v-if="form.errors.room_id" class="text-sm text-red-500">{{ form.errors.room_id }}</div>
-              <p v-if="!filteredRooms.length && form.building_id" class="text-xs text-slate-400">
+              <p v-if="!filteredRooms.length && form.building_id" class="text-xs text-slate-400 dark:text-slate-400">
                 Tidak ada ruangan yang terdaftar pada gedung ini.
               </p>
             </div>
@@ -509,22 +512,22 @@ onBeforeUnmount(() => {
 
           <div
             v-if="selectedRoom"
-            class="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm text-slate-600"
+            class="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-700/50 dark:text-slate-300"
           >
             <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
-                <p class="text-sm font-semibold text-slate-700">Detail Ruangan</p>
-                <p class="mt-1">Kampus: <span class="font-medium text-slate-800">{{ currentCampus?.name ?? '-' }}</span></p>
-                <p>Gedung: <span class="font-medium text-slate-800">{{ selectedBuilding?.name ?? '-' }}</span></p>
-                <p>Ruangan: <span class="font-medium text-slate-800">{{ selectedRoom.name }}</span></p>
-                <p>Kapasitas: <span class="font-medium text-slate-800">{{ selectedRoom.capacity }} orang</span></p>
+                <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">Detail Ruangan</p>
+                <p class="mt-1">Kampus: <span class="font-medium text-slate-800 dark:text-slate-200">{{ currentCampus?.name ?? '-' }}</span></p>
+                <p>Gedung: <span class="font-medium text-slate-800 dark:text-slate-200">{{ selectedBuilding?.name ?? '-' }}</span></p>
+                <p>Ruangan: <span class="font-medium text-slate-800 dark:text-slate-200">{{ selectedRoom.name }}</span></p>
+                <p>Kapasitas: <span class="font-medium text-slate-800 dark:text-slate-200">{{ selectedRoom.capacity }} orang</span></p>
               </div>
               <div>
                 <span
                   class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium"
                   :class="selectedRoom.is_available
-                    ? 'border-emerald-200 bg-emerald-100 text-emerald-700'
-                    : 'border-rose-200 bg-rose-100 text-rose-700'"
+                    ? 'border-emerald-200 bg-emerald-100 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
+                    : 'border-rose-200 bg-rose-100 text-rose-700 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-300'"
                 >
                   {{ selectedRoom.is_available ? 'Tersedia' : 'Tidak tersedia' }}
                 </span>
@@ -572,13 +575,13 @@ onBeforeUnmount(() => {
               </p>
             </div>
             <div class="space-y-2">
-              <label class="block text-sm font-medium text-slate-700">Waktu Mulai</label>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Waktu Mulai</label>
               <select
                 v-model="form.start_time"
                 :disabled="!selectedRoom || !selectedRoom.is_available || !form.start_date || isAvailabilityLoading"
-                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-slate-100 dark:border-slate-600 dark:bg-slate-700 dark:text-white disabled:dark:bg-slate-600"
               >
-                <option value="" disabled>
+                <option value="" disabled class="dark:bg-slate-700">
                   {{
                     selectedRoom
                       ? selectedRoom.is_available
@@ -592,19 +595,20 @@ onBeforeUnmount(() => {
                   :key="slot"
                   :value="slot"
                   :disabled="isStartOptionDisabled(slot)"
+                  class="dark:bg-slate-700"
                 >
                   {{ startOptionLabel(slot) }}
                 </option>
               </select>
             </div>
             <div class="space-y-2">
-              <label class="block text-sm font-medium text-slate-700">Waktu Selesai</label>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Waktu Selesai</label>
               <select
                 v-model="form.end_time"
                 :disabled="!selectedRoom || !selectedRoom.is_available || !form.start_time || isAvailabilityLoading"
-                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-slate-100 dark:border-slate-600 dark:bg-slate-700 dark:text-white disabled:dark:bg-slate-600"
               >
-                <option value="" disabled>
+                <option value="" disabled class="dark:bg-slate-700">
                   {{
                     form.start_time
                       ? selectedRoom?.is_available
@@ -618,6 +622,7 @@ onBeforeUnmount(() => {
                   :key="slot"
                   :value="slot"
                   :disabled="isEndOptionDisabled(slot)"
+                  class="dark:bg-slate-700"
                 >
                   {{ endOptionLabel(slot) }}
                 </option>
@@ -629,26 +634,26 @@ onBeforeUnmount(() => {
             </div>
           </div>
 
-          <div class="space-y-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm">
+          <div class="space-y-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-700/50 dark:text-slate-300">
             <div class="flex items-center justify-between">
-              <p class="font-semibold text-slate-700">Waktu yang Tidak Tersedia untuk Ruangan Ini</p>
+              <p class="font-semibold text-slate-700 dark:text-slate-200">Waktu yang Tidak Tersedia untuk Ruangan Ini</p>
               <span v-if="isAvailabilityLoading" class="text-xs text-blue-500">Memuat jadwal...</span>
             </div>
-            <p v-if="availabilityMessage" class="text-sm text-slate-600">{{ availabilityMessage }}</p>
-            <ul v-else-if="bookedIntervals.length" class="space-y-1 text-sm text-slate-600">
+            <p v-if="availabilityMessage" class="text-sm text-slate-600 dark:text-slate-300">{{ availabilityMessage }}</p>
+            <ul v-else-if="bookedIntervals.length" class="space-y-1 text-sm text-slate-600 dark:text-slate-300">
               <li
                 v-for="interval in bookedIntervals"
                 :key="interval.id"
-                class="flex items-center justify-between rounded-md bg-white px-3 py-2 shadow-sm"
+                class="flex items-center justify-between rounded-md bg-white px-3 py-2 shadow-sm dark:bg-slate-600 dark:text-slate-200"
               >
                 <span>{{ formatInterval(interval) }}</span>
-                <span class="text-xs font-semibold uppercase text-slate-400">{{ interval.status }}</span>
+                <span class="text-xs font-semibold uppercase text-slate-400 dark:text-slate-400">{{ interval.status }}</span>
               </li>
             </ul>
-            <p v-else-if="form.room_id && availabilityDate" class="text-sm text-slate-500">
+            <p v-else-if="form.room_id && availabilityDate" class="text-sm text-slate-500 dark:text-slate-400">
               Belum ada jadwal lain di tanggal yang dipilih.
             </p>
-            <p v-else class="text-sm text-slate-500">
+            <p v-else class="text-sm text-slate-500 dark:text-slate-400">
               Pilih ruangan serta tanggal pengecekan untuk melihat ketersediaan waktunya.
             </p>
           </div>

@@ -244,33 +244,33 @@ onBeforeUnmount(() => {
     <Head title="Peminjaman Barang" />
 
     <div class="mx-auto max-w-5xl space-y-6 px-4 py-6 sm:px-0">
-      <div class="card-surface space-y-6 p-5 sm:p-6">
-        <div class="border-b border-slate-200 pb-5">
-          <h1 class="text-2xl font-semibold text-slate-900">Request Peminjaman Barang</h1>
-          <p class="mt-1 text-sm text-slate-500">
+      <div class="card-surface space-y-6 p-5 sm:p-6 dark:bg-slate-800 dark:border-slate-700">
+        <div class="border-b border-slate-200 pb-5 dark:border-slate-700">
+          <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Request Peminjaman Barang</h1>
+          <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
             Pilih multiple barang untuk satu request. Upload surat tugas <span class="text-rose-500 font-medium">*</span>
           </p>
         </div>
 
-        <div class="grid gap-3 rounded-2xl bg-slate-50 p-4 text-xs text-slate-600 sm:grid-cols-3">
+        <div class="grid gap-3 rounded-2xl bg-slate-50 p-4 text-xs text-slate-600 sm:grid-cols-3 dark:bg-slate-700/50 dark:text-slate-300">
           <div class="flex items-start gap-3">
             <span class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">1</span>
             <div>
-              <p class="font-semibold text-slate-800">Tambah Barang</p>
+              <p class="font-semibold text-slate-800 dark:text-slate-200">Tambah Barang</p>
               <p>Pilih barang & tentukan jumlah + tanggal.</p>
             </div>
           </div>
           <div class="flex items-start gap-3">
             <span class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">2</span>
             <div>
-              <p class="font-semibold text-slate-800">Detail Request</p>
+              <p class="font-semibold text-slate-800 dark:text-slate-200">Detail Request</p>
               <p>Judul & deskripsi kegiatan.</p>
             </div>
           </div>
           <div class="flex items-start gap-3">
             <span class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">3</span>
             <div>
-              <p class="font-semibold text-slate-800">Upload Surat <span class="text-rose-500">*</span></p>
+              <p class="font-semibold text-slate-800 dark:text-slate-200">Upload Surat <span class="text-rose-500">*</span></p>
               <p>Surat tugas/wajib lampiran.</p>
             </div>
           </div>
@@ -279,8 +279,8 @@ onBeforeUnmount(() => {
         <form @submit.prevent="submit" class="space-y-8">
           <!-- Title -->
           <div class="space-y-2">
-            <label class="block text-sm font-medium text-slate-700">Keperluan / Judul <span class="text-rose-500">*</span></label>
-            <input v-model="form.title" type="text" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500" placeholder="Contoh: Seminar Teknologi 2026" />
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Keperluan / Judul <span class="text-rose-500">*</span></label>
+            <input v-model="form.title" type="text" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white" placeholder="Contoh: Seminar Teknologi 2026" />
             <div v-if="form.errors.title" class="text-sm text-red-500">{{ form.errors.title }}</div>
           </div>
 
@@ -298,17 +298,17 @@ onBeforeUnmount(() => {
             </div>
 
             <div v-else class="space-y-4">
-              <div v-for="(itemRow, index) in form.items" :key="index" class="border border-slate-200 rounded-2xl p-6 space-y-4 hover:border-blue-300">
+              <div v-for="(itemRow, index) in form.items" :key="index" class="border border-slate-200 rounded-2xl p-6 space-y-4 hover:border-blue-300 dark:border-slate-600">
                 <div class="flex items-center justify-between">
-                  <h4 class="font-semibold text-slate-900">Barang #{{ index + 1 }}</h4>
+                  <h4 class="font-semibold text-slate-900 dark:text-white">Barang #{{ index + 1 }}</h4>
                   <button type="button" @click="removeItem(index)" class="text-rose-500 hover:text-rose-600 text-sm font-medium">Hapus</button>
                 </div>
 
                 <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   <!-- Item Select -->
                   <div class="space-y-2">
-                    <label class="block text-sm font-medium text-slate-700">Barang</label>
-                    <select v-model="itemRow.item_id" @change="updateAvailability(index)" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Barang</label>
+                    <select v-model="itemRow.item_id" @change="updateAvailability(index)" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white">
                       <option value="">Pilih barang</option>
                       <option
                         v-for="item in props.items"
@@ -323,66 +323,66 @@ onBeforeUnmount(() => {
 
                   <!-- Quantity -->
                   <div class="space-y-2">
-                    <label class="block text-sm font-medium text-slate-700">Jumlah</label>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Jumlah</label>
                     <input 
                       v-model.number="itemRow.quantity" 
                       type="number" 
                       min="1" 
                       @input="updateAvailability(index)"
-                      class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500" 
+                      class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white" 
                     />
                   </div>
 
                   <!-- Borrow Date -->
                   <div class="space-y-2">
-                    <label class="block text-sm font-medium text-slate-700">Tanggal Pinjam</label>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Tanggal Pinjam</label>
                     <input 
                       :id="`borrow_date_${index}`"
                       type="text" 
                       placeholder="Pilih tanggal pinjam"
-                      class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer" 
+                      class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer dark:border-slate-600 dark:bg-slate-700 dark:text-white" 
                       readonly
                     />
                   </div>
 
                   <!-- Return Date -->
                   <div class="space-y-2">
-                    <label class="block text-sm font-medium text-slate-700">Tanggal Kembali</label>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Tanggal Kembali</label>
                     <input 
                       :id="`return_date_${index}`"
                       type="text" 
                       placeholder="Pilih tanggal kembali"
-                      class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer" 
+                      class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer dark:border-slate-600 dark:bg-slate-700 dark:text-white" 
                       readonly
                     />
                   </div>
                 </div>
 
                 <!-- Availability Card (same style) -->
-                <div v-if="itemRow.item_id" class="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                <div v-if="itemRow.item_id" class="rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-700/50">
 
                   <div class="flex items-center justify-between mb-3">
-                    <p class="font-semibold text-slate-700">Ketersediaan {{ getItemById(itemRow.item_id)?.name }}</p>
+                    <p class="font-semibold text-slate-700 dark:text-slate-200">Ketersediaan {{ getItemById(itemRow.item_id)?.name }}</p>
                     <span v-if="isLoadingAvailability[index]" class="text-xs text-blue-500">Memuat...</span>
                   </div>
                   <div v-if="itemAvailabilities[index]" class="grid gap-3 sm:grid-cols-3">
-                    <div class="rounded-xl bg-white p-3 shadow-sm">
-                      <div class="text-xs font-semibold uppercase tracking-wide text-slate-400">Total</div>
-                      <div class="mt-1 text-2xl font-semibold text-slate-900">{{ itemAvailabilities[index].total_quantity }}</div>
+                    <div class="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-600 dark:text-slate-200">
+                      <div class="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-400">Total</div>
+                      <div class="mt-1 text-2xl font-semibold text-slate-900 dark:text-white">{{ itemAvailabilities[index].total_quantity }}</div>
                     </div>
-                    <div class="rounded-xl bg-white p-3 shadow-sm">
-                      <div class="text-xs font-semibold uppercase tracking-wide text-slate-400">Dipakai</div>
-                      <div class="mt-1 text-2xl font-semibold text-slate-900">{{ itemAvailabilities[index].reserved_quantity }}</div>
+                    <div class="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-600 dark:text-slate-200">
+                      <div class="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-400">Dipakai</div>
+                      <div class="mt-1 text-2xl font-semibold text-slate-900 dark:text-white">{{ itemAvailabilities[index].reserved_quantity }}</div>
                     </div>
-                    <div class="rounded-xl bg-white p-3 shadow-sm">
-                      <div class="text-xs font-semibold uppercase tracking-wide text-slate-400">Tersisa</div>
-                      <div class="mt-1 text-2xl font-semibold text-slate-900" :class="itemRow.quantity > itemAvailabilities[index].remaining_quantity ? 'text-rose-600' : 'text-emerald-600'">
+                    <div class="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-600 dark:text-slate-200">
+                      <div class="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-400">Tersisa</div>
+                      <div class="mt-1 text-2xl font-semibold" :class="itemRow.quantity > itemAvailabilities[index].remaining_quantity ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'">
                         {{ itemAvailabilities[index].remaining_quantity }}
                       </div>
                     </div>
                   </div>
-                  <p v-else class="text-sm text-slate-500">Pilih tanggal untuk melihat ketersediaan.</p>
-                  <p v-if="itemRow.quantity > (itemAvailabilities[index]?.remaining_quantity || 0)" class="mt-2 text-xs text-rose-500 font-medium">
+                  <p v-else class="text-sm text-slate-500 dark:text-slate-400">Pilih tanggal untuk melihat ketersediaan.</p>
+                  <p v-if="itemRow.quantity > (itemAvailabilities[index]?.remaining_quantity || 0)" class="mt-2 text-xs text-rose-500 font-medium dark:text-rose-400">
                     ⚠️ Jumlah melebihi stok tersedia
                   </p>
                 </div>
@@ -393,29 +393,29 @@ onBeforeUnmount(() => {
 
           <!-- Description -->
           <div class="space-y-2">
-            <label class="block text-sm font-medium text-slate-700">Deskripsi</label>
-            <textarea v-model="form.description" rows="3" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500" placeholder="Detail kegiatan atau keperluan..."></textarea>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Deskripsi</label>
+            <textarea v-model="form.description" rows="3" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white" placeholder="Detail kegiatan atau keperluan..."></textarea>
             <div v-if="form.errors.description" class="text-sm text-red-500">{{ form.errors.description }}</div>
           </div>
 
           <!-- Mandatory Attachment * -->
           <div class="space-y-3">
-            <label class="block text-sm font-medium text-slate-700">Lampiran Surat Tugas <span class="text-rose-500">*</span></label>
-            <p class="text-xs text-slate-500 mb-2">PDF, JPG, PNG (max 2MB) - Wajib untuk verifikasi</p>
-            <label class="flex cursor-pointer items-center justify-between rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-6 transition hover:border-blue-400 hover:bg-blue-50/20">
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Lampiran Surat Tugas <span class="text-rose-500">*</span></label>
+            <p class="text-xs text-slate-500 mb-2 dark:text-slate-400">PDF, JPG, PNG (max 2MB) - Wajib untuk verifikasi</p>
+            <label class="flex cursor-pointer items-center justify-between rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-6 transition hover:border-blue-400 hover:bg-blue-50/20 dark:border-slate-600 dark:bg-slate-700/50 dark:hover:border-slate-500 dark:hover:bg-slate-600/50">
               <div class="text-left">
-                <p class="font-medium text-slate-700">
+                <p class="font-medium text-slate-700 dark:text-slate-200">
                   {{ form.attachment ? form.attachment.name : 'Upload surat tugas (wajib)' }}
                 </p>
-                <p class="text-xs text-slate-500 mt-1">Wajib lampiran surat tugas / dokumen resmi</p>
+                <p class="text-xs text-slate-500 mt-1 dark:text-slate-400">Wajib lampiran surat tugas / dokumen resmi</p>
               </div>
-              <span class="rounded-xl bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm">Pilih File</span>
+              <span class="rounded-xl bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm dark:bg-slate-600 dark:text-slate-200">Pilih File</span>
               <input class="hidden" type="file" accept=".pdf,.jpg,.jpeg,.png" @change="handleFileChange" required />
             </label>
             <div v-if="form.errors.attachment" class="text-sm text-red-500">{{ form.errors.attachment }}</div>
           </div>
 
-          <div class="flex flex-col gap-3 border-t border-slate-200 pt-6 sm:flex-row sm:justify-end">
+          <div class="flex flex-col gap-3 border-t border-slate-200 pt-6 sm:flex-row sm:justify-end dark:border-slate-700">
             <button type="submit" :disabled="form.processing || hasAnyRowError || form.items.length === 0 || !form.attachment" class="inline-flex items-center justify-center rounded-2xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto">
               {{ form.processing ? 'Menyimpan...' : 'Ajukan Peminjaman' }}
             </button>
@@ -425,6 +425,6 @@ onBeforeUnmount(() => {
       </div>
     </div>
   </AuthenticatedLayout>
-  </template>
+</template>
 
 

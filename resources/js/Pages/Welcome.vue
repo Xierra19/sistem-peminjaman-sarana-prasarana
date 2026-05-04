@@ -10,6 +10,7 @@ import {
     Eye,
     EyeOff
 } from 'lucide-vue-next';
+import DarkModeSwitch from '@/Components/DarkModeSwitch.vue';
 
 const props = defineProps({
     canLogin: {
@@ -61,15 +62,15 @@ const features = [
 const aboutBadges = [
     {
         text: 'Real-time Availability',
-        classes: 'bg-indigo-500/20 text-indigo-200',
+        classes: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-200',
     },
     {
         text: 'Konfirmasi Instan',
-        classes: 'bg-indigo-500/20 text-indigo-200',
+        classes: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-200',
     },
     {
         text: 'Akses 24/7',
-        classes: 'bg-indigo-500/20 text-indigo-200',
+        classes: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-200',
     },
 ];
 </script>
@@ -77,7 +78,7 @@ const aboutBadges = [
 <template>
     <Head title="Selamat Datang" />
 
-    <div class="relative min-h-screen overflow-hidden bg-slate-950 text-white">
+    <div class="relative min-h-screen overflow-hidden bg-white text-slate-900 dark:bg-slate-950 dark:text-white">
         <!-- Background Blur Effects -->
         <div class="absolute inset-0">
             <div class="absolute -left-10 top-16 hidden h-64 w-64 rounded-full bg-indigo-500/20 blur-[120px] sm:block"></div>
@@ -85,7 +86,7 @@ const aboutBadges = [
             <div class="absolute inset-x-0 top-32 mx-auto h-72 w-[32rem] rounded-full bg-white/5 blur-[160px]"></div>
         </div>
 
-        <header class="sticky top-0 z-10 border-b border-white/10 bg-slate-950/80 backdrop-blur-sm">
+        <header class="sticky top-0 z-10 border-b border-slate-200 bg-slate-50/80 backdrop-blur-sm dark:border-white/10 dark:bg-slate-950/80">
             <div class="container mx-auto flex flex-wrap items-center justify-between gap-3 px-4 py-4">
                 <div class="flex items-center gap-3">
                     <img
@@ -95,11 +96,12 @@ const aboutBadges = [
                         loading="lazy"
                     />
                     <div>
-                        <p class="text-sm font-semibold text-indigo-200">{{ appName }}</p>
-                        <p class="text-xs font-medium text-indigo-300">{{ campusName }}</p>
+                        <p class="text-sm font-semibold text-indigo-600 dark:text-indigo-200">{{ appName }}</p>
+                        <p class="text-xs font-medium text-indigo-700 dark:text-indigo-300">{{ campusName }}</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-3">
+                    <DarkModeSwitch />
                     <Link
                         v-if="props.canRegister"
                         :href="route('register')"
@@ -128,7 +130,7 @@ const aboutBadges = [
                     enter-to-class="translate-y-0 opacity-100"
                 >
                     <div class="relative mx-auto max-w-4xl">
-                        <div class="relative overflow-hidden rounded-[40px] border border-white/10 bg-white/5 px-6 py-12 shadow-2xl shadow-indigo-500/20 backdrop-blur">
+                        <div class="relative overflow-hidden rounded-[40px] border border-slate-200 bg-white px-6 py-12 shadow-2xl shadow-indigo-500/20 backdrop-blur dark:border-white/10 dark:bg-white/5">
                             <!-- Decorative Blur -->
                             <div aria-hidden="true" class="pointer-events-none absolute inset-0">
                                 <div class="absolute -top-24 left-10 h-56 w-56 rounded-full bg-indigo-200/20 blur-3xl"></div>
@@ -136,15 +138,15 @@ const aboutBadges = [
                             </div>
 
                             <div class="relative space-y-6 text-center">
-                                <div class="inline-flex items-center gap-2 rounded-full bg-indigo-500/20 px-4 py-2 text-sm font-semibold text-indigo-200 shadow-sm shadow-indigo-200/60">
+                                <div class="inline-flex items-center gap-2 rounded-full bg-indigo-100 px-4 py-2 text-sm font-semibold text-indigo-600 shadow-sm shadow-indigo-200/60 dark:bg-indigo-500/20 dark:text-indigo-200">
                                     <span class="inline-flex size-2 rounded-full bg-indigo-500"></span>
                                     {{ heroContent.badge }}
                                 </div>
-                                <h1 class="text-4xl font-semibold text-white md:text-5xl lg:text-6xl">
+                                <h1 class="text-4xl font-semibold text-slate-900 md:text-5xl lg:text-6xl dark:text-white">
                                     {{ campusName }}
                                     <span class="block bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">{{ heroContent.title }}</span>
                                 </h1>
-                                <p class="mx-auto max-w-2xl text-base leading-relaxed text-indigo-100/80 md:text-lg">
+                                <p class="mx-auto max-w-2xl text-base leading-relaxed text-slate-600 md:text-lg dark:text-indigo-100/80">
                                     {{ heroContent.subtitle }}
                                 </p>
                                 <div class="flex flex-col flex-wrap items-center justify-center gap-3 pt-5 sm:flex-row">
@@ -184,8 +186,8 @@ const aboutBadges = [
             <section class="container mx-auto px-4 py-16">
                 <div class="mx-auto max-w-6xl">
                     <div class="mb-12 text-center">
-                        <h2 class="mb-4 text-2xl font-semibold text-white">Fitur Utama</h2>
-                        <p class="mx-auto max-w-2xl text-base text-indigo-100/80">
+                        <h2 class="mb-4 text-2xl font-semibold text-slate-900 dark:text-white">Fitur Utama</h2>
+                        <p class="mx-auto max-w-2xl text-base text-slate-600 dark:text-indigo-100/80">
                             Semua yang dibutuhkan untuk mengatur reservasi ruangan dan peminjaman barang kampus secara efisien dan terorganisir.
                         </p>
                     </div>
@@ -193,13 +195,13 @@ const aboutBadges = [
                         <article
                             v-for="feature in features"
                             :key="feature.title"
-                            class="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-sm transition hover:bg-white/10 hover:shadow-lg"
+                            class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:bg-slate-50 hover:shadow-lg dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
                         >
                             <div class="mb-4 flex size-12 items-center justify-center rounded-lg bg-indigo-500/20">
-                                <component :is="feature.icon" class="size-6 text-indigo-300" />
+                                <component :is="feature.icon" class="size-6 text-indigo-600 dark:text-indigo-300" />
                             </div>
-                            <h3 class="mb-2 text-lg font-semibold text-white">{{ feature.title }}</h3>
-                            <p class="text-sm leading-relaxed text-indigo-100/80">{{ feature.description }}</p>
+                            <h3 class="mb-2 text-lg font-semibold text-slate-900 dark:text-white">{{ feature.title }}</h3>
+                            <p class="text-sm leading-relaxed text-slate-600 dark:text-indigo-100/80">{{ feature.description }}</p>
                         </article>
                     </div>
                 </div>
@@ -208,7 +210,7 @@ const aboutBadges = [
             <!-- About Section -->
             <section class="container mx-auto px-4 pb-16">
                 <div class="mx-auto max-w-4xl">
-                    <div class="overflow-hidden rounded-3xl border border-white/10 bg-white/5 shadow-lg">
+                    <div class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg dark:border-white/10 dark:bg-white/5">
                         <div class="grid gap-8 md:grid-cols-2">
                             <div class="relative h-48 md:h-full">
                                 <img
@@ -220,11 +222,11 @@ const aboutBadges = [
                                 <div class="absolute inset-0 bg-gradient-to-br from-indigo-600/10 via-transparent to-purple-600/20"></div>
                             </div>
                             <div class="flex flex-col justify-center gap-4 p-8">
-                                <h2 class="text-2xl font-semibold text-white">Tentang Sistem Reservasi</h2>
-                                <p class="text-sm leading-relaxed text-indigo-100/80">
+                                <h2 class="text-2xl font-semibold text-slate-900 dark:text-white">Tentang Sistem Reservasi</h2>
+                                <p class="text-sm leading-relaxed text-slate-600 dark:text-indigo-100/80">
                                     Sistem Reservasi Ruangan & Barang Internal dirancang khusus untuk civitas academica Universitas Esa Unggul Kampus Bekasi. Platform ini merapikan proses peminjaman dan pengelolaan fasilitas kampus dalam satu alur terpadu.
                                 </p>
-                                <p class="text-sm leading-relaxed text-indigo-100/80">
+                                <p class="text-sm leading-relaxed text-slate-600 dark:text-indigo-100/80">
                                     Butuh ruang kelas tambahan, ruangan rapat, atau perangkat pendukung seperti meja, kursi, dan proyektor? Tinggal pilih fasilitasnya, ajukan, dan ikuti status persetujuannya secara real-time.
                                 </p>
                                 <div class="flex flex-wrap gap-2 pt-2">
@@ -244,59 +246,59 @@ const aboutBadges = [
             </section>
         </main>
 
-        <footer class="mt-16 border-t border-white/10 bg-slate-950/80 backdrop-blur-sm">
+        <footer class="mt-16 border-t border-slate-200 bg-slate-50/80 backdrop-blur-sm dark:border-white/10 dark:bg-slate-950/80">
             <div class="container mx-auto px-4 py-8">
                 <div class="grid gap-8 md:grid-cols-3">
                     <!-- Brand Info -->
                     <div class="space-y-3">
-                        <p class="text-sm font-semibold text-indigo-200">{{ appName }}</p>
-                        <p class="text-xs leading-relaxed text-indigo-100/80">
+                        <p class="text-sm font-semibold text-indigo-600 dark:text-indigo-200">{{ appName }}</p>
+                        <p class="text-xs leading-relaxed text-slate-600 dark:text-indigo-100/80">
                             Platform reservasi ruangan dan peminjaman barang kampus yang terintegrasi untuk civitas academica Universitas Esa Unggul Kampus Bekasi.
                         </p>
                     </div>
 
                     <!-- Navigation Links -->
                     <div class="space-y-3">
-                        <p class="text-sm font-semibold text-indigo-200">Navigasi</p>
-                        <ul class="space-y-2 text-sm text-indigo-100/80">
+                        <p class="text-sm font-semibold text-indigo-600 dark:text-indigo-200">Navigasi</p>
+                        <ul class="space-y-2 text-sm text-slate-600 dark:text-indigo-100/80">
                             <li>
-                                <Link href="/" class="transition hover:text-white">Beranda</Link>
+                                <Link href="/" class="transition hover:text-slate-900 dark:hover:text-white">Beranda</Link>
                             </li>
                             <li>
-                                <Link :href="route('login')" class="transition hover:text-white">Masuk</Link>
+                                <Link :href="route('login')" class="transition hover:text-slate-900 dark:hover:text-white">Masuk</Link>
                             </li>
                             <li>
-                                <Link :href="route('register')" class="transition hover:text-white">Daftar</Link>
+                                <Link :href="route('register')" class="transition hover:text-slate-900 dark:hover:text-white">Daftar</Link>
                             </li>
                             <li>
-                                <a href="#features" class="transition hover:text-white">Fitur</a>
+                                <a href="#features" class="transition hover:text-slate-900 dark:hover:text-white">Fitur</a>
                             </li>
                         </ul>
                     </div>
 
                     <!-- Contact & Support -->
                     <div class="space-y-3">
-                        <p class="text-sm font-semibold text-indigo-200">Bantuan & Kontak</p>
-                        <ul class="space-y-2 text-sm text-indigo-100/80">
+                        <p class="text-sm font-semibold text-indigo-600 dark:text-indigo-200">Bantuan & Kontak</p>
+                        <ul class="space-y-2 text-sm text-slate-600 dark:text-indigo-100/80">
                             <li class="flex items-center gap-2">
-                                <Mail class="h-4 w-4 text-indigo-300" />
-                                <a href="mailto:leomarhadi13@gmail.com" class="transition hover:text-white">leomarhadi13@gmail.com</a>
+                                <Mail class="h-4 w-4 text-indigo-600 dark:text-indigo-300" />
+                                <a href="mailto:leomarhadi13@gmail.com" class="transition hover:text-slate-900 dark:hover:text-white">leomarhadi13@gmail.com</a>
                             </li>
                             <li class="flex items-center gap-2">
-                                <Phone class="h-4 w-4 text-indigo-300" />
-                                <a href="tel:+6287851327750" class="transition hover:text-white">+62 878-5132-7750</a>
+                                <Phone class="h-4 w-4 text-indigo-600 dark:text-indigo-300" />
+                                <a href="tel:+6287851327750" class="transition hover:text-slate-900 dark:hover:text-white">+62 878-5132-7750</a>
                             </li>
                         </ul>
                     </div>
                 </div>
 
                 <!-- Copyright -->
-                <div class="mt-8 border-t border-white/10 pt-6 text-center">
-                    <p class="font-medium text-indigo-100/90">© {{ currentYear }} {{ campusName }}. All rights reserved.</p>
-                    <p class="mt-2 text-xs text-indigo-300">
+                <div class="mt-8 border-t border-slate-200 pt-6 text-center dark:border-white/10">
+                    <p class="font-medium text-slate-600 dark:text-indigo-100/90">© {{ currentYear }} {{ campusName }}. All rights reserved.</p>
+                    <p class="mt-2 text-xs text-indigo-600 dark:text-indigo-300">
                         Sistem Reservasi Ruangan & Barang • Laravel v{{ props.laravelVersion }} · PHP v{{ props.phpVersion }}
                     </p>
-                    <p class="mt-1 text-xs text-indigo-400">
+                    <p class="mt-1 text-xs text-indigo-600 dark:text-indigo-400">
                         Dikembangkan untuk memenuhi tugas skripsi - Universitas Esa Unggul
                     </p>
                 </div>
