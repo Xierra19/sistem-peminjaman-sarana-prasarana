@@ -450,11 +450,11 @@ const {
             class="flex flex-wrap items-center gap-2 rounded-2xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-xs text-blue-800"
           >
             <span class="text-[11px] font-semibold uppercase tracking-[0.45em] text-blue-500">Filter aktif</span>
-            <span
-              v-for="(chip, index) in activeFilterChips"
-              :key="`${chip.label}-${index}`"
-              class="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 font-medium text-blue-700 shadow-sm"
-            >
+              <span
+                v-for="(chip, index) in activeFilterChips"
+                :key="`${chip.label}-${index}`"
+                class="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 font-medium text-blue-700 shadow-sm dark:bg-slate-700 dark:text-blue-300"
+              >
               {{ chip.label }}: <span class="font-semibold text-blue-900">{{ chip.value }}</span>
             </span>
           </div>

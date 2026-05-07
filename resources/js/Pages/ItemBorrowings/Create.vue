@@ -277,28 +277,28 @@ onBeforeUnmount(() => {
         </div>
 
         <form @submit.prevent="submit" class="space-y-8">
-          <!-- Title -->
-          <div class="space-y-2">
-            <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Keperluan / Judul <span class="text-rose-500">*</span></label>
-            <input v-model="form.title" type="text" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white" placeholder="Contoh: Seminar Teknologi 2026" />
-            <div v-if="form.errors.title" class="text-sm text-red-500">{{ form.errors.title }}</div>
-          </div>
+            <!-- Title -->
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Judul Kegiatan <span class="text-rose-500">*</span></label>
+              <input v-model="form.title" type="text" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-400" placeholder="Contoh: Rapat koordinasi proyek" />
+              <div v-if="form.errors.title" class="text-sm text-red-500">{{ form.errors.title }}</div>
+            </div>
 
           <!-- Multi Items Rows -->
           <div>
             <div class="flex items-center justify-between mb-4">
-              <h3 class="text-lg font-semibold text-slate-900">Daftar Barang</h3>
+              <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Daftar Barang</h3>
               <button type="button" @click="addItem" class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
                 + Tambah Barang
               </button>
             </div>
 
-            <div v-if="form.items.length === 0" class="text-center py-12 text-slate-500">
+            <div v-if="form.items.length === 0" class="text-center py-12 text-slate-500 dark:text-slate-400">
               Belum ada barang. Klik "Tambah Barang" untuk mulai.
             </div>
 
             <div v-else class="space-y-4">
-              <div v-for="(itemRow, index) in form.items" :key="index" class="border border-slate-200 rounded-2xl p-6 space-y-4 hover:border-blue-300 dark:border-slate-600">
+              <div v-for="(itemRow, index) in form.items" :key="index" class="border border-slate-200 rounded-2xl p-6 space-y-4 hover:border-blue-300 dark:border-slate-600 dark:bg-slate-800">
                 <div class="flex items-center justify-between">
                   <h4 class="font-semibold text-slate-900 dark:text-white">Barang #{{ index + 1 }}</h4>
                   <button type="button" @click="removeItem(index)" class="text-rose-500 hover:text-rose-600 text-sm font-medium">Hapus</button>
@@ -335,24 +335,24 @@ onBeforeUnmount(() => {
 
                   <!-- Borrow Date -->
                   <div class="space-y-2">
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Tanggal Pinjam</label>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Tanggal Mulai</label>
                     <input 
                       :id="`borrow_date_${index}`"
                       type="text" 
-                      placeholder="Pilih tanggal pinjam"
-                      class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer dark:border-slate-600 dark:bg-slate-700 dark:text-white" 
+                      placeholder="Pilih tanggal mulai"
+                      class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-400" 
                       readonly
                     />
                   </div>
 
                   <!-- Return Date -->
                   <div class="space-y-2">
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Tanggal Kembali</label>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Tanggal Selesai</label>
                     <input 
                       :id="`return_date_${index}`"
                       type="text" 
-                      placeholder="Pilih tanggal kembali"
-                      class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer dark:border-slate-600 dark:bg-slate-700 dark:text-white" 
+                      placeholder="Pilih tanggal selesai"
+                      class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-400" 
                       readonly
                     />
                   </div>
@@ -391,12 +391,12 @@ onBeforeUnmount(() => {
             <div v-if="formErrors.items" class="text-sm text-red-500 mt-2">{{ formErrors.items }}</div>
           </div>
 
-          <!-- Description -->
-          <div class="space-y-2">
-            <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Deskripsi</label>
-            <textarea v-model="form.description" rows="3" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white" placeholder="Detail kegiatan atau keperluan..."></textarea>
-            <div v-if="form.errors.description" class="text-sm text-red-500">{{ form.errors.description }}</div>
-          </div>
+            <!-- Description -->
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Deskripsi</label>
+              <textarea v-model="form.description" rows="3" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-400" placeholder="Tuliskan detail kegiatan, kebutuhan fasilitas, atau catatan lainnya"></textarea>
+              <div v-if="form.errors.description" class="text-sm text-red-500">{{ form.errors.description }}</div>
+            </div>
 
           <!-- Mandatory Attachment * -->
           <div class="space-y-3">

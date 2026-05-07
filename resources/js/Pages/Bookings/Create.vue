@@ -537,40 +537,40 @@ onBeforeUnmount(() => {
 
           <div class="grid gap-6 md:grid-cols-2">
             <div class="space-y-2">
-              <label class="block text-sm font-medium text-slate-700">Tanggal Mulai</label>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Tanggal Mulai</label>
               <input
                 id="start_date_input"
                 type="text"
                 readonly
                 placeholder="Pilih tanggal mulai"
-                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-400"
               />
-              <p class="text-xs text-slate-500">Tanggal minimal peminjaman: {{ minBookingDate }} (H+3)</p>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Tanggal minimal peminjaman: {{ minBookingDate }} (H+3)</p>
             </div>
             <div class="space-y-2">
-              <label class="block text-sm font-medium text-slate-700">Tanggal Selesai</label>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Tanggal Selesai</label>
               <input
                 id="end_date_input"
                 type="text"
                 readonly
                 placeholder="Pilih tanggal selesai"
-                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-400"
               />
-              <p class="text-xs text-slate-500">Samakan dengan tanggal mulai bila booking hanya satu hari.</p>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Samakan dengan tanggal mulai bila booking hanya satu hari.</p>
             </div>
           </div>
 
           <div class="grid gap-6 md:grid-cols-3">
             <div class="space-y-2">
-              <label class="block text-sm font-medium text-slate-700">Tanggal Cek Ketersediaan</label>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Tanggal Cek Ketersediaan</label>
               <input
                 id="availability_date_input"
                 type="text"
                 readonly
                 :disabled="!form.start_date"
-                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-slate-100 cursor-pointer"
+                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-slate-100 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-400 disabled:dark:bg-slate-600 cursor-pointer"
               />
-              <p class="text-xs text-slate-500">
+              <p class="text-xs text-slate-500 dark:text-slate-400">
                 Gunakan untuk mengecek setiap hari dalam rentang booking apabila perlu.
               </p>
             </div>
@@ -658,33 +658,33 @@ onBeforeUnmount(() => {
             </p>
           </div>
 
-          <div class="space-y-2">
-            <label class="block text-sm font-medium text-slate-700">Judul Kegiatan</label>
-            <input
-              v-model="form.title"
-              type="text"
-              class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              placeholder="Contoh: Rapat Koordinasi Proyek"
-            />
-            <div v-if="form.errors.title" class="text-sm text-red-500">{{ form.errors.title }}</div>
-          </div>
-
-          <div class="space-y-2">
-            <label class="block text-sm font-medium text-slate-700">Deskripsi</label>
-            <textarea
-              v-model="form.description"
-              rows="4"
-              class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              placeholder="Tuliskan detail kegiatan, kebutuhan fasilitas, atau catatan lainnya."
-            />
-            <div v-if="form.errors.description" class="text-sm text-red-500">{{ form.errors.description }}</div>
-          </div>
-
-          <div class="space-y-3">
-            <div class="flex items-center justify-between">
-              <label class="block text-sm font-medium text-slate-700">Lampiran Pendukung</label>
-              <span class="text-xs text-slate-400">PDF, JPG, atau PNG maks. 2MB</span>
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Judul Kegiatan</label>
+              <input
+                v-model="form.title"
+                type="text"
+                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-400"
+                placeholder="Contoh: rapat koordinasi proyek"
+              />
+              <div v-if="form.errors.title" class="text-sm text-red-500">{{ form.errors.title }}</div>
             </div>
+
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Deskripsi</label>
+              <textarea
+                v-model="form.description"
+                rows="4"
+                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-400"
+                placeholder="Tuliskan detail kegiatan, kebutuhan fasilitas, atau catatan lainnya"
+              />
+              <div v-if="form.errors.description" class="text-sm text-red-500">{{ form.errors.description }}</div>
+            </div>
+
+            <div class="space-y-3">
+              <div class="flex items-center justify-between">
+                <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Lampiran Pendukung</label>
+                <span class="text-xs text-slate-400 dark:text-slate-400">PDF, JPG, atau PNG maks. 2MB</span>
+              </div>
             <input
               type="file"
               @change="handleFileChange"

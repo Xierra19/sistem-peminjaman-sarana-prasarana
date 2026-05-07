@@ -26,12 +26,12 @@ const statusLabels = {
 }
 
 const statusColors = {
-  requested: 'bg-amber-100 text-amber-700 border-amber-200',
-  waiting: 'bg-amber-100 text-amber-700 border-amber-200',
-  approved: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-  rejected: 'bg-rose-100 text-rose-700 border-rose-200',
-  cancelled: 'bg-slate-100 text-slate-700 border-slate-200',
-  returned: 'bg-blue-100 text-blue-700 border-blue-200',
+  requested: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
+  waiting: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
+  approved: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800',
+  rejected: 'bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-800',
+  cancelled: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600',
+  returned: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800',
 }
 
 const normalizedStatus = computed(() =>
@@ -119,12 +119,12 @@ const onSignedLetterChange = (event) => {
     <div class="space-y-6">
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div class="text-sm text-gray-500">Approval Peminjaman Barang</div>
-          <h1 class="text-2xl font-semibold text-gray-800">{{ itemBorrowing.title }}</h1>
+          <div class="text-sm text-gray-500 dark:text-slate-400">Approval Peminjaman Barang</div>
+          <h1 class="text-2xl font-semibold text-gray-800 dark:text-white">{{ itemBorrowing.title }}</h1>
         </div>
         <Link
           :href="route('admin.item-borrowings.index')"
-          class="inline-flex items-center rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+          class="inline-flex items-center rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700"
         >
           Kembali ke Daftar
         </Link>
@@ -132,11 +132,11 @@ const onSignedLetterChange = (event) => {
 
       <div class="grid gap-6 lg:grid-cols-3">
         <div class="space-y-6 lg:col-span-2">
-          <section class="rounded-xl border border-gray-200 bg-white shadow-sm">
-            <header class="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+          <section class="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+            <header class="flex items-center justify-between border-b border-gray-100 px-6 py-4 dark:border-slate-700">
               <div class="space-y-1">
-                <h2 class="text-lg font-semibold text-gray-800">Detail Pengajuan</h2>
-                <p class="text-sm text-gray-500">Informasi lengkap mengenai permintaan yang diajukan pengguna.</p>
+                <h2 class="text-lg font-semibold text-gray-800 dark:text-white">Detail Pengajuan</h2>
+                <p class="text-sm text-gray-500 dark:text-slate-400">Informasi lengkap mengenai permintaan yang diajukan pengguna.</p>
               </div>
               <span
                 class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold"
@@ -148,30 +148,27 @@ const onSignedLetterChange = (event) => {
             <div class="grid gap-6 px-6 py-5 sm:grid-cols-2">
               <div class="space-y-3">
                 <div>
-                  <div class="text-xs font-semibold uppercase text-gray-500">Pemohon</div>
-                  <div class="text-sm font-medium text-gray-800">{{ itemBorrowing.user?.name ?? '-' }}</div>
-                  <div class="text-xs text-gray-500">{{ itemBorrowing.user?.email ?? '-' }}</div>
-                  <div class="text-xs text-gray-500">Telp: {{ itemBorrowing.user?.phone ?? '-' }}</div>
+                  <div class="text-xs font-semibold uppercase text-gray-500 dark:text-slate-400">Pemohon</div>
+                  <div class="text-sm font-medium text-gray-800 dark:text-white">{{ itemBorrowing.user?.name ?? '-' }}</div>
+                  <div class="text-xs text-gray-500 dark:text-slate-400">{{ itemBorrowing.user?.email ?? '-' }}</div>
+                  <div class="text-xs text-gray-500 dark:text-slate-400">Telp: {{ itemBorrowing.user?.phone ?? '-' }}</div>
                 </div>
                 <div>
-                  <div class="text-xs font-semibold uppercase text-gray-500">Deskripsi</div>
-                  <p class="text-sm leading-relaxed text-gray-700">{{ itemBorrowing.description || 'Tidak ada deskripsi.' }}</p>
+                  <div class="text-xs font-semibold uppercase text-gray-500 dark:text-slate-400">Deskripsi</div>
+                  <p class="text-sm leading-relaxed text-gray-700 dark:text-slate-300">{{ itemBorrowing.description || 'Tidak ada deskripsi.' }}</p>
                 </div>
               </div>
               <div class="space-y-3">
                 <div>
-                  <div class="text-xs font-semibold uppercase text-gray-500">Barang</div>
+                  <div class="text-xs font-semibold uppercase text-gray-500 dark:text-slate-400">Barang</div>
                   <ul class="space-y-2">
                     <li
                       v-for="borrowingItem in borrowingItems"
                       :key="borrowingItem.id"
-                      class="rounded-lg border border-gray-100 px-3 py-2 text-sm text-gray-700"
+                      class="rounded-lg border border-gray-100 px-3 py-2 text-sm text-gray-700 dark:border-slate-700 dark:text-slate-300"
                     >
-                      <div class="font-semibold text-gray-900">{{ borrowingItem.item?.name ?? '-' }}</div>
-                      <div class="text-xs text-gray-500">
-                        {{ borrowingItem.item?.code ?? '-' }} • {{ borrowingItem.item?.category ?? '-' }}
-                      </div>
-                      <div class="mt-1 text-xs text-gray-600">
+                      <div class="font-semibold text-gray-900 dark:text-white">{{ borrowingItem.item?.name ?? '-' }}</div>
+                      <div class="mt-1 text-xs text-gray-600 dark:text-slate-300">
                         Jumlah {{ borrowingItem.quantity }} •
                         {{ formatDate(borrowingItem.borrow_date) }} s/d {{ formatDate(borrowingItem.return_date) }}
                       </div>
@@ -179,85 +176,85 @@ const onSignedLetterChange = (event) => {
                   </ul>
                 </div>
                 <div>
-                  <div class="text-xs font-semibold uppercase text-gray-500">Periode</div>
-                  <p class="text-sm text-gray-700">Pinjam: <span class="font-semibold text-gray-900">{{ formatDate(earliestBorrowDate) }}</span></p>
-                  <p class="text-sm text-gray-700">Kembali: <span class="font-semibold text-gray-900">{{ formatDate(latestReturnDate) }}</span></p>
-                  <p class="text-sm text-gray-700">Jenis barang: <span class="font-semibold text-gray-900">{{ borrowingItems.length }}</span></p>
+                  <div class="text-xs font-semibold uppercase text-gray-500 dark:text-slate-400">Periode</div>
+                  <p class="text-sm text-gray-700 dark:text-slate-300">Pinjam: <span class="font-semibold text-gray-900 dark:text-white">{{ formatDate(earliestBorrowDate) }}</span></p>
+                  <p class="text-sm text-gray-700 dark:text-slate-300">Kembali: <span class="font-semibold text-gray-900 dark:text-white">{{ formatDate(latestReturnDate) }}</span></p>
+                  <p class="text-sm text-gray-700 dark:text-slate-300">Jenis barang: <span class="font-semibold text-gray-900 dark:text-white">{{ borrowingItems.length }}</span></p>
                 </div>
               </div>
             </div>
           </section>
 
-          <section class="rounded-xl border border-gray-200 bg-white shadow-sm">
-            <header class="border-b border-gray-100 px-6 py-4">
-              <h2 class="text-lg font-semibold text-gray-800">Lampiran</h2>
-              <p class="text-sm text-gray-500">Dokumen pendukung dari pemohon.</p>
+          <section class="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+            <header class="border-b border-gray-100 px-6 py-4 dark:border-slate-700">
+              <h2 class="text-lg font-semibold text-gray-800 dark:text-white">Lampiran</h2>
+              <p class="text-sm text-gray-500 dark:text-slate-400">Dokumen pendukung dari pemohon.</p>
             </header>
-            <div class="px-6 py-5 text-sm text-gray-600">
+            <div class="px-6 py-5 text-sm text-gray-600 dark:text-slate-300">
               <template v-if="itemBorrowing.attachment">
                 <a
                   :href="route('item-borrowings.attachment', itemBorrowing.id)"
                   target="_blank"
                   rel="noopener"
-                  class="inline-flex items-center rounded-md border border-blue-200 px-4 py-2 text-sm font-semibold text-blue-700 transition hover:border-blue-300 hover:text-blue-800"
+                  class="inline-flex items-center rounded-md border border-blue-200 px-4 py-2 text-sm font-semibold text-blue-700 transition hover:border-blue-300 hover:text-blue-800 dark:border-blue-800 dark:text-blue-300 dark:hover:border-blue-700 dark:hover:text-blue-200"
                 >
                   Lihat Lampiran
                 </a>
               </template>
-              <p v-else class="text-gray-400">Tidak ada lampiran yang diunggah.</p>
+              <p v-else class="text-gray-400 dark:text-slate-500">Tidak ada lampiran yang diunggah.</p>
             </div>
           </section>
 
-          <section class="rounded-xl border border-gray-200 bg-white shadow-sm">
-            <header class="border-b border-gray-100 px-6 py-4">
-              <h2 class="text-lg font-semibold text-gray-800">Surat Admin Sarpras</h2>
-              <p class="text-sm text-gray-500">Surat yang sudah ditandatangani admin untuk persetujuan atau penolakan.</p>
+          <section class="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+            <header class="border-b border-gray-100 px-6 py-4 dark:border-slate-700">
+              <h2 class="text-lg font-semibold text-gray-800 dark:text-white">Surat Admin Sarpras</h2>
+              <p class="text-sm text-gray-500 dark:text-slate-400">Surat yang sudah ditandatangani admin untuk persetujuan atau penolakan.</p>
             </header>
-            <div class="space-y-3 px-6 py-5 text-sm text-gray-600">
+            <div class="space-y-3 px-6 py-5 text-sm text-gray-600 dark:text-slate-300">
               <template v-if="itemBorrowing.signed_letter">
                 <a
                   :href="route('item-borrowings.signed-letter', itemBorrowing.id)"
                   target="_blank"
                   rel="noopener"
-                  class="inline-flex items-center rounded-md border border-emerald-200 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:border-emerald-300 hover:text-emerald-800"
+                  class="inline-flex items-center rounded-md border border-emerald-200 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:border-emerald-300 hover:text-emerald-800 dark:border-emerald-800 dark:text-emerald-300 dark:hover:border-emerald-700 dark:hover:text-emerald-200"
                 >
                   Unduh Surat Ditandatangani
                 </a>
-                <p class="text-xs text-gray-400">
+                <p class="text-xs text-gray-400 dark:text-slate-500">
                   Diunggah {{ formatDateTime(itemBorrowing.signed_letter_uploaded_at) }}
                 </p>
               </template>
-              <p v-else class="text-gray-400">Belum ada surat yang diunggah admin.</p>
+              <p v-else class="text-gray-400 dark:text-slate-500">Belum ada surat yang diunggah admin.</p>
             </div>
           </section>
         </div>
 
         <aside class="space-y-6">
-          <section class="rounded-xl border border-gray-200 bg-white shadow-sm">
-            <header class="border-b border-gray-100 px-6 py-4">
-              <h2 class="text-lg font-semibold text-gray-800">Tindakan Persetujuan</h2>
-              <p class="text-sm text-gray-500">Setujui, tolak, batalkan, atau tandai telah kembali.</p>
+          <section class="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+            <header class="border-b border-gray-100 px-6 py-4 dark:border-slate-700">
+              <h2 class="text-lg font-semibold text-gray-800 dark:text-white">Tindakan Persetujuan</h2>
+              <p class="text-sm text-gray-500 dark:text-slate-400">Setujui, tolak, batalkan, atau tandai telah kembali.</p>
             </header>
             <div class="space-y-4 px-6 py-5">
               <textarea
                 v-model="approvalForm.notes"
-                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:focus:border-blue-500 dark:focus:ring-blue-900/30"
                 rows="3"
                 :placeholder="canCancel ? 'Catatan (wajib) untuk pembatalan' : 'Catatan (opsional) untuk pemohon'"
               />
               <p v-if="approvalForm.errors.notes" class="text-xs text-rose-500">{{ approvalForm.errors.notes }}</p>
 
-              <div v-if="itemBorrowing.signed_letter" class="space-y-2 rounded-lg border border-emerald-100 bg-emerald-50 px-4 py-3">
-                <div class="text-xs font-semibold uppercase text-emerald-700">Surat tersimpan</div>
+              <div v-if="itemBorrowing.signed_letter" class="space-y-2 rounded-lg border border-emerald-100 bg-emerald-50 px-4 py-3 dark:border-emerald-800 dark:bg-emerald-900/30">
+                <div class="text-xs font-semibold uppercase text-emerald-700 dark:text-emerald-300">Surat tersimpan</div>
                 <a
                   :href="route('item-borrowings.signed-letter', itemBorrowing.id)"
                   target="_blank"
                   rel="noopener"
-                  class="inline-flex items-center rounded-md border border-emerald-200 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:border-emerald-300 hover:text-emerald-800"
+                  class="inline-flex items-center rounded-md border border-emerald-200 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:border-emerald-300 hover:text-emerald-800 dark:border-emerald-800 dark:text-emerald-300 dark:hover:border-emerald-700 dark:hover:text-emerald-200"
                 >
                   Lihat Surat Ditandatangani
                 </a>
-                <p class="text-xs text-emerald-700/80">
+                <p class="text-xs text-emerald-700/80 dark:text-emerald-300/80">
                   {{ signedLetterHelpText }}
                   <span v-if="itemBorrowing.signed_letter_uploaded_at">
                     Diunggah {{ formatDateTime(itemBorrowing.signed_letter_uploaded_at) }}.
@@ -266,12 +263,12 @@ const onSignedLetterChange = (event) => {
               </div>
 
               <div v-if="isWaiting" class="space-y-2">
-                <label class="block text-xs font-semibold uppercase text-gray-500">Surat bertandatangan admin</label>
+                <label class="block text-xs font-semibold uppercase text-gray-500 dark:text-slate-400">Surat bertandatangan admin</label>
                 <label
-                  class="flex cursor-pointer items-center justify-between rounded-lg border border-dashed border-gray-300 px-3 py-3 text-sm text-gray-600 transition hover:border-blue-300 hover:bg-blue-50"
+                  class="flex cursor-pointer items-center justify-between rounded-lg border border-dashed border-gray-300 px-3 py-3 text-sm text-gray-600 transition hover:border-blue-300 hover:bg-blue-50 dark:border-slate-600 dark:text-slate-300 dark:hover:border-blue-700 dark:hover:bg-blue-900/30"
                 >
                   <span class="truncate pr-3">{{ approvalFileLabel }}</span>
-                  <span class="rounded-md bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">Pilih File</span>
+                  <span class="rounded-md bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700 dark:bg-slate-600 dark:text-slate-200">Pilih File</span>
                   <input
                     type="file"
                     class="hidden"
@@ -327,35 +324,35 @@ const onSignedLetterChange = (event) => {
             </div>
           </section>
 
-          <section class="rounded-xl border border-gray-200 bg-white shadow-sm">
-            <header class="border-b border-gray-100 px-6 py-4">
-              <h2 class="text-lg font-semibold text-gray-800">Riwayat Aktivitas</h2>
-              <p class="text-sm text-gray-500">Jejak persetujuan untuk peminjaman ini.</p>
+          <section class="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+            <header class="border-b border-gray-100 px-6 py-4 dark:border-slate-700">
+              <h2 class="text-lg font-semibold text-gray-800 dark:text-white">Riwayat Aktivitas</h2>
+              <p class="text-sm text-gray-500 dark:text-slate-400">Jejak persetujuan untuk peminjaman ini.</p>
             </header>
             <ul class="space-y-4 px-6 py-5">
               <li
                 v-for="log in itemBorrowing.logs ?? []"
                 :key="log.id"
-                class="flex gap-3 rounded-lg border border-gray-100 bg-white p-3 shadow-sm"
+                class="flex gap-3 rounded-lg border border-gray-100 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800"
               >
                 <div
                   class="mt-1 h-2.5 w-2.5 flex-shrink-0 rounded-full"
-                  :class="statusColors[log.action] ?? 'bg-gray-300'"
+                  :class="statusColors[log.action] ?? 'bg-gray-300 dark:bg-slate-600'"
                 />
-                <div class="space-y-1 text-sm text-gray-600">
+                <div class="space-y-1 text-sm text-gray-600 dark:text-slate-300">
                   <div class="flex items-center justify-between gap-3">
-                    <span class="font-medium text-gray-800">{{ log.user?.name ?? 'Sistem' }}</span>
-                    <span class="text-xs text-gray-400">{{ formatDateTime(log.created_at) }}</span>
+                    <span class="font-medium text-gray-800 dark:text-white">{{ log.user?.name ?? 'Sistem' }}</span>
+                    <span class="text-xs text-gray-400 dark:text-slate-500">{{ formatDateTime(log.created_at) }}</span>
                   </div>
-                  <p class="text-xs uppercase tracking-wide text-gray-400">
+                  <p class="text-xs uppercase tracking-wide text-gray-400 dark:text-slate-500">
                     {{ statusLabels[log.action] ?? log.action }}
                   </p>
-                  <p class="leading-snug text-gray-600">{{ log.description ?? '-' }}</p>
+                  <p class="leading-snug text-gray-600 dark:text-slate-300">{{ log.description ?? '-' }}</p>
                 </div>
               </li>
               <li
                 v-if="!(itemBorrowing.logs && itemBorrowing.logs.length)"
-                class="rounded-lg border border-dashed border-gray-200 p-4 text-center text-xs text-gray-400"
+                class="rounded-lg border border-dashed border-gray-200 p-4 text-center text-xs text-gray-400 dark:border-slate-700 dark:text-slate-500"
               >
                 Belum ada aktivitas tercatat.
               </li>

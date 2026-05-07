@@ -52,10 +52,10 @@ const statusLabels = {
 }
 
 const statusBadgeClasses = {
-  approved: 'bg-emerald-100 text-emerald-700 border border-emerald-200',
-  waiting: 'bg-amber-100 text-amber-700 border border-amber-200',
-  rejected: 'bg-rose-100 text-rose-700 border border-rose-200',
-  cancelled: 'bg-violet-100 text-violet-700 border border-violet-200',
+  approved: 'bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-100 dark:border-emerald-800',
+  waiting: 'bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-100 dark:border-amber-800',
+  rejected: 'bg-rose-100 text-rose-700 border border-rose-200 dark:bg-rose-900/30 dark:text-rose-100 dark:border-rose-800',
+  cancelled: 'bg-violet-100 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-100 dark:border-violet-800',
 }
 
 const isUser = computed(() => page.props.auth.user.role === 'user')
@@ -305,10 +305,10 @@ const chartOptions = {
       <div class="mx-auto space-y-8 px-4 sm:px-6 lg:max-w-7xl lg:px-8">
         <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 class="text-3xl font-semibold text-gray-900">Dashboard</h1>
-            <p class="text-sm text-gray-500">
-              {{ isAdmin ? 'Lihat riwayat peminjaman seluruh pengguna.' : 'Pantau permintaan peminjaman yang telah kamu ajukan.' }}
-            </p>
+            <h1 class="text-3xl font-semibold text-gray-900 dark:text-white">Dashboard</h1>
+<p class="text-sm text-gray-500 dark:text-slate-400">
+  {{ isAdmin ? 'Lihat riwayat peminjaman seluruh pengguna.' : 'Pantau permintaan peminjaman yang telah kamu ajukan.' }}
+</p>
           </div>
           <Link
             v-if="isUser"
@@ -320,38 +320,38 @@ const chartOptions = {
         </div>
 
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-          <div class="rounded-xl border border-blue-100 bg-blue-50 p-4 text-blue-800">
-            <div class="text-sm font-medium">Total Pengajuan</div>
-            <div class="mt-2 text-3xl font-semibold">{{ summary.total }}</div>
-          </div>
-          <div class="rounded-xl border border-emerald-100 bg-emerald-50 p-4 text-emerald-700">
-            <div class="text-sm font-medium">Disetujui</div>
-            <div class="mt-2 text-3xl font-semibold">{{ summary.approved }}</div>
-          </div>
-          <div class="rounded-xl border border-amber-100 bg-amber-50 p-4 text-amber-700">
-            <div class="text-sm font-medium">Menunggu</div>
-            <div class="mt-2 text-3xl font-semibold">{{ summary.waiting }}</div>
-          </div>
-          <div class="rounded-xl border border-rose-100 bg-rose-50 p-4 text-rose-700">
-            <div class="text-sm font-medium">Ditolak</div>
-            <div class="mt-2 text-3xl font-semibold">{{ summary.rejected }}</div>
-          </div>
-          <div class="rounded-xl border border-slate-100 bg-slate-50 p-4 text-slate-700">
-            <div class="text-sm font-medium">Dibatalkan</div>
-            <div class="mt-2 text-3xl font-semibold">{{ summary.cancelled }}</div>
-          </div>
+<div class="rounded-xl border border-blue-100 bg-blue-50 p-4 text-blue-800 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-100">
+  <div class="text-sm font-medium">Total Pengajuan</div>
+  <div class="mt-2 text-3xl font-semibold">{{ summary.total }}</div>
+</div>
+<div class="rounded-xl border border-emerald-100 bg-emerald-50 p-4 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-100">
+  <div class="text-sm font-medium">Disetujui</div>
+  <div class="mt-2 text-3xl font-semibold">{{ summary.approved }}</div>
+</div>
+<div class="rounded-xl border border-amber-100 bg-amber-50 p-4 text-amber-700 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-100">
+  <div class="text-sm font-medium">Menunggu</div>
+  <div class="mt-2 text-3xl font-semibold">{{ summary.waiting }}</div>
+</div>
+<div class="rounded-xl border border-rose-100 bg-rose-50 p-4 text-rose-700 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-100">
+  <div class="text-sm font-medium">Ditolak</div>
+  <div class="mt-2 text-3xl font-semibold">{{ summary.rejected }}</div>
+</div>
+<div class="rounded-xl border border-slate-100 bg-slate-50 p-4 text-slate-700 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-200">
+  <div class="text-sm font-medium">Dibatalkan</div>
+  <div class="mt-2 text-3xl font-semibold">{{ summary.cancelled }}</div>
+</div>
         </div>
 
         <!-- Charts Section -->
         <div class="grid gap-6 md:grid-cols-2 mb-6">
-          <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4">Distribusi Status Booking</h3>
+<div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+  <h3 class="text-lg font-semibold text-gray-800 mb-4 dark:text-white">Distribusi Status Booking</h3>
             <div class="h-64">
               <Pie :data="statusChartData" :options="chartOptions" />
             </div>
           </div>
-          <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4">Tren Peminjaman 6 Bulan Terakhir</h3>
+<div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+  <h3 class="text-lg font-semibold text-gray-800 mb-4 dark:text-white">Tren Peminjaman 6 Bulan Terakhir</h3>
             <div class="h-64">
               <Bar :data="monthlyChartData" :options="chartOptions" />
             </div>
@@ -462,8 +462,8 @@ const chartOptions = {
           </div>
 
           <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 text-sm text-gray-700">
-              <thead class="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
+            <table class="min-w-full divide-y divide-gray-200 text-sm text-gray-700 dark:divide-slate-700 dark:text-slate-300">
+              <thead class="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:bg-slate-800 dark:text-slate-400">
                 <tr>
                   <SortableTh
                     class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
@@ -517,21 +517,21 @@ const chartOptions = {
                   <th v-if="isAdmin" class="px-5 py-3 text-left">Aksi</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-gray-100">
-                <tr v-for="booking in paginatedBookings" :key="booking.id" class="hover:bg-gray-50">
+              <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
+                <tr v-for="booking in paginatedBookings" :key="booking.id" class="hover:bg-gray-50 dark:hover:bg-slate-700">
                   <td class="px-5 py-4">
-                    <div class="font-semibold text-gray-900">{{ booking.title }}</div>
-                    <div class="text-xs text-gray-500">
+                    <div class="font-semibold text-gray-900 dark:text-white">{{ booking.title }}</div>
+                    <div class="text-xs text-gray-500 dark:text-slate-400">
                       {{ booking.description || 'Tidak ada deskripsi tambahan.' }}
                     </div>
                   </td>
                   <td v-if="isAdmin" class="px-5 py-4">
-                    <div class="font-medium text-gray-900">{{ booking.user?.name ?? '-' }}</div>
-                    <div class="text-xs text-gray-500">{{ booking.user?.email ?? '-' }}</div>
+                    <div class="font-medium text-gray-900 dark:text-white">{{ booking.user?.name ?? '-' }}</div>
+                    <div class="text-xs text-gray-500 dark:text-slate-400">{{ booking.user?.email ?? '-' }}</div>
                   </td>
                   <td class="px-5 py-4">
-                    <div class="font-medium text-gray-900">{{ booking.room?.name ?? '-' }}</div>
-                    <div class="text-xs text-gray-500">
+                    <div class="font-medium text-gray-900 dark:text-white">{{ booking.room?.name ?? '-' }}</div>
+                    <div class="text-xs text-gray-500 dark:text-slate-400">
                       {{ booking.room?.building?.name ?? '-' }} - {{ booking.room?.building?.campus?.name ?? '-' }}
                     </div>
                   </td>

@@ -424,7 +424,6 @@ onBeforeUnmount(() => {
               </td>
               <td class="px-5 py-4">
                 <div class="font-medium text-slate-800 dark:text-slate-200">{{ getItemNames(borrowing) }}</div>
-                <div class="text-xs text-slate-500 dark:text-slate-400">{{ getItemCodes(borrowing) }} • {{ getItemCategories(borrowing) }}</div>
                 <div v-if="borrowing.items && borrowing.items.length > 1" class="mt-1 text-xs text-slate-400 dark:text-slate-500">
                   {{ borrowing.items.length }} jenis barang
                 </div>

@@ -23,10 +23,10 @@ const statusLabels = {
 }
 
 const statusColors = {
-  waiting: 'bg-amber-100 text-amber-700 border-amber-200',
-  approved: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-  rejected: 'bg-rose-100 text-rose-700 border-rose-200',
-  cancelled: 'bg-slate-100 text-slate-700 border-slate-200',
+  waiting: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
+  approved: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800',
+  rejected: 'bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-800',
+  cancelled: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600',
 }
 
 const normalizeStatus = (status) => {
@@ -80,20 +80,20 @@ const cancelBooking = () => {
     <div class="space-y-6">
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div class="text-sm text-gray-500">Detail Permintaan Booking</div>
-          <h1 class="text-2xl font-semibold text-gray-800">{{ booking.title }}</h1>
+          <div class="text-sm text-gray-500 dark:text-slate-400">Detail Permintaan Booking</div>
+          <h1 class="text-2xl font-semibold text-gray-800 dark:text-white">{{ booking.title }}</h1>
         </div>
         <div class="flex items-center gap-2">
           <span
             class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold"
-            :class="statusColors[normalizedStatus] ?? 'bg-gray-100 text-gray-600 border-gray-200'"
+            :class="statusColors[normalizedStatus] ?? 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600'"
           >
             {{ statusLabels[normalizedStatus] ?? booking.status }}
           </span>
           <button
             v-if="canCancelBooking"
             type="button"
-            class="inline-flex items-center rounded-md border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-600 transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+            class="inline-flex items-center rounded-md border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-600 transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-rose-800 dark:text-rose-400 dark:hover:border-rose-700 dark:hover:bg-rose-900/30"
             :disabled="cancelForm.processing"
             @click="cancelBooking"
           >
@@ -101,7 +101,7 @@ const cancelBooking = () => {
           </button>
           <Link
             :href="route('bookings.index')"
-            class="inline-flex items-center rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+            class="inline-flex items-center rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700"
           >
             Kembali
           </Link>
@@ -110,79 +110,79 @@ const cancelBooking = () => {
 
       <div class="grid gap-6 lg:grid-cols-3">
         <div class="space-y-6 lg:col-span-2">
-          <section class="rounded-xl border border-gray-200 bg-white shadow-sm">
-            <header class="flex flex-col gap-2 border-b border-gray-100 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <section class="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+            <header class="flex flex-col gap-2 border-b border-gray-100 px-6 py-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700">
               <div>
-                <h2 class="text-lg font-semibold text-gray-800">Informasi Pengajuan</h2>
-                <p class="text-sm text-gray-500">Rincian ruangan dan jadwal yang kamu ajukan.</p>
+                <h2 class="text-lg font-semibold text-gray-800 dark:text-white">Informasi Pengajuan</h2>
+                <p class="text-sm text-gray-500 dark:text-slate-400">Rincian ruangan dan jadwal yang kamu ajukan.</p>
               </div>
             </header>
             <div class="grid gap-6 px-6 py-5 sm:grid-cols-2">
               <div class="space-y-3">
                 <div>
-                  <div class="text-xs font-semibold uppercase text-gray-500">Deskripsi</div>
-                  <p class="text-sm leading-relaxed text-gray-700">
+                  <div class="text-xs font-semibold uppercase text-gray-500 dark:text-slate-400">Deskripsi</div>
+                  <p class="text-sm leading-relaxed text-gray-700 dark:text-slate-300">
                     {{ booking.description || 'Tidak ada deskripsi tambahan.' }}
                   </p>
                 </div>
                 <div>
-                  <div class="text-xs font-semibold uppercase text-gray-500">Lampiran</div>
+                  <div class="text-xs font-semibold uppercase text-gray-500 dark:text-slate-400">Lampiran</div>
                   <template v-if="booking.attachment">
                     <a
                       :href="route('bookings.attachment', booking.id)"
                       target="_blank"
                       rel="noopener"
-                      class="inline-flex items-center rounded-md border border-blue-200 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:border-blue-300 hover:text-blue-800"
+                      class="inline-flex items-center rounded-md border border-blue-200 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:border-blue-300 hover:text-blue-800 dark:border-blue-800 dark:text-blue-300 dark:hover:border-blue-700 dark:hover:text-blue-200"
                     >
                       Lihat Lampiran
                     </a>
                   </template>
-                  <p v-else class="text-sm text-gray-400">Tidak ada lampiran yang diunggah.</p>
+                  <p v-else class="text-sm text-gray-400 dark:text-slate-500">Tidak ada lampiran yang diunggah.</p>
                 </div>
               </div>
               <div class="space-y-3">
                 <div>
-                  <div class="text-xs font-semibold uppercase text-gray-500">Jadwal</div>
-                  <p class="text-sm text-gray-700">
-                    Mulai: <span class="font-semibold text-gray-900">{{ formatDateTime(booking.start_time) }}</span>
+                  <div class="text-xs font-semibold uppercase text-gray-500 dark:text-slate-400">Jadwal</div>
+                  <p class="text-sm text-gray-700 dark:text-slate-300">
+                    Mulai: <span class="font-semibold text-gray-900 dark:text-white">{{ formatDateTime(booking.start_time) }}</span>
                   </p>
-                  <p class="text-sm text-gray-700">
-                    Selesai: <span class="font-semibold text-gray-900">{{ formatDateTime(booking.end_time) }}</span>
+                  <p class="text-sm text-gray-700 dark:text-slate-300">
+                    Selesai: <span class="font-semibold text-gray-900 dark:text-white">{{ formatDateTime(booking.end_time) }}</span>
                   </p>
                 </div>
                 <div>
-                  <div class="text-xs font-semibold uppercase text-gray-500">Lokasi</div>
-                  <p class="text-sm text-gray-700">
+                  <div class="text-xs font-semibold uppercase text-gray-500 dark:text-slate-400">Lokasi</div>
+                  <p class="text-sm text-gray-700 dark:text-slate-300">
                     Ruangan:
-                    <span class="font-semibold text-gray-900">{{ booking.room?.name ?? '-' }}</span>
+                    <span class="font-semibold text-gray-900 dark:text-white">{{ booking.room?.name ?? '-' }}</span>
                   </p>
-                  <p class="text-sm text-gray-700">Gedung: {{ booking.room?.building?.name ?? '-' }}</p>
-                  <p class="text-sm text-gray-700">Kampus: {{ booking.room?.building?.campus?.name ?? '-' }}</p>
+                  <p class="text-sm text-gray-700 dark:text-slate-300">Gedung: {{ booking.room?.building?.name ?? '-' }}</p>
+                  <p class="text-sm text-gray-700 dark:text-slate-300">Kampus: {{ booking.room?.building?.campus?.name ?? '-' }}</p>
                 </div>
               </div>
             </div>
           </section>
 
-          <section class="rounded-xl border border-gray-200 bg-white shadow-sm">
-            <header class="border-b border-gray-100 px-6 py-4">
-              <h2 class="text-lg font-semibold text-gray-800">Surat Peminjaman</h2>
-              <p class="text-sm text-gray-500">Unduh surat persetujuan setelah booking disetujui.</p>
+          <section class="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+            <header class="border-b border-gray-100 px-6 py-4 dark:border-slate-700">
+              <h2 class="text-lg font-semibold text-gray-800 dark:text-white">Surat Peminjaman</h2>
+              <p class="text-sm text-gray-500 dark:text-slate-400">Unduh surat persetujuan setelah booking disetujui.</p>
             </header>
-            <div class="px-6 py-5 text-sm text-gray-600">
+            <div class="px-6 py-5 text-sm text-gray-600 dark:text-slate-300">
               <template v-if="normalizedStatus === 'approved'">
                 <a
                   :href="route('bookings.letter', booking.id)"
                   target="_blank"
                   rel="noopener"
-                  class="inline-flex items-center rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+                  class="inline-flex items-center rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-800"
                 >
                   Download Surat Peminjaman
                 </a>
               </template>
-              <p v-else-if="normalizedStatus === 'cancelled'" class="text-gray-500">
+              <p v-else-if="normalizedStatus === 'cancelled'" class="text-gray-500 dark:text-slate-400">
                 Booking ini telah dibatalkan sehingga surat peminjaman tidak tersedia.
               </p>
-              <p v-else class="text-gray-400">
+              <p v-else class="text-gray-400 dark:text-slate-500">
                 Surat peminjaman tersedia setelah permintaan disetujui oleh admin.
               </p>
             </div>
@@ -190,65 +190,65 @@ const cancelBooking = () => {
         </div>
 
         <aside class="space-y-6">
-          <section class="rounded-xl border border-gray-200 bg-white shadow-sm">
-            <header class="border-b border-gray-100 px-6 py-4">
-              <h2 class="text-lg font-semibold text-gray-800">Catatan Persetujuan</h2>
-              <p class="text-sm text-gray-500">Catatan dari admin terkait status permintaanmu.</p>
+          <section class="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+            <header class="border-b border-gray-100 px-6 py-4 dark:border-slate-700">
+              <h2 class="text-lg font-semibold text-gray-800 dark:text-white">Catatan Persetujuan</h2>
+              <p class="text-sm text-gray-500 dark:text-slate-400">Catatan dari admin terkait status permintaanmu.</p>
             </header>
-            <div class="space-y-3 px-6 py-5 text-sm text-gray-600">
+            <div class="space-y-3 px-6 py-5 text-sm text-gray-600 dark:text-slate-300">
               <template v-if="hasDecision">
                 <span
                   class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold"
-                  :class="statusColors[decisionStatus] ?? 'bg-gray-100 text-gray-600 border-gray-200'"
+                  :class="statusColors[decisionStatus] ?? 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600'"
                 >
                   {{ statusLabels[decisionStatus] ?? decisionStatus }}
                 </span>
-                <p v-if="decisionNote" class="leading-relaxed text-gray-700">
+                <p v-if="decisionNote" class="leading-relaxed text-gray-700 dark:text-slate-300">
                   {{ decisionNote }}
                 </p>
-                <p v-else class="text-gray-400">Tidak ada catatan tambahan dari admin.</p>
-                <p class="text-xs text-gray-400">
+                <p v-else class="text-gray-400 dark:text-slate-500">Tidak ada catatan tambahan dari admin.</p>
+                <p class="text-xs text-gray-400 dark:text-slate-500">
                   Diperbarui pada {{ decisionTimestamp }}
                   <span v-if="latestDecisionLog?.user?.name"> oleh {{ latestDecisionLog.user.name }}</span>
                 </p>
               </template>
               <template v-else>
-                <p class="text-gray-500">
+                <p class="text-gray-500 dark:text-slate-400">
                   Permintaan masih menunggu keputusan admin. Kamu akan melihat catatan di sini setelah disetujui atau ditolak.
                 </p>
               </template>
             </div>
           </section>
 
-          <section class="rounded-xl border border-gray-200 bg-white shadow-sm">
-            <header class="border-b border-gray-100 px-6 py-4">
-              <h2 class="text-lg font-semibold text-gray-800">Riwayat Aktivitas</h2>
-              <p class="text-sm text-gray-500">Jejak proses permintaan booking ini.</p>
+          <section class="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+            <header class="border-b border-gray-100 px-6 py-4 dark:border-slate-700">
+              <h2 class="text-lg font-semibold text-gray-800 dark:text-white">Riwayat Aktivitas</h2>
+              <p class="text-sm text-gray-500 dark:text-slate-400">Jejak proses permintaan booking ini.</p>
             </header>
             <ul class="space-y-4 px-6 py-5">
               <li
                 v-for="log in booking.logs ?? []"
                 :key="log.id"
-                class="flex gap-3 rounded-lg border border-gray-100 bg-white p-3 shadow-sm"
+                class="flex gap-3 rounded-lg border border-gray-100 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800"
               >
                 <div
                   class="mt-1 h-2.5 w-2.5 flex-shrink-0 rounded-full"
-                  :class="statusColors[normalizeStatus(log.action)] ?? 'bg-gray-300'"
+                  :class="statusColors[normalizeStatus(log.action)] ?? 'bg-gray-300 dark:bg-slate-600'"
                 />
-                <div class="space-y-1 text-sm text-gray-600">
+                <div class="space-y-1 text-sm text-gray-600 dark:text-slate-300">
                   <div class="flex items-center justify-between gap-3">
-                    <span class="font-medium text-gray-800">{{ log.user?.name ?? 'Sistem' }}</span>
-                    <span class="text-xs text-gray-400">{{ formatDateTime(log.created_at) }}</span>
+                    <span class="font-medium text-gray-800 dark:text-white">{{ log.user?.name ?? 'Sistem' }}</span>
+                    <span class="text-xs text-gray-400 dark:text-slate-500">{{ formatDateTime(log.created_at) }}</span>
                   </div>
-                  <p class="text-xs uppercase tracking-wide text-gray-400">
+                  <p class="text-xs uppercase tracking-wide text-gray-400 dark:text-slate-500">
                     {{ statusLabels[normalizeStatus(log.action)] ?? (normalizeStatus(log.action) || log.action) }}
                   </p>
-                  <p class="leading-snug text-gray-600">{{ log.description ?? '-' }}</p>
+                  <p class="leading-snug text-gray-600 dark:text-slate-300">{{ log.description ?? '-' }}</p>
                 </div>
               </li>
               <li
                 v-if="!(booking.logs && booking.logs.length)"
-                class="rounded-lg border border-dashed border-gray-200 p-4 text-center text-xs text-gray-400"
+                class="rounded-lg border border-dashed border-gray-200 p-4 text-center text-xs text-gray-400 dark:border-slate-700 dark:text-slate-500"
               >
                 Belum ada aktivitas tercatat.
               </li>
