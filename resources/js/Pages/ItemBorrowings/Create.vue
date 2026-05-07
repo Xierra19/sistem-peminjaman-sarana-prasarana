@@ -248,7 +248,7 @@ onBeforeUnmount(() => {
         <div class="border-b border-slate-200 pb-5 dark:border-slate-700">
           <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Request Peminjaman Barang</h1>
           <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Pilih multiple barang untuk satu request. Upload surat tugas <span class="text-rose-500 font-medium">*</span>
+            Pilih multiple barang untuk satu request. Upload surat <span class="text-rose-500 font-medium">*</span>
           </p>
         </div>
 
@@ -271,7 +271,7 @@ onBeforeUnmount(() => {
             <span class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">3</span>
             <div>
               <p class="font-semibold text-slate-800 dark:text-slate-200">Upload Surat <span class="text-rose-500">*</span></p>
-              <p>Surat tugas/wajib lampiran.</p>
+              <p>Surat /wajib lampiran.</p>
             </div>
           </div>
         </div>
@@ -400,14 +400,14 @@ onBeforeUnmount(() => {
 
           <!-- Mandatory Attachment * -->
           <div class="space-y-3">
-            <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Lampiran Surat Tugas <span class="text-rose-500">*</span></label>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Lampiran Surat <span class="text-rose-500">*</span></label>
             <p class="text-xs text-slate-500 mb-2 dark:text-slate-400">PDF, JPG, PNG (max 2MB) - Wajib untuk verifikasi</p>
             <label class="flex cursor-pointer items-center justify-between rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-6 transition hover:border-blue-400 hover:bg-blue-50/20 dark:border-slate-600 dark:bg-slate-700/50 dark:hover:border-slate-500 dark:hover:bg-slate-600/50">
               <div class="text-left">
                 <p class="font-medium text-slate-700 dark:text-slate-200">
-                  {{ form.attachment ? form.attachment.name : 'Upload surat tugas (wajib)' }}
+                  {{ form.attachment ? form.attachment.name : 'Upload surat (wajib)' }}
                 </p>
-                <p class="text-xs text-slate-500 mt-1 dark:text-slate-400">Wajib lampiran surat tugas / dokumen resmi</p>
+                <p class="text-xs text-slate-500 mt-1 dark:text-slate-400">Wajib lampiran surat / dokumen resmi</p>
               </div>
               <span class="rounded-xl bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm dark:bg-slate-600 dark:text-slate-200">Pilih File</span>
               <input class="hidden" type="file" accept=".pdf,.jpg,.jpeg,.png" @change="handleFileChange" required />

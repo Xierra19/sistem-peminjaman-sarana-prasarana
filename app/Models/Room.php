@@ -16,12 +16,10 @@ class Room extends Model
         'building_id',
         'capacity',
         'is_available',
-        'features',
     ];
 
     protected $casts = [
         'is_available' => 'boolean',
-        'features' => 'array',
     ];
 
     /**
@@ -40,11 +38,4 @@ class Room extends Model
         return $this->hasMany(Booking::class);
     }
 
-    /**
-     * @return HasMany<ImportedClassSchedule>
-     */
-    public function importedClassSchedules(): HasMany
-    {
-        return $this->hasMany(ImportedClassSchedule::class);
-    }
 }

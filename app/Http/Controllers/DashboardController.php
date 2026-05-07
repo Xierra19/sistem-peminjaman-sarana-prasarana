@@ -73,7 +73,7 @@ class DashboardController extends Controller
         ];
 
         $rooms = Room::query()
-            ->select(['id', 'name', 'building_id', 'capacity', 'is_available', 'features'])
+            ->select(['id', 'name', 'building_id', 'capacity', 'is_available'])
             ->with([
                 'building:id,name,campus_id',
                 'building.campus:id,name',

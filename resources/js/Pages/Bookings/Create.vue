@@ -681,17 +681,20 @@ onBeforeUnmount(() => {
             </div>
 
             <div class="space-y-3">
-              <div class="flex items-center justify-between">
-                <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Lampiran Pendukung</label>
-                <span class="text-xs text-slate-400 dark:text-slate-400">PDF, JPG, atau PNG maks. 2MB</span>
-              </div>
-            <input
-              type="file"
-              @change="handleFileChange"
-              class="w-full rounded-2xl border border-dashed border-slate-200 px-3 py-2 text-sm file:mr-4 file:rounded-md file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-blue-600 hover:file:bg-blue-100"
-            />
-            <div v-if="form.errors.attachment" class="text-sm text-red-500">{{ form.errors.attachment }}</div>
-          </div>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Lampiran Pendukung</label>
+              <p class="text-xs text-slate-500 mb-2 dark:text-slate-400">PDF, JPG, atau PNG maks. 2MB (Opsional)</p>
+              <label class="flex cursor-pointer items-center justify-between rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-6 transition hover:border-blue-400 hover:bg-blue-50/20 dark:border-slate-600 dark:bg-slate-700/50 dark:hover:border-slate-500 dark:hover:bg-slate-600/50">
+                <div class="text-left">
+                  <p class="font-medium text-slate-700 dark:text-slate-200">
+                    {{ form.attachment ? form.attachment.name : 'Upload lampiran (opsional)' }}
+                  </p>
+                  <p class="text-xs text-slate-500 mt-1 dark:text-slate-400">Lampiran pendukung kegiatan (surat, dokumen, dll)</p>
+                </div>
+                <span class="rounded-xl bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm dark:bg-slate-600 dark:text-slate-200">Pilih File</span>
+                <input class="hidden" type="file" accept=".pdf,.jpg,.jpeg,.png" @change="handleFileChange" />
+              </label>
+              <div v-if="form.errors.attachment" class="text-sm text-red-500">{{ form.errors.attachment }}</div>
+            </div>
 
           <div class="flex flex-col gap-3 sm:flex-row sm:justify-end">
             <button
