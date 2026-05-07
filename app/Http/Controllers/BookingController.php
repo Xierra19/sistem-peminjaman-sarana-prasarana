@@ -24,20 +24,68 @@ class BookingController extends Controller
     /**
      * Display a listing of the authenticated user's booking requests.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $bookings = Booking::with([
-            'room.building.campus',
-            'logs' => function ($query) {
-                $query->with('user')->orderBy('created_at');
-            },
-        ])
-            ->where('user_id', Auth::id())
-            ->orderByDesc('created_at')
-            ->get();
+        // Ambil parameter dari request
+        $search = $request->input('search');
+        $status = $request->input('status');
+        $sort = $request->input('sort', 'created_at');
+        $direction = $request->input('direction', 'desc');
+        $perPage = $request->input('per_page', 10);
+
+        // Flatten response dengan join, hindari nested relationships
+        $query = Booking::query()
+            ->join('rooms', 'bookings.room_id', '=', 'rooms.id')
+            ->join('buildings', 'rooms.building_id', '=', 'buildings.id')
+            ->join('campuses', 'buildings.campus_id', '=', 'campuses.id')
+            ->select(
+                'bookings.id',
+                'bookings.title',
+                'bookings.description',
+                'bookings.start_time',
+                'bookings.end_time',
+                'bookings.status',
+                'rooms.name as room_name',
+                'buildings.name as building_name',
+                'campuses.name as campus_name'
+            )
+            ->where('bookings.user_id', Auth::id());
+
+        // Filter pencarian (server-side)
+        $query->when($search, function ($q) use ($search) {
+            $q->where(function ($sub) use ($search) {
+                $sub->where('bookings.title', 'like', "%{$search}%")
+                    ->orWhere('bookings.description', 'like', "%{$search}%")
+                    ->orWhere('rooms.name', 'like', "%{$search}%")
+                    ->orWhere('buildings.name', 'like', "%{$search}%")
+                    ->orWhere('campuses.name', 'like', "%{$search}%");
+            });
+        });
+
+        // Filter status
+        $query->when($status, function ($q) use ($status) {
+            $q->where('bookings.status', $status);
+        });
+
+        // Sorting (flattened field mapping)
+        $sortColumn = match ($sort) {
+            'room' => 'rooms.name',
+            default => "bookings.{$sort}",
+        };
+        $query->orderBy($sortColumn, $direction);
+
+        // Pagination
+        $bookings = $query->paginate($perPage)->withQueryString();
 
         return Inertia::render('Bookings/Index', [
             'bookings' => $bookings,
+            'filters' => [
+                'search' => $search,
+                'status' => $status,
+                'sort' => $sort,
+                'direction' => $direction,
+                'per_page' => $perPage,
+            ],
         ]);
     }
 

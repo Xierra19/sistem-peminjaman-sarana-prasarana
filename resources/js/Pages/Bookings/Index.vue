@@ -1,17 +1,33 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import SortableTh from '@/Components/SortableTh.vue'
-import { Head, Link, useForm } from '@inertiajs/vue3'
-import { computed, ref } from 'vue'
-import { usePagination } from '@/Composables/usePagination'
-import { useTableSort } from '@/Composables/useTableSort'
+import { Head, Link, useForm, router } from '@inertiajs/vue3'
+import { ref, watch, computed, onBeforeUnmount } from 'vue'
 import { formatDateTimeToDDMMYY } from '@/Composables/useDateFormatter'
 
 const props = defineProps({
   bookings: {
-    type: Array,
-    default: () => [],
+    type: Object,
+    default: () => ({}),
   },
+  filters: {
+    type: Object,
+    default: () => ({}),
+  },
+})
+
+// Debounce helper (no external library)
+let timer = null
+const debounce = (fn, delay) => {
+  return (...args) => {
+    if (timer) clearTimeout(timer)
+    timer = setTimeout(() => fn(...args), delay)
+  }
+}
+
+// Cleanup on unmount to prevent memory leaks
+onBeforeUnmount(() => {
+  if (timer) clearTimeout(timer)
 })
 
 const statusLabels = {
@@ -34,57 +50,18 @@ const normalizeStatus = (status) => {
 }
 
 const perPageOptions = [5, 10, 25, 50]
-const searchQuery = ref('')
-const statusFilter = ref('')
+const searchQuery = ref(props.filters.search || '')
+const statusFilter = ref(props.filters.status || '')
+const sortColumn = ref(props.filters.sort || 'created_at')
+const sortDirection = ref(props.filters.direction || 'desc')
+const rowsPerPage = ref(props.filters.per_page || 10)
+const isLoading = ref(false)
 
-const filteredBookings = computed(() => {
-  const q = searchQuery.value.trim().toLowerCase()
-  const status = statusFilter.value
+// Prevent race conditions with plain variable (not ref)
+let currentRequestId = 0
 
-  return (props.bookings ?? []).filter((booking) => {
-    const searchable = [
-      booking.title,
-      booking.description,
-      booking.room?.name,
-      booking.room?.building?.name,
-      booking.room?.building?.campus?.name,
-    ]
-      .filter(Boolean)
-      .join(' ')
-      .toLowerCase()
-
-    const matchesSearch = !q || searchable.includes(q)
-    const bookingStatus = normalizeStatus(booking.status)
-    const matchesStatus = !status || bookingStatus === status
-
-    return matchesSearch && matchesStatus
-  })
-})
-
-const {
-  sortedItems: sortedBookings,
-  toggleSort: toggleBookingSort,
-  sortDirection: bookingSortDirection,
-  ariaSortValue: bookingAriaSortValue,
-} = useTableSort(filteredBookings, {
-  accessors: {
-    number: (booking) => booking.id ?? 0,
-    title: (booking) => booking.title ?? '',
-    room: (booking) => booking.room?.name ?? '',
-    start_time: (booking) => (booking.start_time ? new Date(booking.start_time) : null),
-    end_time: (booking) => (booking.end_time ? new Date(booking.end_time) : null),
-    status: (booking) => normalizeStatus(booking.status) ?? '',
-  },
-})
-
-const {
-  paginatedItems: paginatedBookings,
-  rowsPerPage,
-  currentPage,
-  pageMeta,
-  pages,
-  changePage,
-} = usePagination(sortedBookings)
+// Data from server
+const paginatedBookings = computed(() => props.bookings.data || [])
 
 const formatDateTime = (value) => formatDateTimeToDDMMYY(value)
 
@@ -109,6 +86,133 @@ const cancelBooking = (booking) => {
     onFinish: () => {
       cancellingId.value = null
     },
+  })
+}
+
+// Centralized request logic (reusable function to avoid duplication)
+const sendRequest = (params) => {
+  isLoading.value = true
+  const thisRequestId = ++currentRequestId
+  
+  router.get(
+    route('bookings.index'),
+    params,
+    {
+      preserveState: true,
+      replace: true,
+      onFinish: () => {
+        if (thisRequestId === currentRequestId) {
+          isLoading.value = false
+        }
+      },
+    }
+  )
+}
+
+// Function to send request with new filter/sort
+const applyFilters = () => {
+  sendRequest({
+    search: searchQuery.value || undefined,
+    status: statusFilter.value || undefined,
+    sort: sortColumn.value,
+    direction: sortDirection.value,
+    per_page: rowsPerPage.value,
+  })
+}
+
+// Debounced search (300ms) - only for search input
+const debouncedSearch = debounce(applyFilters, 300)
+
+// Watchers
+watch(searchQuery, () => { debouncedSearch() })
+watch([statusFilter, rowsPerPage], () => { applyFilters() })
+
+// Toggle sort (server-side only)
+const toggleBookingSort = (column) => {
+  if (sortColumn.value === column) {
+    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortColumn.value = column
+    sortDirection.value = 'asc'
+  }
+  applyFilters()
+}
+
+const bookingSortDirection = (column) => {
+  if (sortColumn.value !== column) return 'none'
+  return sortDirection.value
+}
+
+const bookingAriaSortValue = (column) => {
+  if (sortColumn.value !== column) return 'none'
+  return sortDirection.value === 'asc' ? 'ascending' : 'descending'
+}
+
+// Pagination
+const pageMeta = computed(() => ({
+  from: props.bookings.from || 0,
+  to: props.bookings.to || 0,
+  of: props.bookings.total || 0,
+}))
+
+const currentPage = computed(() => props.bookings.current_page || 1)
+const totalPages = computed(() => props.bookings.last_page || 1)
+
+// Skeleton rows (max 5 even if rowsPerPage is larger)
+const skeletonRows = computed(() => Math.min(rowsPerPage.value, 5))
+
+// Limit pagination to max 5 visible pages with ellipsis
+const pages = computed(() => {
+  const total = totalPages.value
+  const current = currentPage.value
+  
+  if (total <= 5) {
+    return Array.from({ length: total }, (_, i) => i + 1)
+  }
+  
+  const pages = []
+  
+  if (current <= 3) {
+    // Show first 4 pages + ellipsis + last page
+    for (let i = 1; i <= Math.min(4, total); i++) {
+      pages.push(i)
+    }
+    if (total > 4) {
+      pages.push('...')
+      pages.push(total)
+    }
+  } else if (current >= total - 2) {
+    // Show first page + ellipsis + last 4 pages
+    pages.push(1)
+    pages.push('...')
+    for (let i = Math.max(total - 3, 2); i <= total; i++) {
+      pages.push(i)
+    }
+  } else {
+    // Show first page + ellipsis + current-1, current, current+1 + ellipsis + last page
+    pages.push(1)
+    pages.push('...')
+    pages.push(current - 1)
+    pages.push(current)
+    pages.push(current + 1)
+    pages.push('...')
+    pages.push(total)
+  }
+  
+  return pages
+})
+
+const changePage = (page) => {
+  // Defensive coding: guard against invalid page values
+  if (typeof page !== 'number' || page < 1 || page > totalPages.value) return
+  
+  sendRequest({
+    page,
+    search: searchQuery.value || undefined,
+    status: statusFilter.value || undefined,
+    sort: sortColumn.value,
+    direction: sortDirection.value,
+    per_page: rowsPerPage.value,
   })
 }
 </script>
@@ -183,7 +287,7 @@ const cancelBooking = (booking) => {
             <div class="flex items-center gap-3 rounded-2xl bg-slate-50 px-3 py-2 text-sm text-slate-600 dark:bg-slate-700 dark:text-slate-300">
               <span class="font-medium">Total data</span>
               <span class="inline-flex h-8 w-12 items-center justify-center rounded-xl bg-white text-sm font-semibold text-slate-900 shadow-sm dark:bg-slate-600 dark:text-slate-100">
-                {{ paginatedBookings.length }}
+                {{ isLoading ? '...' : pageMeta.of }}
               </span>
             </div>
           </div>
@@ -259,90 +363,108 @@ const cancelBooking = (booking) => {
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
-              <tr v-for="(booking, index) in paginatedBookings" :key="booking.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
-                <td class="px-4 py-3 text-slate-500 dark:text-slate-400" data-title="#">
-                  {{ pageMeta.from + index }}
-                </td>
-                <td class="px-4 py-3" data-title="Judul">
-                  <div class="font-semibold text-slate-900 dark:text-slate-100">{{ booking.title }}</div>
-                  <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ booking.description || 'Tidak ada deskripsi tambahan.' }}</div>
-                </td>
+              <!-- Loading skeleton rows (max 5) -->
+              <template v-if="isLoading">
+                <tr v-for="n in skeletonRows" :key="`skeleton-${n}`">
+                  <td colspan="7" class="px-4 py-3">
+                    <div class="h-6 animate-pulse rounded bg-slate-200 dark:bg-slate-700"></div>
+                  </td>
+                </tr>
+              </template>
+              
+              <template v-else>
+                <tr v-for="(booking, index) in paginatedBookings" :key="booking.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                  <td class="px-4 py-3 text-slate-500 dark:text-slate-400" data-title="#">
+                    {{ (pageMeta.from || 1) + index }}
+                  </td>
+                  <td class="px-4 py-3" data-title="Judul">
+                    <div class="font-semibold text-slate-900 dark:text-slate-100">{{ booking.title }}</div>
+                    <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ booking.description || 'Tidak ada deskripsi tambahan.' }}</div>
+                  </td>
                 <td class="px-4 py-3" data-title="Ruangan">
-                  <div class="font-medium text-slate-900 dark:text-slate-100">{{ booking.room?.name ?? '-' }}</div>
+                  <div class="font-medium text-slate-900 dark:text-slate-100">{{ booking.room_name ?? '-' }}</div>
                   <div class="text-xs text-slate-500 dark:text-slate-400">
-                    {{ booking.room?.building?.name ?? '-' }} - {{ booking.room?.building?.campus?.name ?? '-' }}
+                    {{ booking.building_name ?? '-' }} - {{ booking.campus_name ?? '-' }}
                   </div>
                 </td>
-                <td class="px-4 py-3 text-slate-700 dark:text-slate-300" data-title="Mulai">{{ formatDateTime(booking.start_time) }}</td>
-                <td class="px-4 py-3 text-slate-700 dark:text-slate-300" data-title="Selesai">{{ formatDateTime(booking.end_time) }}</td>
-                <td class="px-4 py-3" data-title="Status">
-                  <span
-                    class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold"
-                    :class="statusClasses[normalizeStatus(booking.status)] ?? 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600'"
-                  >
-                    {{ statusLabels[normalizeStatus(booking.status)] ?? booking.status }}
-                  </span>
-                </td>
-                <td class="px-4 py-3" data-title="Aksi">
-                  <div class="flex flex-col gap-2">
-                    <Link
-                      :href="route('bookings.show', booking.id)"
-                      class="inline-flex items-center justify-center rounded-xl border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:border-blue-300 hover:text-blue-800 dark:border-blue-800 dark:text-blue-300 dark:hover:border-blue-700 dark:hover:text-blue-200"
+                  <td class="px-4 py-3 text-slate-700 dark:text-slate-300" data-title="Mulai">{{ formatDateTime(booking.start_time) }}</td>
+                  <td class="px-4 py-3 text-slate-700 dark:text-slate-300" data-title="Selesai">{{ formatDateTime(booking.end_time) }}</td>
+                  <td class="px-4 py-3" data-title="Status">
+                    <span
+                      class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold"
+                      :class="statusClasses[normalizeStatus(booking.status)] ?? 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600'"
                     >
-                      Lihat Detail
-                    </Link>
-                    <template v-if="normalizeStatus(booking.status) === 'approved'">
-                      <a
-                        :href="route('bookings.letter', booking.id)"
-                        target="_blank"
-                        rel="noopener"
-                        class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+                      {{ statusLabels[normalizeStatus(booking.status)] ?? booking.status }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3" data-title="Aksi">
+                    <div class="flex flex-col gap-2">
+                      <Link
+                        :href="route('bookings.show', booking.id)"
+                        class="inline-flex items-center justify-center rounded-xl border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:border-blue-300 hover:text-blue-800 dark:border-blue-800 dark:text-blue-300 dark:hover:border-blue-700 dark:hover:text-blue-200"
                       >
-                        Download Surat
-                      </a>
-                    </template>
-                    <template v-else-if="canCancelBooking(booking)">
-                      <button
-                        type="button"
-                        class="inline-flex items-center justify-center rounded-xl border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-rose-800 dark:text-rose-300 dark:hover:border-rose-700 dark:hover:bg-rose-900/30"
-                        :disabled="cancelForm.processing && cancellingId === booking.id"
-                        @click="cancelBooking(booking)"
-                      >
-                        {{ cancellingId === booking.id ? 'Membatalkan...' : 'Batalkan Permintaan' }}
-                      </button>
-                    </template>
-                    <template v-else-if="normalizeStatus(booking.status) === 'rejected'">
-                      <span class="text-xs font-semibold text-rose-500 dark:text-rose-400">Permintaan ditolak</span>
-                    </template>
-                    <template v-else-if="normalizeStatus(booking.status) === 'cancelled'">
-                      <span class="text-xs text-slate-400 dark:text-slate-500">Booking telah dibatalkan</span>
-                    </template>
-                    <template v-else>
-                      <span class="text-xs text-slate-400 dark:text-slate-500">Menunggu persetujuan admin</span>
-                    </template>
-                  </div>
-                </td>
-              </tr>
-              <tr v-if="!paginatedBookings.length">
-                <td colspan="7" class="px-4 py-10 text-center text-sm text-slate-400 dark:text-slate-500">
-                  Tidak ada data booking yang cocok dengan filter saat ini.
-                </td>
-              </tr>
+                        Lihat Detail
+                      </Link>
+                      <template v-if="normalizeStatus(booking.status) === 'approved'">
+                        <a
+                          :href="route('bookings.letter', booking.id)"
+                          target="_blank"
+                          rel="noopener"
+                          class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+                        >
+                          Download Surat
+                        </a>
+                      </template>
+                      <template v-else-if="canCancelBooking(booking)">
+                        <button
+                          type="button"
+                          class="inline-flex items-center justify-center rounded-xl border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-rose-800 dark:text-rose-300 dark:hover:border-rose-700 dark:hover:bg-rose-900/30"
+                          :disabled="cancelForm.processing && cancellingId === booking.id"
+                          @click="cancelBooking(booking)"
+                        >
+                          {{ cancellingId === booking.id ? 'Membatalkan...' : 'Batalkan Permintaan' }}
+                        </button>
+                      </template>
+                      <template v-else-if="normalizeStatus(booking.status) === 'rejected'">
+                        <span class="text-xs font-semibold text-rose-500 dark:text-rose-400">Permintaan ditolak</span>
+                      </template>
+                      <template v-else-if="normalizeStatus(booking.status) === 'cancelled'">
+                        <span class="text-xs text-slate-400 dark:text-slate-500">Booking telah dibatalkan</span>
+                      </template>
+                      <template v-else>
+                        <span class="text-xs text-slate-400 dark:text-slate-500">Menunggu persetujuan admin</span>
+                      </template>
+                    </div>
+                  </td>
+                </tr>
+                <tr v-if="!paginatedBookings.length">
+                  <td colspan="7" class="px-4 py-10 text-center text-sm text-slate-400 dark:text-slate-500">
+                    Tidak ada data booking yang cocok dengan filter saat ini.
+                  </td>
+                </tr>
+              </template>
             </tbody>
           </table>
         </div>
 
         <div class="flex flex-col gap-3 border-t border-slate-100 px-5 py-4 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:text-slate-400">
           <div>
-            <span v-if="pageMeta.of">Menampilkan {{ pageMeta.from }}-{{ pageMeta.to }} dari {{ pageMeta.of }} data</span>
-            <span v-else>Menampilkan 0 data</span>
+            <template v-if="isLoading">
+              Menampilkan ... data
+            </template>
+            <template v-else-if="pageMeta.of">
+              Menampilkan {{ pageMeta.from }}-{{ pageMeta.to }} dari {{ pageMeta.of }} data
+            </template>
+            <template v-else>
+              Menampilkan 0 data
+            </template>
           </div>
           <div class="flex items-center gap-2">
             <button
               type="button"
               class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400"
               @click="changePage(1)"
-              :disabled="currentPage === 1 || !pageMeta.of"
+              :disabled="isLoading || currentPage === 1 || !pageMeta.of"
             >
               «
             </button>
@@ -350,22 +472,25 @@ const cancelBooking = (booking) => {
               type="button"
               class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400"
               @click="changePage(currentPage - 1)"
-              :disabled="currentPage === 1 || !pageMeta.of"
+              :disabled="isLoading || currentPage === 1 || !pageMeta.of"
             >
               ‹
             </button>
             <template v-if="pageMeta.of">
               <button
-                v-for="page in pages"
-                :key="`bookings-page-${page}`"
+                v-for="(page, index) in pages"
+                :key="`bookings-page-${page}-${index}`"
                 type="button"
                 class="rounded border px-3 py-1 text-sm transition"
                 :class="
-                  currentPage === page
+                  page === '...'
+                    ? 'cursor-default border-transparent text-slate-400'
+                    : currentPage === page
                     ? 'border-blue-500 bg-blue-500 text-white'
                     : 'border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400'
                 "
                 @click="changePage(page)"
+                :disabled="isLoading || page === '...'"
               >
                 {{ page }}
               </button>
@@ -374,15 +499,15 @@ const cancelBooking = (booking) => {
               type="button"
               class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400"
               @click="changePage(currentPage + 1)"
-              :disabled="currentPage === pages.length || !pageMeta.of"
+              :disabled="isLoading || currentPage === totalPages.value || !pageMeta.of"
             >
               ›
             </button>
             <button
               type="button"
               class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400"
-              @click="changePage(pages.length)"
-              :disabled="currentPage === pages.length || !pageMeta.of"
+              @click="changePage(totalPages.value)"
+              :disabled="isLoading || currentPage === totalPages.value || !pageMeta.of"
             >
               »
             </button>
