@@ -447,7 +447,7 @@ const {
 
           <div
             v-if="activeFilterChips.length"
-            class="flex flex-wrap items-center gap-2 rounded-2xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-xs text-blue-800"
+            class="flex flex-wrap items-center gap-2 rounded-2xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-xs text-blue-800 dark:border-slate-700 dark:bg-slate-800/70 dark:text-blue-200"
           >
             <span class="text-[11px] font-semibold uppercase tracking-[0.45em] text-blue-500">Filter aktif</span>
               <span
@@ -468,7 +468,7 @@ const {
                   v-model="searchQuery"
                   type="text"
                   placeholder="Cari nama ruangan, fasilitas, kampus, atau gedung..."
-                  class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm leading-5 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm leading-5 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200 dark:placeholder:text-slate-400"
                 />
               </div>
 
@@ -481,7 +481,7 @@ const {
                   min="0"
                   step="1"
                   placeholder="Contoh: 30"
-                  class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm leading-5 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm leading-5 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200 dark:placeholder:text-slate-400"
                 />
               </div>
 
@@ -490,7 +490,7 @@ const {
                 <select
                   id="room-campus"
                   v-model="campusFilter"
-                  class="w-full appearance-none rounded-xl border border-slate-200 px-3 py-2 pr-9 text-sm leading-5 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  class="w-full appearance-none rounded-xl border border-slate-200 px-3 py-2 pr-9 text-sm leading-5 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200"
                 >
                   <option value="">Semua Kampus</option>
                   <option v-for="campus in campusOptions" :key="campus.id" :value="campus.id">
@@ -505,7 +505,7 @@ const {
                   id="room-building"
                   v-model="buildingFilter"
                   :disabled="!campusFilter"
-                  class="w-full appearance-none rounded-xl border border-slate-200 px-3 py-2 pr-9 text-sm leading-5 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                  class="w-full appearance-none rounded-xl border border-slate-200 px-3 py-2 pr-9 text-sm leading-5 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-slate-100 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200 dark:disabled:bg-slate-800"
                 >
                   <option value="">
                     {{ campusFilter ? 'Semua Gedung' : 'Pilih kampus terlebih dahulu' }}
@@ -524,7 +524,7 @@ const {
                   id="room-date"
                   v-model="searchDate"
                   type="date"
-                  class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm leading-5 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm leading-5 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200"
                 />
               </div>
 
@@ -534,7 +534,7 @@ const {
                   id="room-start"
                   v-model="searchStartTime"
                   :disabled="!searchDate"
-                  class="w-full appearance-none rounded-xl border border-slate-200 px-3 py-2 pr-9 text-sm leading-5 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                  class="w-full appearance-none rounded-xl border border-slate-200 px-3 py-2 pr-9 text-sm leading-5 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-slate-100 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200 dark:disabled:bg-slate-800"
                 >
                   <option value="">
                     {{ searchDate ? 'Pilih jam mulai' : 'Pilih tanggal terlebih dahulu' }}
@@ -551,7 +551,7 @@ const {
                   id="room-end"
                   v-model="searchEndTime"
                   :disabled="!searchDate || !searchStartTime"
-                  class="w-full appearance-none rounded-xl border border-slate-200 px-3 py-2 pr-9 text-sm leading-5 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                  class="w-full appearance-none rounded-xl border border-slate-200 px-3 py-2 pr-9 text-sm leading-5 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-slate-100 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200 dark:disabled:bg-slate-800"
                 >
                   <option value="">
                     {{
@@ -570,7 +570,7 @@ const {
             </div>
 
             <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <label class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-600">
+              <label class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-600 dark:border-slate-600 dark:text-slate-300">
                 <input
                   type="checkbox"
                   v-model="onlyAvailable"
@@ -584,7 +584,7 @@ const {
                 <div class="relative">
                   <select
                     v-model="sortOption"
-                    class="w-full appearance-none rounded-xl border border-slate-200 px-3 py-2 pr-9 text-sm leading-5 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:w-56"
+                    class="w-full appearance-none rounded-xl border border-slate-200 px-3 py-2 pr-9 text-sm leading-5 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:w-56 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200"
                   >
                     <option value="capacity-desc">Kapasitas terbesar</option>
                     <option value="capacity-asc">Kapasitas terkecil</option>
@@ -607,7 +607,7 @@ const {
             <div class="flex flex-col gap-3 sm:flex-row sm:justify-end">
               <button
                 type="button"
-                class="inline-flex items-center justify-center rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                class="inline-flex items-center justify-center rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
                 @click="resetFilters"
                 :disabled="!canResetFilters"
               >
@@ -737,7 +737,7 @@ const {
 
           <div v-if="recentBookingsList.length" class="mt-4 overflow-x-auto">
             <table class="mobile-friendly-table min-w-full divide-y divide-slate-200 text-sm text-slate-700">
-              <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                 <tr>
                   <SortableTh
                     class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
@@ -773,19 +773,19 @@ const {
                   />
                 </tr>
               </thead>
-              <tbody class="divide-y divide-slate-100">
-                <tr v-for="booking in sortedRecentBookings" :key="booking.id" class="hover:bg-slate-50">
+              <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                <tr v-for="booking in sortedRecentBookings" :key="booking.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
                   <td class="px-4 py-3" data-title="Judul">
-                    <div class="font-semibold text-slate-900">{{ booking.title }}</div>
-                    <div class="text-xs text-slate-500">{{ booking.description || 'Tidak ada deskripsi.' }}</div>
+                    <div class="font-semibold text-slate-900 dark:text-slate-200">{{ booking.title }}</div>
+                    <div class="text-xs text-slate-500 dark:text-slate-400">{{ booking.description || 'Tidak ada deskripsi.' }}</div>
                   </td>
                   <td class="px-4 py-3" data-title="Ruangan">
-                    <div class="font-medium text-slate-900">{{ booking.room?.name ?? '-' }}</div>
-                    <div class="text-xs text-slate-500">
+                    <div class="font-medium text-slate-900 dark:text-slate-200">{{ booking.room?.name ?? '-' }}</div>
+                    <div class="text-xs text-slate-500 dark:text-slate-400">
                       {{ booking.room?.building?.name ?? '-' }} - {{ booking.room?.building?.campus?.name ?? '-' }}
                     </div>
                   </td>
-                  <td class="px-4 py-3 text-slate-700" data-title="Mulai">{{ formatDateTime(booking.start_time) }}</td>
+                  <td class="px-4 py-3 text-slate-700 dark:text-slate-300" data-title="Mulai">{{ formatDateTime(booking.start_time) }}</td>
                   <td class="px-4 py-3" data-title="Status">
                     <span
                       class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold capitalize"
