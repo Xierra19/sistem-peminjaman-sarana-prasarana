@@ -440,7 +440,7 @@ const {
               <h2 class="section-heading">Filter Pencarian Ruangan</h2>
               <p class="section-subtitle">Isi detail kebutuhanmu lalu tekan Search untuk menampilkan hasil.</p>
             </div>
-            <span class="text-xs uppercase tracking-[0.35em] text-blue-500 sm:text-right">
+            <span class="text-xs uppercase tracking-[0.35em] text-blue-500 sm:text-right dark:text-blue-300">
               {{ hasSearched ? 'Filter diperbarui' : 'Belum ada filter' }}
             </span>
           </div>
@@ -636,8 +636,8 @@ const {
                 </template>
               </p>
             </div>
-            <div v-if="hasSearched" class="flex items-center gap-2 text-sm text-slate-500">
-              <span class="inline-flex items-center rounded-full border border-slate-200 px-3 py-1 font-semibold text-slate-700">
+            <div v-if="hasSearched" class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+              <span class="inline-flex items-center rounded-full border border-slate-200 px-3 py-1 font-semibold text-slate-700 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200">
                 {{ resultsCount }} hasil
               </span>
             </div>
@@ -645,7 +645,7 @@ const {
 
           <div
             v-if="!hasSearched"
-            class="mt-6 rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800"
+            class="mt-6 rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
           >
             Gunakan filter di atas dan klik tombol Search untuk melihat daftar ruangan yang cocok.
           </div>
@@ -715,7 +715,7 @@ const {
 
           <div
             v-else
-            class="mt-6 rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800"
+            class="mt-6 rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
           >
             Tidak ada ruangan yang cocok dengan filter saat ini. Coba ubah kombinasi filter untuk melihat opsi lainnya.
           </div>
@@ -727,12 +727,12 @@ const {
               <h2 class="section-heading">Pengajuan Terbaru</h2>
               <p class="section-subtitle">Pantau status beberapa pengajuan booking terakhir kamu.</p>
             </div>
-            <Link
-              :href="route('bookings.index')"
-              class="inline-flex items-center rounded-xl border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
-            >
-              Lihat Semua
-            </Link>
+          <Link
+            :href="route('bookings.index')"
+            class="inline-flex items-center rounded-xl border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700/50"
+          >
+            Lihat Semua
+          </Link>
           </div>
 
           <div v-if="recentBookingsList.length" class="mt-4 overflow-x-auto">
@@ -789,7 +789,7 @@ const {
                   <td class="px-4 py-3" data-title="Status">
                     <span
                       class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold capitalize"
-                      :class="statusBadgeClasses[booking.normalizedStatus] ?? 'bg-slate-100 text-slate-600 border-slate-200'"
+                      :class="statusBadgeClasses[booking.normalizedStatus] ?? 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600'"
                     >
                       {{ statusLabels[booking.normalizedStatus] ?? (booking.normalizedStatus || booking.status) }}
                     </span>
@@ -799,7 +799,7 @@ const {
             </table>
           </div>
 
-          <p v-else class="mt-6 text-sm text-slate-500">
+          <p v-else class="mt-6 text-sm text-slate-500 dark:text-slate-400">
             Kamu belum memiliki pengajuan booking. Mulai dengan memilih ruangan yang sesuai di atas.
           </p>
         </section>
