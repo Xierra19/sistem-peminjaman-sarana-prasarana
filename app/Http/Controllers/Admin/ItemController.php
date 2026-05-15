@@ -51,6 +51,11 @@ class ItemController extends Controller
 
     public function destroy(Item $item)
     {
+        // Check if item has any borrowing records
+        if ($item->borrowingItems()->exists()) {
+            return redirect()->route('admin.items.index')->with('error', 'Barang tidak dapat dihapus karena masih memiliki riwayat peminjaman!');
+        }
+
         $item->delete();
 
         return redirect()->route('admin.items.index')->with('success', 'Barang berhasil dihapus!');

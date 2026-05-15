@@ -51,8 +51,8 @@ class CampusController extends Controller
         if ($duplicateCampus) {
             return back()
                 ->withErrors(['name' => 'Nama campus sudah digunakan.'])
-                ->with('error', 'Nama campus sudah digunakan.'); // <-- untuk popup
-}
+                ->with('error', 'Nama campus sudah digunakan.');
+        }
 
         Campus::create($validated);
 
@@ -91,7 +91,7 @@ class CampusController extends Controller
         if ($duplicateCampus) {
             return back()
                 ->withErrors(['name' => 'Nama campus sudah digunakan.'])
-                ->with('error', 'Nama campus sudah digunakan.'); // <-- untuk popup
+                ->with('error', 'Nama campus sudah digunakan.');
         }
 
         $campus->update($validated);
@@ -107,5 +107,14 @@ class CampusController extends Controller
         $campus->delete();
 
         return redirect()->route('admin.campus.index')->with('success', 'Campus berhasil dihapus!');
+    }
+
+    /**
+     * Normalize nama campus untuk perbandingan duplikasi
+     * (lowercase dan hapus spasi)
+     */
+    protected function normalizeName(string $name): string
+    {
+        return strtolower(str_replace(' ', '', $name));
     }
 }

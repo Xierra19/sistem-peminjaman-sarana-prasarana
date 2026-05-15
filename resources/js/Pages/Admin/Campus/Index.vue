@@ -83,7 +83,7 @@ const confirmCreate = () => {
 }
 
 const submitCreate = () => {
-  createForm.post(route('admin.campuses.store'), {
+  createForm.post(route('admin.campus.store'), {
     onSuccess: () => {
       closeCreateModal()
     }
@@ -134,7 +134,7 @@ const confirmEdit = () => {
 const submitEdit = () => {
   if (!selectedCampus.value) return
   
-  editForm.put(route('admin.campuses.update', selectedCampus.value.id), {
+  editForm.put(route('admin.campus.update', selectedCampus.value.id), {
     onSuccess: () => {
       closeEditModal()
     }
@@ -158,7 +158,7 @@ const confirmDelete = (id, name) => {
   }).then((result) => {
     if (result.isConfirmed) {
       // Mengirim request DELETE menggunakan router Inertia
-      router.delete(route('admin.campuses.destroy', id))
+      router.delete(route('admin.campus.destroy', id))
     }
   })
 }
