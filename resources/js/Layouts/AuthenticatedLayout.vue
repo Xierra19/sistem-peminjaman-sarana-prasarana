@@ -351,7 +351,7 @@ watch(
             >
               <span class="flex items-center gap-2">
                 <span class="text-lg">🛡️</span>
-                <span>Approval</span>
+                <span>Persetujuan</span>
               </span>
               <svg
                 class="h-4 w-4 transform transition-transform"
