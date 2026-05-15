@@ -113,7 +113,6 @@ const formatDate = (value) => formatDateTimeToDDMMYY(value)
 </script>
 
 <template>
-    <div>DEBUG: {{ users?.length }}</div>  <!-- tambah ini sementara -->
   <AuthenticatedLayout>
     <Head title="Manajemen User" />
 
