@@ -61,16 +61,16 @@ class BookingRequestedNotification extends Notification
             $mail->line('Keperluan: '.Str::limit($booking->description, 200));
         }
 
-        $fromAddress = config('mail.from.address');
-        $fromName = 'Aplikasi Booking Ruangan';
+         $fromAddress = config('mail.from.address');
+         $fromName = 'Sistem Peminjaman Sarana dan Prasarana';
 
-        if ($fromAddress) {
-            $mail->from($fromAddress, $fromName);
-        }
+         if ($fromAddress) {
+             $mail->from($fromAddress, $fromName);
+         }
 
-        return $mail
-            ->salutation("Hormat kami,\nTim Aplikasi Booking Ruangan")
-            ->action('Tinjau Booking', route('admin.bookings.show', $booking))
-            ->line('Terima kasih telah mengelola jadwal kampus dengan baik.');
+         return $mail
+             ->salutation("Hormat kami,\nTim Sistem Peminjaman Sarana dan Prasarana")
+             ->action('Tinjau Booking', route('admin.bookings.show', $booking))
+             ->line('Terima kasih telah mengelola jadwal kampus dengan baik.');
     }
 }

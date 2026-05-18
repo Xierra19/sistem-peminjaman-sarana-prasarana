@@ -66,16 +66,16 @@ class ItemBorrowingRequestedNotification extends Notification
             $mail->line('Keperluan: ' . Str::limit($borrowing->description, 200));
         }
 
-        $fromAddress = config('mail.from.address');
-        $fromName = 'Aplikasi Booking Ruangan';
+         $fromAddress = config('mail.from.address');
+         $fromName = 'Sistem Peminjaman Sarana dan Prasarana';
 
-        if ($fromAddress) {
-            $mail->from($fromAddress, $fromName);
-        }
+         if ($fromAddress) {
+             $mail->from($fromAddress, $fromName);
+         }
 
-        return $mail
-            ->salutation("Hormat kami,\nTim Aplikasi Booking Ruangan")
-            ->action('Tinjau Pengajuan', route('admin.item-borrowings.show', $borrowing))
-            ->line('Terima kasih telah mengelola permintaan inventaris barang dengan tertib.');
+         return $mail
+             ->salutation("Hormat kami,\nTim Sistem Peminjaman Sarana dan Prasarana")
+             ->action('Tinjau Pengajuan', route('admin.item-borrowings.show', $borrowing))
+             ->line('Terima kasih telah mengelola permintaan inventaris barang dengan tertib.');
     }
 }
