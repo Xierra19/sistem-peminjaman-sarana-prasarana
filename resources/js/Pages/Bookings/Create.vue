@@ -404,12 +404,12 @@ onBeforeUnmount(() => {
 
 <template>
   <AuthenticatedLayout>
-    <Head title="Request Booking" />
+    <Head title="Permintaan Peminjaman Ruangan" />
 
     <div class="mx-auto max-w-5xl space-y-6 px-4 py-6 sm:px-0">
         <div class="card-surface space-y-6 p-5 sm:p-6 dark:bg-slate-800 dark:border-slate-700">
             <div class="border-b border-slate-200 pb-5 dark:border-slate-700">
-                <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Request Booking Ruangan</h1>
+                <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Permintaan Peminjaman Ruangan</h1>
                 <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
                     Pilih kampus, gedung, dan ruangan yang tersedia lalu tentukan jadwal penggunaan.
                 </p>
@@ -571,7 +571,7 @@ onBeforeUnmount(() => {
                 class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-slate-100 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-400 disabled:dark:bg-slate-600 cursor-pointer"
               />
               <p class="text-xs text-slate-500 dark:text-slate-400">
-                Gunakan untuk mengecek setiap hari dalam rentang booking apabila perlu.
+                Gunakan untuk mengecek setiap hari dalam rentang peminjaman apabila perlu.
               </p>
             </div>
             <div class="space-y-2">
@@ -702,7 +702,7 @@ onBeforeUnmount(() => {
               class="inline-flex w-full items-center justify-center rounded-2xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 sm:w-auto"
               :disabled="form.processing"
             >
-              Ajukan Booking
+              Ajukan Peminjaman
             </button>
           </div>
         </form>

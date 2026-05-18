@@ -383,14 +383,14 @@ const {
               <p class="text-sm font-semibold text-blue-700 dark:text-blue-300">Halo, {{ greetingName }}!</p>
               <h1 class="text-3xl font-semibold text-slate-900 dark:text-white">Temukan Ruangan untuk Kebutuhanmu</h1>
               <p class="text-sm text-slate-600 dark:text-slate-300">
-                Cari ruangan yang sesuai dengan kapasitas, lokasi, dan jadwal kegiatanmu lalu ajukan booking secara cepat.
+                Cari ruangan yang sesuai dengan kapasitas, lokasi, dan jadwal kegiatanmu lalu ajukan peminjaman secara cepat.
               </p>
               <div class="flex flex-wrap gap-2 text-xs text-slate-600 dark:text-slate-300">
                 <span class="inline-flex items-center gap-1 rounded-full bg-white/90 px-3 py-1 font-semibold text-blue-700 shadow-sm dark:bg-slate-700 dark:text-blue-300">
                   🏢 {{ totalRooms }} Ruangan terdaftar
                 </span>
                 <span class="inline-flex items-center gap-1 rounded-full bg-white/90 px-3 py-1 font-semibold text-blue-700 shadow-sm dark:bg-slate-700 dark:text-blue-300">
-                  🕑 {{ recentBookingsList.length }} Booking terbaru
+                  🕑 {{ recentBookingsList.length }} Peminjaman terbaru
                 </span>
               </div>
             </div>
@@ -399,7 +399,7 @@ const {
                 :href="route('bookings.create')"
                 class="inline-flex w-full items-center justify-center rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-400/30 transition hover:bg-blue-700 sm:w-auto"
               >
-                + Ajukan Booking
+                + Ajukan Peminjaman
               </Link>
               <Link
                 :href="route('bookings.index')"
@@ -706,9 +706,9 @@ const {
                   :href="route('bookings.create')"
                   class="inline-flex items-center justify-center rounded-xl border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-50 dark:border-slate-600 dark:text-blue-300 dark:hover:bg-slate-700"
                 >
-                  Ajukan Booking
+                  Ajukan Peminjaman
                 </Link>
-                <span class="text-xs text-slate-400 dark:text-slate-500">Pilih ruangan ini pada formulir booking.</span>
+                <span class="text-xs text-slate-400 dark:text-slate-500">Pilih ruangan ini pada formulir Peminjaman.</span>
               </div>
             </article>
           </div>
@@ -725,7 +725,7 @@ const {
           <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 class="section-heading">Pengajuan Terbaru</h2>
-              <p class="section-subtitle">Pantau status beberapa pengajuan booking terakhir kamu.</p>
+              <p class="section-subtitle">Pantau status beberapa pengajuan peminjaman terakhir kamu.</p>
             </div>
           <Link
             :href="route('bookings.index')"
@@ -800,7 +800,7 @@ const {
           </div>
 
           <p v-else class="mt-6 text-sm text-slate-500 dark:text-slate-400">
-            Kamu belum memiliki pengajuan booking. Mulai dengan memilih ruangan yang sesuai di atas.
+            Kamu belum memiliki pengajuan Peminjaman. Mulai dengan memilih ruangan yang sesuai di atas.
           </p>
         </section>
       </div>

@@ -181,12 +181,12 @@ const perPageOptions = [5, 10, 25, 50]
 
 <template>
   <AuthenticatedLayout>
-    <Head title="Approval Booking Ruangan" />
+    <Head title="Persetujuan Peminjaman Ruangan" />
 
     <div class="space-y-6">
       <div>
-        <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Approval Booking Ruangan</h1>
-        <p class="text-sm text-slate-500 dark:text-slate-400">Kelola permintaan booking ruangan yang masuk.</p>
+        <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Persetujuan Peminjaman Ruangan</h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400">Kelola permintaan peminjaman ruangan yang masuk.</p>
       </div>
 
       <!-- Summary cards -->

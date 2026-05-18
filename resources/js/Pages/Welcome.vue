@@ -31,20 +31,20 @@ const props = defineProps({
     },
 });
 
-const appName = 'Sistem Reservasi Ruangan & Barang Kampus';
+const appName = 'Sistem Peminjaman Sarana & Prasarana';
 const campusName = 'Universitas Esa Unggul Kampus Bekasi';
 const currentYear = new Date().getFullYear();
 
 const heroContent = {
-    badge: 'Selamat Datang di Portal Reservasi Internal',
-    title: 'Reservasi Ruangan & Barang Kampus',
+    badge: 'Selamat Datang di Portal Peminjaman Internal',
+    title: 'Peminjaman Sarana & Prasarana',
     subtitle: 'Kelola peminjaman ruangan kelas, ruang rapat, laboratorium, hingga perangkat pendukung kampus dalam satu platform terintegrasi yang modern dan efisien.',
 };
 
 const features = [
     {
         icon: CalendarCheck2,
-        title: 'Reservasi Ruangan & Barang',
+        title: 'Peminjaman Sarana & Prasarana',
         description: 'Pesan ruang kelas, rapat, laboratorium, serta pinjam perangkat pendukung seperti meja, kursi, proyektor, dan sound system secara real-time.',
     },
     {
@@ -188,7 +188,7 @@ const aboutBadges = [
                     <div class="mb-12 text-center">
                         <h2 class="mb-4 text-2xl font-semibold text-slate-900 dark:text-white">Fitur Utama</h2>
                         <p class="mx-auto max-w-2xl text-base text-slate-600 dark:text-indigo-100/80">
-                            Semua yang dibutuhkan untuk mengatur reservasi ruangan dan peminjaman barang kampus secara efisien dan terorganisir.
+                            Semua yang dibutuhkan untuk mengatur Peminjaman ruangan dan peminjaman barang kampus secara efisien dan terorganisir.
                         </p>
                     </div>
                     <div class="mx-auto grid grid-cols-1 max-w-5xl gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -222,9 +222,9 @@ const aboutBadges = [
                                 <div class="absolute inset-0 bg-gradient-to-br from-indigo-600/10 via-transparent to-purple-600/20"></div>
                             </div>
                             <div class="flex flex-col justify-center gap-4 p-8">
-                                <h2 class="text-2xl font-semibold text-slate-900 dark:text-white">Tentang Sistem Reservasi</h2>
+                                <h2 class="text-2xl font-semibold text-slate-900 dark:text-white">Tentang Sistem Peminjaman</h2>
                                 <p class="text-sm leading-relaxed text-slate-600 dark:text-indigo-100/80">
-                                    Sistem Reservasi Ruangan & Barang Internal dirancang khusus untuk civitas academica Universitas Esa Unggul Kampus Bekasi. Platform ini merapikan proses peminjaman dan pengelolaan fasilitas kampus dalam satu alur terpadu.
+                                    Sistem Peminjaman Ruangan & Barang Internal dirancang khusus untuk civitas academica Universitas Esa Unggul Kampus Bekasi. Platform ini merapikan proses peminjaman dan pengelolaan fasilitas kampus dalam satu alur terpadu.
                                 </p>
                                 <p class="text-sm leading-relaxed text-slate-600 dark:text-indigo-100/80">
                                     Butuh ruang kelas tambahan, ruangan rapat, atau perangkat pendukung seperti meja, kursi, dan proyektor? Tinggal pilih fasilitasnya, ajukan, dan ikuti status persetujuannya secara real-time.
@@ -253,7 +253,7 @@ const aboutBadges = [
                     <div class="space-y-3">
                         <p class="text-sm font-semibold text-indigo-600 dark:text-indigo-200">{{ appName }}</p>
                         <p class="text-xs leading-relaxed text-slate-600 dark:text-indigo-100/80">
-                            Platform reservasi ruangan dan peminjaman barang kampus yang terintegrasi untuk civitas academica Universitas Esa Unggul Kampus Bekasi.
+                            Platform Peminjaman ruangan dan peminjaman barang kampus yang terintegrasi untuk civitas academica Universitas Esa Unggul Kampus Bekasi.
                         </p>
                     </div>
 
@@ -296,7 +296,7 @@ const aboutBadges = [
                 <div class="mt-8 border-t border-slate-200 pt-6 text-center dark:border-white/10">
                     <p class="font-medium text-slate-600 dark:text-indigo-100/90">&copy; {{ currentYear }} {{ campusName }}. All rights reserved.</p>
                     <p class="mt-2 text-xs text-indigo-600 dark:text-indigo-300">
-                        Sistem Reservasi Ruangan & Barang &bull; Laravel v{{ props.laravelVersion }} &middot; PHP v{{ props.phpVersion }}
+                        Sistem Peminjaman Sarana & Prasarana &bull; Laravel v{{ props.laravelVersion }} &middot; PHP v{{ props.phpVersion }}
                     </p>
                     <p class="mt-1 text-xs text-indigo-600 dark:text-indigo-400">
                         Dikembangkan untuk memenuhi tugas skripsi - Universitas Esa Unggul

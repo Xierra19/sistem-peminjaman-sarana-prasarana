@@ -75,12 +75,12 @@ const cancelBooking = () => {
 
 <template>
   <AuthenticatedLayout>
-    <Head :title="`Detail Booking: ${booking.title}`" />
+    <Head :title="`Detail Peminjaman: ${booking.title}`" />
 
     <div class="space-y-6">
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div class="text-sm text-gray-500 dark:text-slate-400">Detail Permintaan Booking</div>
+          <div class="text-sm text-gray-500 dark:text-slate-400">Detail Permintaan Peminjaman</div>
           <h1 class="text-2xl font-semibold text-gray-800 dark:text-white">{{ booking.title }}</h1>
         </div>
         <div class="flex items-center gap-2">
@@ -166,7 +166,7 @@ const cancelBooking = () => {
           <section class="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
             <header class="border-b border-gray-100 px-6 py-4 dark:border-slate-700">
               <h2 class="text-lg font-semibold text-gray-800 dark:text-white">Surat Peminjaman</h2>
-              <p class="text-sm text-gray-500 dark:text-slate-400">Unduh surat persetujuan setelah booking disetujui.</p>
+              <p class="text-sm text-gray-500 dark:text-slate-400">Unduh surat persetujuan setelah peminjaman disetujui.</p>
             </header>
             <div class="px-6 py-5 text-sm text-gray-600 dark:text-slate-300">
               <template v-if="normalizedStatus === 'approved'">
@@ -180,7 +180,7 @@ const cancelBooking = () => {
                 </a>
               </template>
               <p v-else-if="normalizedStatus === 'cancelled'" class="text-gray-500 dark:text-slate-400">
-                Booking ini telah dibatalkan sehingga surat peminjaman tidak tersedia.
+                Peminjaman ini telah dibatalkan sehingga surat peminjaman tidak tersedia.
               </p>
               <p v-else class="text-gray-400 dark:text-slate-500">
                 Surat peminjaman tersedia setelah permintaan disetujui oleh admin.
@@ -223,7 +223,7 @@ const cancelBooking = () => {
           <section class="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
             <header class="border-b border-gray-100 px-6 py-4 dark:border-slate-700">
               <h2 class="text-lg font-semibold text-gray-800 dark:text-white">Riwayat Aktivitas</h2>
-              <p class="text-sm text-gray-500 dark:text-slate-400">Jejak proses permintaan booking ini.</p>
+              <p class="text-sm text-gray-500 dark:text-slate-400">Jejak proses permintaan peminjaman ini.</p>
             </header>
             <ul class="space-y-4 px-6 py-5">
               <li

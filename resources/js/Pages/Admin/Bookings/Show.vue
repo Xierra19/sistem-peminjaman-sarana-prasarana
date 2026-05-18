@@ -63,12 +63,12 @@ const submitApproval = (status) => {
 
 <template>
   <AuthenticatedLayout>
-    <Head title="Detail Approval Booking" />
+    <Head title="Detail Persetujuan Peminjaman" />
 
     <div class="space-y-6">
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div class="text-sm text-gray-500 dark:text-slate-400">Approval Booking Ruangan</div>
+          <div class="text-sm text-gray-500 dark:text-slate-400">Persetujuan Peminjaman Ruangan</div>
           <h1 class="text-2xl font-semibold text-gray-800 dark:text-white">{{ booking.title }}</h1>
         </div>
         <Link

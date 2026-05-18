@@ -246,9 +246,9 @@ onBeforeUnmount(() => {
     <div class="mx-auto max-w-5xl space-y-6 px-4 py-6 sm:px-0">
       <div class="card-surface space-y-6 p-5 sm:p-6 dark:bg-slate-800 dark:border-slate-700">
         <div class="border-b border-slate-200 pb-5 dark:border-slate-700">
-          <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Request Peminjaman Barang</h1>
+          <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Permintaan Peminjaman Barang</h1>
           <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Pilih multiple barang untuk satu request. Upload surat <span class="text-rose-500 font-medium">*</span>
+            Pilih multiple barang untuk satu permintaan. Upload surat <span class="text-rose-500 font-medium">*</span>
           </p>
         </div>
 
@@ -263,7 +263,7 @@ onBeforeUnmount(() => {
           <div class="flex items-start gap-3">
             <span class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">2</span>
             <div>
-              <p class="font-semibold text-slate-800 dark:text-slate-200">Detail Request</p>
+              <p class="font-semibold text-slate-800 dark:text-slate-200">Detail Permintaan</p>
               <p>Judul & deskripsi kegiatan.</p>
             </div>
           </div>

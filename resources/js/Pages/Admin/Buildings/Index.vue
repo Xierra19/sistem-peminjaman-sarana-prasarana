@@ -215,12 +215,12 @@ const perPageOptions = [5, 10, 25, 50]
 
 <template>
   <AuthenticatedLayout>
-    <Head title="Master Building" />
+    <Head title="Master Gedung" />
 
     <div class="space-y-6">
       <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 class="text-2xl font-semibold text-gray-800 dark:text-gray-200">Master Building</h1>
+          <h1 class="text-2xl font-semibold text-gray-800 dark:text-gray-200">Master Gedung</h1>
           <p class="text-sm text-gray-500 dark:text-gray-400">Kelola data gedung untuk setiap kampus.</p>
         </div>
 

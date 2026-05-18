@@ -114,7 +114,7 @@ const onSignedLetterChange = (event) => {
 
 <template>
   <AuthenticatedLayout>
-    <Head title="Detail Approval Peminjaman Barang" />
+    <Head title="Detail Persetujuan Peminjaman Barang" />
 
     <div class="space-y-6">
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

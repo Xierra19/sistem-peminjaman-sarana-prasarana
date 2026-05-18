@@ -219,12 +219,12 @@ const changePage = (page) => {
 
 <template>
   <AuthenticatedLayout>
-    <Head title="Request Booking Ruangan" />
+    <Head title="Permintaan Peminjaman Ruangan" />
 
     <div class="space-y-6">
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 class="text-2xl font-semibold text-slate-900 dark:text-slate-100">Request Booking Ruangan</h1>
+          <h1 class="text-2xl font-semibold text-slate-900 dark:text-slate-100">Permintaan Peminjaman Ruangan</h1>
           <p class="text-sm text-slate-500 dark:text-slate-400">
             Pantau status persetujuan booking ruangan yang telah kamu ajukan.
           </p>

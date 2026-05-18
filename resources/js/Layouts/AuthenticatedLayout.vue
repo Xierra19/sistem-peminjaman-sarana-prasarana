@@ -446,7 +446,7 @@ watch(
               </div>
               <div class="hidden flex-col leading-tight sm:flex">
                 <span class="text-[10px] font-semibold uppercase tracking-[0.45em] text-blue-500">Esa Unggul</span>
-                <span class="text-sm font-semibold text-slate-900 dark:text-slate-100">Sistem Booking Ruangan</span>
+                <span class="text-sm font-semibold text-slate-900 dark:text-slate-100">Sistem Peminjaman Sarana dan Prasarana</span>
                 <span class="text-xs text-slate-500 dark:text-slate-400">Universitas Esa Unggul</span>
               </div>
             </Link>
