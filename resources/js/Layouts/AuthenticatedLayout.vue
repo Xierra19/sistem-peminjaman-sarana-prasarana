@@ -371,14 +371,14 @@ watch(
                 :href="route('admin.bookings.index')"
                 :class="subLinkClasses(isRouteActive('admin.bookings.*'))"
               >
-                🏫 Approval Ruangan
+                🏫 Persetujuan Ruangan
               </Link>
               <Link
                 v-if="canManageItemModule"
                 :href="route('admin.item-borrowings.index')"
                 :class="subLinkClasses(isRouteActive('admin.item-borrowings.*'))"
               >
-                📦 Approval Barang
+                📦 Persetujuan Barang
               </Link>
             </div>
           </div>
