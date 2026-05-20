@@ -316,7 +316,7 @@ onBeforeUnmount(() => {
                         :value="item.id"
                         :disabled="!item.is_available || form.items.some((row, i) => i !== index && String(row.item_id) === String(item.id))"
                       >
-                        {{ item.name }} ({{ item.code }}) - Stok {{ item.quantity }}
+                        {{ item.name }} - Stok {{ item.quantity }}
                       </option>
                     </select>
                   </div>

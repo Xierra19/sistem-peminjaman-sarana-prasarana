@@ -48,10 +48,10 @@ class ItemBorrowingStatusUpdatedNotification extends Notification implements Sho
                     return null;
                 }
 
-                return $item->name.' ('.$item->code.') x'.$borrowingItem->quantity;
+                return $item->name.' x'.$borrowingItem->quantity;
             })->filter()->implode(', '));
         } elseif ($borrowing->singleItem?->name) {
-            $mail->line('Barang: '.$borrowing->singleItem->name.' ('.$borrowing->singleItem->code.')');
+            $mail->line('Barang: '.$borrowing->singleItem->name.);
         }
 
         if ($items->isNotEmpty()) {

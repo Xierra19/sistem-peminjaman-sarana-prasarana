@@ -35,7 +35,7 @@ class ItemBorrowingReportController extends Controller
         $statusSummary = [
             'total' => $itemBorrowings->count(),
             'approved' => $itemBorrowings->where('status', 'approved')->count(),
-            'waiting' => $itemBorrowings->whereIn('status', ['waiting', 'requested'])->count(),
+            'waiting' => $itemBorrowings->where('status', 'waiting')->count(),
             'rejected' => $itemBorrowings->where('status', 'rejected')->count(),
             'cancelled' => $itemBorrowings->where('status', 'cancelled')->count(),
             'returned' => $itemBorrowings->where('status', 'returned')->count(),

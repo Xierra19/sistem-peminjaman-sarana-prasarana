@@ -399,7 +399,7 @@ class ItemBorrowingController extends Controller
             abort(403);
         }
 
-        if (! in_array($itemBorrowing->status, ['waiting', 'requested'], true)) {
+        if (! in_array($itemBorrowing->status, ['waiting'], true)) {
             return redirect()
                 ->back()
                 ->with('error', 'Permintaan tidak dapat dibatalkan karena sudah diproses oleh admin.');

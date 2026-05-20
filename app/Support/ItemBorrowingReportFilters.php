@@ -16,7 +16,7 @@ class ItemBorrowingReportFilters
         if ($status) {
             $query->where(function (Builder $statusQuery) use ($status): void {
                 if ($status === 'waiting') {
-                    $statusQuery->whereIn('status', ['waiting', 'requested']);
+                    $statusQuery->whereIn('status', ['waiting']);
                     return;
                 }
 
