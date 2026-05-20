@@ -560,20 +560,7 @@ onBeforeUnmount(() => {
             </div>
           </div>
 
-          <div class="grid gap-6 md:grid-cols-3">
-            <div class="space-y-2">
-              <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Tanggal Cek Ketersediaan</label>
-              <input
-                id="availability_date_input"
-                type="text"
-                readonly
-                :disabled="!form.start_date"
-                class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-slate-100 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-400 disabled:dark:bg-slate-600 cursor-pointer"
-              />
-              <p class="text-xs text-slate-500 dark:text-slate-400">
-                Gunakan untuk mengecek setiap hari dalam rentang peminjaman apabila perlu.
-              </p>
-            </div>
+            <div class="grid gap-6 md:grid-cols-2">
             <div class="space-y-2">
               <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Waktu Mulai</label>
               <select
@@ -628,7 +615,7 @@ onBeforeUnmount(() => {
                 </option>
               </select>
             </div>
-            <div class="md:col-span-3 text-sm text-red-500">
+            <div class="md:col-span-2 text-sm text-red-500">
               <p v-if="form.errors.start_time">{{ form.errors.start_time }}</p>
               <p v-if="form.errors.end_time">{{ form.errors.end_time }}</p>
             </div>
@@ -659,7 +646,7 @@ onBeforeUnmount(() => {
           </div>
 
             <div class="space-y-2">
-              <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Judul Kegiatan</label>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Judul Kegiatan *</label>
               <input
                 v-model="form.title"
                 type="text"
