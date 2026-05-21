@@ -176,6 +176,8 @@ const {
   sortDirection,
   ariaSortValue,
 } = useTableSort(borrowingsList, {
+  defaultColumn: 'created_at',
+  defaultDirection: 'desc',
   accessors: {
     title:      (b) => b.title ?? '',
     applicant:  (b) => b.user?.name ?? '',
@@ -185,6 +187,7 @@ const {
       const d = getBorrowDates(b)
       return d ? new Date(d) : null
     },
+    created_at: (b) => (b.created_at ? new Date(b.created_at) : null),
     status: (b) => normalizeStatus(b.status) ?? '',
   },
 })
@@ -201,6 +204,15 @@ const {
 const perPageOptions = [5, 10, 25, 50]
 
 const formatDate = (value) => formatToDDMMYY(value)
+
+const formatTimeHHMM = (value) => {
+  if (!value) return '-'
+  const d = new Date(value)
+  if (isNaN(d.getTime())) return '-'
+  const hours = String(d.getHours()).padStart(2, '0')
+  const minutes = String(d.getMinutes()).padStart(2, '0')
+  return `${hours}:${minutes}`
+}
 
 // Inisialisasi Flatpickr
 onMounted(() => {
@@ -408,6 +420,14 @@ onBeforeUnmount(() => {
                 :aria-sort="ariaSortValue('borrow_date')"
                 @toggle="toggleSort"
               />
+              <SortableTh
+                class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300"
+                column="created_at"
+                label="Dibuat"
+                :direction="sortDirection('created_at')"
+                :aria-sort="ariaSortValue('created_at')"
+                @toggle="toggleSort"
+              />
               <th class="px-5 py-3 text-center text-slate-500 dark:text-slate-300">Status</th>
               <th class="px-5 py-3"></th>
             </tr>
@@ -433,6 +453,20 @@ onBeforeUnmount(() => {
                 <div>Pinjam: <span class="font-medium text-slate-800 dark:text-slate-200">{{ formatDate(getBorrowDates(borrowing)) }}</span></div>
                 <div>Kembali: <span class="font-medium text-slate-800 dark:text-slate-200">{{ formatDate(getReturnDates(borrowing)) }}</span></div>
               </td>
+              <td class="px-5 py-4 text-sm">
+                <div>
+                  Dibuat:
+                  <span class="font-medium text-slate-800 dark:text-slate-200">
+                    {{ borrowing.created_at ? formatDate(new Date(borrowing.created_at)) : '-' }}
+                  </span>
+                </div>
+                <div class="text-xs text-slate-500 dark:text-slate-400">
+                  Jam:
+                  <span class="font-medium text-slate-800 dark:text-slate-200">
+                    {{ borrowing.created_at ? formatTimeHHMM(borrowing.created_at) : '-' }}
+                  </span>
+                </div>
+              </td>
               <td class="px-5 py-4 text-center">
                 <span
                   class="inline-flex rounded-full px-3 py-1 text-xs font-semibold"
@@ -451,7 +485,7 @@ onBeforeUnmount(() => {
               </td>
             </tr>
             <tr v-if="!borrowingsList.length">
-              <td colspan="7" class="px-5 py-10 text-center text-sm text-slate-400 dark:text-slate-500">
+              <td colspan="8" class="px-5 py-10 text-center text-sm text-slate-400 dark:text-slate-500">
                 Belum ada data peminjaman barang.
               </td>
             </tr>
