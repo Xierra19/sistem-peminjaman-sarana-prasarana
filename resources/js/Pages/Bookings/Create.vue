@@ -4,7 +4,6 @@ import { Head, useForm } from '@inertiajs/vue3'
 import { computed, ref, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import flatpickr from 'flatpickr'
 import 'flatpickr/dist/flatpickr.css'
-import { formatToDDMMYY } from '@/Composables/useDateFormatter'
 
 // Definisikan props untuk menerima data dari controller
 const props = defineProps({
@@ -19,6 +18,7 @@ const form = useForm({
   campus_id: '',
   building_id: '',
   room_id: '',
+  schedule_mode: 'continuous',
   title: '',
   description: '',
   start_date: '',
@@ -29,6 +29,7 @@ const form = useForm({
 })
 
 const bookedIntervals = ref([])
+const dailyBookedIntervals = ref([])
 const availabilityDate = ref('')
 const availabilityMessage = ref('')
 const isAvailabilityLoading = ref(false)
@@ -68,6 +69,12 @@ const generateTimeSlots = (startHour = 7, endHour = 21, stepMinutes = 30) => {
 }
 
 const timeSlots = generateTimeSlots()
+const indonesianDateFormatter = new Intl.DateTimeFormat('id-ID', {
+  weekday: 'long',
+  day: '2-digit',
+  month: 'long',
+  year: 'numeric',
+})
 
 const findById = (items = [], id) => items.find((item) => String(item.id) === String(id))
 
@@ -84,12 +91,79 @@ const filteredRooms = computed(() => {
 const currentCampus = computed(() => findById(props.campuses, form.campus_id))
 const selectedBuilding = computed(() => findById(filteredBuildings.value, form.building_id))
 const selectedRoom = computed(() => findById(filteredRooms.value, form.room_id))
+const hasBookingDateRange = computed(() => Boolean(form.start_date && form.end_date))
+const canSelectAvailabilityDate = computed(() => Boolean(form.room_id && hasBookingDateRange.value))
+const isSameHoursDailyMode = computed(() => form.schedule_mode === 'same_hours_daily')
+const scheduleModeOptions = [
+  {
+    value: 'continuous',
+    label: 'Kontinu antar hari',
+    description: 'Cocok untuk penggunaan yang berjalan terus melewati malam hingga hari berikutnya.',
+  },
+  {
+    value: 'same_hours_daily',
+    label: 'Jam sama pada rentang tanggal',
+    description: 'Cocok untuk kegiatan berulang dengan jam yang sama pada seluruh tanggal dalam rentang booking.',
+  },
+]
+const scheduleDateLabels = computed(() =>
+  isSameHoursDailyMode.value
+    ? {
+        start: 'Tanggal Mulai Rentang',
+        end: 'Tanggal Selesai Rentang',
+        startHelp: 'Tanggal pertama jadwal berulang akan dipakai.',
+        endHelp: 'Tanggal terakhir yang akan memakai jam yang sama setiap hari.',
+        timeStart: 'Jam Mulai Setiap Hari',
+        timeEnd: 'Jam Selesai Setiap Hari',
+      }
+    : {
+        start: 'Tanggal Mulai',
+        end: 'Tanggal Selesai',
+        startHelp: `Tanggal minimal peminjaman: ${minBookingDate.value} (H+3)`,
+        endHelp: 'Samakan dengan tanggal mulai bila booking hanya satu hari.',
+        timeStart: 'Waktu Mulai',
+        timeEnd: 'Waktu Selesai',
+      },
+)
+const selectedAvailabilityDateLabel = computed(() =>
+  availabilityDate.value ? formatDateLabel(availabilityDate.value) : '',
+)
+const availabilityRangeSummary = computed(() =>
+  dailyBookedIntervals.value.map((entry) => ({
+    ...entry,
+    label: formatDateLabel(entry.date),
+  })),
+)
+
+const groupedIntervalsByDate = computed(() => {
+  const map = new Map()
+
+  for (const entry of dailyBookedIntervals.value) {
+    map.set(entry.date, entry.bookings ?? [])
+  }
+
+  return map
+})
+
+const startDateIntervals = computed(() => groupedIntervalsByDate.value.get(form.start_date) ?? [])
+const endDateIntervals = computed(() => groupedIntervalsByDate.value.get(form.end_date) ?? [])
+const allDailyIntervals = computed(() =>
+  dailyBookedIntervals.value.flatMap((entry) => entry.bookings ?? []),
+)
+
+const startSelectionIntervals = computed(() =>
+  isSameHoursDailyMode.value ? allDailyIntervals.value : startDateIntervals.value,
+)
+
+const endSelectionIntervals = computed(() =>
+  isSameHoursDailyMode.value ? allDailyIntervals.value : endDateIntervals.value,
+)
 
 const isTimeBlocked = (time) =>
-  bookedIntervals.value.some((interval) => time >= interval.start && time < interval.end)
+  startSelectionIntervals.value.some((interval) => time >= interval.start && time < interval.end)
 
 const isEndTimeBlocked = (time) =>
-  bookedIntervals.value.some((interval) => time > interval.start && time < interval.end)
+  endSelectionIntervals.value.some((interval) => time > interval.start && time < interval.end)
 
 const availableStartOptions = computed(() =>
   timeSlots.filter((slot) => !isTimeBlocked(slot)),
@@ -171,11 +245,24 @@ watch(
 )
 
 watch(
+  () => form.schedule_mode,
+  () => {
+    form.start_time = ''
+    form.end_time = ''
+
+    if (form.room_id && availabilityDate.value) {
+      loadAvailability()
+    }
+  },
+)
+
+watch(
   () => form.start_date,
   (value) => {
     if (!value) {
       form.end_date = ''
       availabilityDate.value = ''
+      datePickers.value.avail?.clear()
       form.start_time = ''
       form.end_time = ''
       resetAvailability()
@@ -193,7 +280,10 @@ watch(
 
     if (!availabilityDate.value || availabilityDate.value < value) {
       availabilityDate.value = value
+      datePickers.value.avail?.setDate(value, true)
     }
+
+    datePickers.value.avail?.set('minDate', value)
 
     form.start_time = ''
     form.end_time = ''
@@ -217,6 +307,22 @@ watch(
 
     if (availabilityDate.value && availabilityDate.value > value) {
       availabilityDate.value = value
+      datePickers.value.avail?.setDate(value, true)
+    }
+
+    datePickers.value.avail?.set('maxDate', value || null)
+
+    if (form.room_id && availabilityDate.value) {
+      loadAvailability()
+    }
+  },
+)
+
+watch(
+  () => form.start_date,
+  () => {
+    if (form.room_id && availabilityDate.value) {
+      loadAvailability()
     }
   },
 )
@@ -235,6 +341,15 @@ watch(
 )
 
 watch(
+  canSelectAvailabilityDate,
+  async () => {
+    await nextTick()
+    syncAvailabilityPickerState()
+  },
+  { immediate: true },
+)
+
+watch(
   availabilityDate,
   (value) => {
     if (!value) {
@@ -247,12 +362,14 @@ watch(
     if (value < minDate) {
       if (availabilityDate.value !== minDate) {
         availabilityDate.value = minDate
+        datePickers.value.avail?.setDate(minDate, true)
       }
       return
     }
 
     if (form.end_date && value > form.end_date) {
       availabilityDate.value = form.end_date
+      datePickers.value.avail?.setDate(form.end_date, true)
       return
     }
 
@@ -264,13 +381,40 @@ watch(
 
 function resetAvailability() {
   bookedIntervals.value = []
+  dailyBookedIntervals.value = []
   availabilityMessage.value = ''
   isAvailabilityLoading.value = false
+}
+
+const syncAvailabilityPickerState = () => {
+  const availabilityPicker = datePickers.value.avail
+
+  if (!availabilityPicker) {
+    return
+  }
+
+  const isDisabled = !canSelectAvailabilityDate.value
+
+  availabilityPicker.input.disabled = isDisabled
+
+  if (availabilityPicker.altInput) {
+    availabilityPicker.altInput.disabled = isDisabled
+  }
+}
+
+const formatDateLabel = (date) => {
+  if (!date) return ''
+
+  const parsedDate = new Date(`${date}T00:00:00`)
+  return Number.isNaN(parsedDate.getTime()) ? date : indonesianDateFormatter.format(parsedDate)
 }
 
 const loadAvailability = async () => {
   const room = selectedRoom.value
   const dateToCheck = availabilityDate.value
+  const startDate = form.start_date
+  const endDate = form.end_date
+  const scheduleMode = form.schedule_mode
 
   if (!room || !dateToCheck) {
     resetAvailability()
@@ -279,6 +423,7 @@ const loadAvailability = async () => {
 
   if (!room.is_available) {
     bookedIntervals.value = []
+    dailyBookedIntervals.value = []
     availabilityMessage.value = 'Ruangan ini sedang tidak tersedia untuk dipilih.'
     isAvailabilityLoading.value = false
     return
@@ -287,9 +432,16 @@ const loadAvailability = async () => {
   isAvailabilityLoading.value = true
   availabilityMessage.value = ''
   bookedIntervals.value = []
+  dailyBookedIntervals.value = []
 
   try {
-    const response = await fetch(route('rooms.availability', { room: room.id, date: dateToCheck }), {
+    const response = await fetch(route('rooms.availability', {
+      room: room.id,
+      date: dateToCheck,
+      start_date: startDate,
+      end_date: endDate,
+      schedule_mode: scheduleMode,
+    }), {
       headers: {
         Accept: 'application/json',
       },
@@ -304,11 +456,13 @@ const loadAvailability = async () => {
     if (data.available === false) {
       availabilityMessage.value = data.message || 'Ruangan tidak tersedia.'
       bookedIntervals.value = []
+      dailyBookedIntervals.value = []
     } else {
       bookedIntervals.value = Array.isArray(data.bookings) ? data.bookings : []
+      dailyBookedIntervals.value = Array.isArray(data.daily_bookings) ? data.daily_bookings : []
       availabilityMessage.value =
-        bookedIntervals.value.length === 0
-          ? 'Semua slot waktu tersedia pada tanggal ini.'
+        dailyBookedIntervals.value.length === 0
+          ? 'Semua slot waktu tersedia pada rentang tanggal ini.'
           : ''
     }
   } catch (error) {
@@ -329,16 +483,16 @@ const formatInterval = (interval) => `${interval.start} - ${interval.end}`
 const submit = () => {
   form
     .transform((data) => {
-      const endDate = data.end_date || data.start_date
-
       return {
         room_id: data.room_id,
+        schedule_mode: data.schedule_mode,
         title: data.title,
         description: data.description,
+        start_date: data.start_date,
+        end_date: data.end_date || data.start_date,
         attachment: data.attachment,
-        start_time:
-          data.start_date && data.start_time ? `${data.start_date}T${data.start_time}` : '',
-        end_time: endDate && data.end_time ? `${endDate}T${data.end_time}` : '',
+        start_time: data.start_time,
+        end_time: data.end_time,
       }
     })
     .post(route('bookings.store'), {
@@ -394,6 +548,8 @@ onMounted(() => {
         availabilityDate.value = dateStr
       }
     })
+
+    syncAvailabilityPickerState()
   }
 })
 
@@ -535,9 +691,44 @@ onBeforeUnmount(() => {
             </div>
           </div>
 
+          <div class="space-y-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-700/50">
+            <div>
+              <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">Jenis Jadwal</p>
+              <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                Pilih apakah peminjaman berlangsung terus antar hari atau memakai jam yang sama setiap hari dalam rentang tanggal.
+              </p>
+            </div>
+            <div class="grid gap-3 md:grid-cols-2">
+              <label
+                v-for="option in scheduleModeOptions"
+                :key="option.value"
+                class="flex cursor-pointer gap-3 rounded-xl border p-4 transition"
+                :class="form.schedule_mode === option.value
+                  ? 'border-blue-500 bg-blue-50/80 dark:border-blue-500 dark:bg-blue-900/20'
+                  : 'border-slate-200 bg-white dark:border-slate-600 dark:bg-slate-800'"
+              >
+                <input
+                  v-model="form.schedule_mode"
+                  type="radio"
+                  name="schedule_mode"
+                  :value="option.value"
+                  class="mt-1 h-4 w-4 border-slate-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span class="space-y-1">
+                  <span class="block text-sm font-semibold text-slate-800 dark:text-slate-100">{{ option.label }}</span>
+                  <span class="block text-xs text-slate-500 dark:text-slate-400">{{ option.description }}</span>
+                </span>
+              </label>
+            </div>
+            <p v-if="form.schedule_mode === 'same_hours_daily'" class="text-xs text-blue-600 dark:text-blue-300">
+              Sistem akan memeriksa bentrok untuk jam yang sama pada seluruh tanggal di rentang yang dipilih.
+            </p>
+            <p v-if="form.errors.schedule_mode" class="text-sm text-red-500">{{ form.errors.schedule_mode }}</p>
+          </div>
+
           <div class="grid gap-6 md:grid-cols-2">
             <div class="space-y-2">
-              <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Tanggal Mulai</label>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">{{ scheduleDateLabels.start }}</label>
               <input
                 id="start_date_input"
                 type="text"
@@ -545,10 +736,11 @@ onBeforeUnmount(() => {
                 placeholder="Pilih tanggal mulai"
                 class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-400"
               />
-              <p class="text-xs text-slate-500 dark:text-slate-400">Tanggal minimal peminjaman: {{ minBookingDate }} (H+3)</p>
+              <p class="text-xs text-slate-500 dark:text-slate-400">{{ scheduleDateLabels.startHelp }}</p>
+              <p v-if="form.errors.start_date" class="text-sm text-red-500">{{ form.errors.start_date }}</p>
             </div>
             <div class="space-y-2">
-              <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Tanggal Selesai</label>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">{{ scheduleDateLabels.end }}</label>
               <input
                 id="end_date_input"
                 type="text"
@@ -556,13 +748,14 @@ onBeforeUnmount(() => {
                 placeholder="Pilih tanggal selesai"
                 class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-400"
               />
-              <p class="text-xs text-slate-500 dark:text-slate-400">Samakan dengan tanggal mulai bila booking hanya satu hari.</p>
+              <p class="text-xs text-slate-500 dark:text-slate-400">{{ scheduleDateLabels.endHelp }}</p>
+              <p v-if="form.errors.end_date" class="text-sm text-red-500">{{ form.errors.end_date }}</p>
             </div>
           </div>
 
             <div class="grid gap-6 md:grid-cols-2">
             <div class="space-y-2">
-              <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Waktu Mulai</label>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">{{ scheduleDateLabels.timeStart }}</label>
               <select
                 v-model="form.start_time"
                 :disabled="!selectedRoom || !selectedRoom.is_available || !form.start_date || isAvailabilityLoading"
@@ -589,7 +782,7 @@ onBeforeUnmount(() => {
               </select>
             </div>
             <div class="space-y-2">
-              <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Waktu Selesai</label>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">{{ scheduleDateLabels.timeEnd }}</label>
               <select
                 v-model="form.end_time"
                 :disabled="!selectedRoom || !selectedRoom.is_available || !form.start_time || isAvailabilityLoading"
@@ -621,28 +814,90 @@ onBeforeUnmount(() => {
             </div>
           </div>
 
-          <div class="space-y-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-700/50 dark:text-slate-300">
-            <div class="flex items-center justify-between">
-              <p class="font-semibold text-slate-700 dark:text-slate-200">Waktu yang Tidak Tersedia untuk Ruangan Ini</p>
+          <div class="space-y-4 rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-700/50 dark:text-slate-300">
+            <div class="flex items-center justify-between gap-4">
+              <div>
+                <p class="font-semibold text-slate-700 dark:text-slate-200">Waktu yang Tidak Tersedia untuk Ruangan Ini</p>
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  Lihat ringkasan bentrok untuk seluruh rentang tanggal booking, lalu cek detail per hari bila diperlukan.
+                </p>
+              </div>
               <span v-if="isAvailabilityLoading" class="text-xs text-blue-500">Memuat jadwal...</span>
             </div>
-            <p v-if="availabilityMessage" class="text-sm text-slate-600 dark:text-slate-300">{{ availabilityMessage }}</p>
-            <ul v-else-if="bookedIntervals.length" class="space-y-1 text-sm text-slate-600 dark:text-slate-300">
-              <li
-                v-for="interval in bookedIntervals"
-                :key="interval.id"
-                class="flex items-center justify-between rounded-md bg-white px-3 py-2 shadow-sm dark:bg-slate-600 dark:text-slate-200"
-              >
-                <span>{{ formatInterval(interval) }}</span>
-                <span class="text-xs font-semibold uppercase text-slate-400 dark:text-slate-400">{{ interval.status }}</span>
-              </li>
-            </ul>
-            <p v-else-if="form.room_id && availabilityDate" class="text-sm text-slate-500 dark:text-slate-400">
-              Belum ada jadwal lain di tanggal yang dipilih.
-            </p>
-            <p v-else class="text-sm text-slate-500 dark:text-slate-400">
-              Pilih ruangan serta tanggal pengecekan untuk melihat ketersediaan waktunya.
-            </p>
+
+            <div class="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+              <div class="space-y-3">
+                <div class="space-y-2">
+                  <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Tanggal Cek Ketersediaan</label>
+                  <input
+                    id="availability_date_input"
+                    type="text"
+                    readonly
+                    placeholder="Pilih tanggal dalam rentang booking"
+                    :disabled="!canSelectAvailabilityDate"
+                    class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm cursor-pointer focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-slate-100 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-400 disabled:dark:bg-slate-600"
+                  />
+                  <p class="text-xs text-slate-500 dark:text-slate-400">
+                    Pilih satu tanggal untuk melihat detail jam bentrok pada hari tersebut.
+                  </p>
+                </div>
+
+                <div class="space-y-2">
+                  <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">Ringkasan Bentrok per Hari</p>
+                  <p v-if="availabilityMessage" class="text-sm text-slate-600 dark:text-slate-300">{{ availabilityMessage }}</p>
+                  <div v-else-if="availabilityRangeSummary.length" class="space-y-3">
+                    <div
+                      v-for="entry in availabilityRangeSummary"
+                      :key="entry.date"
+                      class="rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-600 dark:bg-slate-600"
+                    >
+                      <div class="flex items-center justify-between gap-3">
+                        <p class="font-medium text-slate-800 dark:text-slate-100">{{ entry.label }}</p>
+                        <span class="text-xs text-slate-500 dark:text-slate-300">{{ entry.bookings.length }} bentrok</span>
+                      </div>
+                      <ul class="mt-2 space-y-2">
+                        <li
+                          v-for="interval in entry.bookings"
+                          :key="`${entry.date}-${interval.id}-${interval.start}-${interval.end}`"
+                          class="flex items-center justify-between gap-3 rounded-md bg-slate-50 px-3 py-2 dark:bg-slate-700"
+                        >
+                          <span>{{ formatInterval(interval) }}</span>
+                          <span class="text-xs font-semibold uppercase text-slate-400 dark:text-slate-300">{{ interval.status }}</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                  <p v-else-if="form.room_id && hasBookingDateRange" class="text-sm text-slate-500 dark:text-slate-400">
+                    Belum ada jadwal lain pada rentang tanggal yang dipilih.
+                  </p>
+                  <p v-else class="text-sm text-slate-500 dark:text-slate-400">
+                    Pilih ruangan, tanggal mulai, dan tanggal selesai untuk melihat ringkasan bentrok per hari.
+                  </p>
+                </div>
+              </div>
+
+              <div class="space-y-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-600 dark:bg-slate-600">
+                <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                  Detail pada {{ selectedAvailabilityDateLabel || 'Tanggal yang Dipilih' }}
+                </p>
+                <ul v-if="bookedIntervals.length" class="space-y-2 text-sm text-slate-600 dark:text-slate-300">
+                  <li
+                    v-for="interval in bookedIntervals"
+                    :key="`detail-${interval.id}-${interval.start}-${interval.end}`"
+                    class="flex items-center justify-between rounded-md bg-slate-50 px-3 py-2 dark:bg-slate-700 dark:text-slate-200"
+                  >
+                    <span>{{ formatInterval(interval) }}</span>
+                    <span class="text-xs font-semibold uppercase text-slate-400 dark:text-slate-300">{{ interval.status }}</span>
+                  </li>
+                </ul>
+                <p v-else-if="form.room_id && availabilityDate" class="text-sm text-slate-500 dark:text-slate-400">
+                  Belum ada jadwal lain pada tanggal ini.
+                </p>
+                <p v-else class="text-sm text-slate-500 dark:text-slate-400">
+                  Pilih tanggal cek ketersediaan untuk melihat detail bentrok per hari.
+                </p>
+              </div>
+            </div>
           </div>
 
             <div class="space-y-2">

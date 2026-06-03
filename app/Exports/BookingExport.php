@@ -28,8 +28,8 @@ class BookingExport implements FromCollection, WithHeadings, WithMapping, Should
             'Ruang',
             'Judul',
             'Deskripsi',
-            'Mulai',
-            'Selesai',
+            'Mode Jadwal',
+            'Jadwal',
             'Status',
         ];
     }
@@ -45,8 +45,8 @@ class BookingExport implements FromCollection, WithHeadings, WithMapping, Should
             optional($booking->room)->name,
             $booking->title,
             $booking->description,
-            optional($booking->start_time)->format('Y-m-d H:i'),
-            optional($booking->end_time)->format('Y-m-d H:i'),
+            $booking->schedule_mode_label,
+            $booking->schedule_summary,
             $booking->status,
         ];
     }

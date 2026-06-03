@@ -44,6 +44,11 @@ class BookingController extends Controller
                 'bookings.description',
                 'bookings.start_time',
                 'bookings.end_time',
+                'bookings.schedule_mode',
+                'bookings.schedule_start_date',
+                'bookings.schedule_end_date',
+                'bookings.schedule_start_clock',
+                'bookings.schedule_end_clock',
                 'bookings.status',
                 'rooms.name as room_name',
                 'buildings.name as building_name',
@@ -146,19 +151,42 @@ class BookingController extends Controller
      */
     public function store(Request $request)
     {
-        $minimumStartTime = now()->addDays(3)->startOfDay();
-        $minStartDateLabel = $minimumStartTime->format('d/m/Y');
+        $minimumStartDate = now()->addDays(3)->startOfDay();
+        $minStartDateLabel = $minimumStartDate->format('d/m/Y');
 
         $validated = $request->validate([
             'room_id'     => 'required|exists:rooms,id',
             'title'       => 'required|string|max:255',
             'description' => 'nullable|string',
-            'start_time'  => 'required|date|after_or_equal:'.$minimumStartTime->toDateTimeString(),
-            'end_time'    => 'required|date|after:start_time',
+            'schedule_mode' => 'required|in:'.Booking::MODE_CONTINUOUS.','.Booking::MODE_SAME_HOURS_DAILY,
+            'start_date'  => 'required|date|after_or_equal:'.$minimumStartDate->toDateString(),
+            'end_date'    => 'required|date|after_or_equal:start_date',
+            'start_time'  => 'required|date_format:H:i',
+            'end_time'    => 'required|date_format:H:i',
             'attachment'  => 'nullable|file|mimes:pdf,jpg,png|max:2048',
         ], [
-            'start_time.after_or_equal' => 'Tanggal penggunaan minimal '.$minStartDateLabel.' (H+3 dari hari ini).',
+            'start_date.after_or_equal' => 'Tanggal penggunaan minimal '.$minStartDateLabel.' (H+3 dari hari ini).',
         ]);
+
+        $schedulePayload = $this->buildSchedulePayload($validated);
+        $startDateTime = Carbon::parse($schedulePayload['start_time']);
+        $endDateTime = Carbon::parse($schedulePayload['end_time']);
+
+        if ($validated['schedule_mode'] === Booking::MODE_SAME_HOURS_DAILY && $validated['end_time'] <= $validated['start_time']) {
+            return back()
+                ->withErrors([
+                    'end_time' => 'Jam selesai harus setelah jam mulai untuk mode jam sama pada rentang tanggal.',
+                ])
+                ->withInput();
+        }
+
+        if ($validated['schedule_mode'] === Booking::MODE_CONTINUOUS && $endDateTime->lte($startDateTime)) {
+            return back()
+                ->withErrors([
+                    'end_time' => 'Waktu selesai harus setelah waktu mulai untuk mode kontinu antar hari.',
+                ])
+                ->withInput();
+        }
 
         // Upload file kalau ada
         if ($request->hasFile(key: 'attachment')) {
@@ -168,29 +196,26 @@ class BookingController extends Controller
         // Tambah user id yang login & status default
         $validated['user_id'] = Auth::id();
         $validated['status']  = 'waiting';
+        $validated['start_time'] = $schedulePayload['start_time'];
+        $validated['end_time'] = $schedulePayload['end_time'];
+        $validated['schedule_start_date'] = $schedulePayload['schedule_start_date'];
+        $validated['schedule_end_date'] = $schedulePayload['schedule_end_date'];
+        $validated['schedule_start_clock'] = $schedulePayload['schedule_start_clock'];
+        $validated['schedule_end_clock'] = $schedulePayload['schedule_end_clock'];
 
         // Simpan booking
-        $room = Room::with('bookings')->findOrFail($validated['room_id']);
+        $room = Room::findOrFail($validated['room_id']);
 
         if (! $room->is_available) {
             return back()
                 ->withErrors([
-                    'start_time' => 'Ruangan sudah dibooking pada rentang waktu yang dipilih.',
+                    'start_date' => 'Ruangan sudah dibooking pada rentang waktu yang dipilih.',
                 ])
                 ->with('error', 'Ruangan sudah dibooking pada rentang waktu yang dipilih.')
                 ->withInput();
         }
 
-        $start = Carbon::parse($validated['start_time']);
-        $end   = Carbon::parse($validated['end_time']);
-
-        $hasConflict = $room->bookings()
-            ->whereNotIn('status', ['rejected', 'cancelled'])
-            ->where('start_time', '<', $end)
-            ->where('end_time', '>', $start)
-            ->exists();
-
-        if ($hasConflict) {
+        if ($this->roomHasScheduleConflict($room, $schedulePayload)) {
             return back()
                 ->withErrors([
                     'room_id' => 'Ruangan sedang tidak tersedia untuk dibooking.',
@@ -228,7 +253,7 @@ class BookingController extends Controller
     }
 
     /**
-     * Return availability information for a room on a specific date.
+     * Return availability information for a room on a specific date or date range.
      */
     public function availability(Request $request, Room $room)
     {
@@ -236,55 +261,202 @@ class BookingController extends Controller
             return response()->json([
                 'available' => false,
                 'bookings' => [],
+                'daily_bookings' => [],
                 'message' => 'Ruangan saat ini ditandai tidak tersedia.',
             ]);
         }
 
         $date = $request->query('date');
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
 
-        if (! $date) {
+        if (! $date && ! $startDate && ! $endDate) {
             return response()->json([
                 'available' => true,
                 'bookings' => [],
+                'daily_bookings' => [],
             ], 200);
         }
 
         try {
-            $day = Carbon::parse($date);
+            $day = $date ? Carbon::parse($date) : null;
+            $rangeStart = $startDate ? Carbon::parse($startDate)->startOfDay() : null;
+            $rangeEnd = $endDate ? Carbon::parse($endDate)->endOfDay() : null;
         } catch (\Throwable $exception) {
             return response()->json([
                 'available' => true,
                 'bookings' => [],
+                'daily_bookings' => [],
             ], 422);
         }
-        $startOfDay = $day->copy()->startOfDay();
-        $endOfDay = $day->copy()->endOfDay();
+
+        if ($rangeStart && $rangeEnd && $rangeStart->gt($rangeEnd)) {
+            [$rangeStart, $rangeEnd] = [$rangeEnd->copy()->startOfDay(), $rangeStart->copy()->endOfDay()];
+        }
+
+        $queryStart = $rangeStart ?? $day?->copy()->startOfDay();
+        $queryEnd = $rangeEnd ?? $day?->copy()->endOfDay();
+
+        if (! $queryStart || ! $queryEnd) {
+            return response()->json([
+                'available' => true,
+                'bookings' => [],
+                'daily_bookings' => [],
+            ], 200);
+        }
 
         $bookings = $room->bookings()
             ->whereNotIn('status', ['rejected', 'cancelled'])
-            ->where(function ($query) use ($startOfDay, $endOfDay) {
-                $query->whereBetween('start_time', [$startOfDay, $endOfDay])
-                    ->orWhereBetween('end_time', [$startOfDay, $endOfDay])
-                    ->orWhere(function ($subQuery) use ($startOfDay, $endOfDay) {
-                        $subQuery->where('start_time', '<', $startOfDay)
-                            ->where('end_time', '>', $endOfDay);
-                    });
-            })
-            ->get()
-            ->map(function (Booking $booking) {
-                return [
-                    'id' => $booking->id,
-                    'title' => $booking->title,
-                    'status' => $booking->status,
-                    'start' => Carbon::parse($booking->start_time)->format('H:i'),
-                    'end' => Carbon::parse($booking->end_time)->format('H:i'),
-                ];
-            });
+            ->get();
+
+        $dailyBookings = $this->buildDailyBookings($bookings, $queryStart, $queryEnd);
+        $selectedDateEntry = $day
+            ? collect($dailyBookings)->firstWhere('date', $day->toDateString())
+            : null;
+        $bookingsForSelectedDate = $selectedDateEntry['bookings'] ?? [];
 
         return response()->json([
             'available' => true,
-            'bookings' => $bookings,
+            'bookings' => $bookingsForSelectedDate,
+            'daily_bookings' => $dailyBookings,
         ], 200);
+    }
+
+    /**
+     * Build room booking intervals grouped per day within the requested range.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function buildDailyBookings($bookings, Carbon $rangeStart, Carbon $rangeEnd): array
+    {
+        $grouped = collect();
+
+        foreach ($bookings as $booking) {
+            foreach ($booking->buildDailyIntervalsWithinRange($rangeStart, $rangeEnd) as $interval) {
+                $grouped->push($interval);
+            }
+        }
+
+        return $grouped
+            ->groupBy('date')
+            ->map(function ($items, $date) {
+                return [
+                    'date' => $date,
+                    'bookings' => $items
+                        ->sortBy(['start', 'end'])
+                        ->values()
+                        ->map(fn ($item) => [
+                            'id' => $item['id'],
+                            'title' => $item['title'],
+                            'status' => $item['status'],
+                            'start' => $item['start'],
+                            'end' => $item['end'],
+                        ])
+                        ->all(),
+                ];
+            })
+            ->sortBy('date')
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     * @return array<string, string>
+     */
+    private function buildSchedulePayload(array $validated): array
+    {
+        $startDate = Carbon::parse($validated['start_date']);
+        $endDate = Carbon::parse($validated['end_date']);
+        $startDateTime = Carbon::parse($validated['start_date'].' '.$validated['start_time']);
+        $endDateTime = Carbon::parse($validated['end_date'].' '.$validated['end_time']);
+
+        return [
+            'schedule_mode' => $validated['schedule_mode'],
+            'start_time' => $startDateTime->toDateTimeString(),
+            'end_time' => $endDateTime->toDateTimeString(),
+            'schedule_start_date' => $startDate->toDateString(),
+            'schedule_end_date' => $endDate->toDateString(),
+            'schedule_start_clock' => $startDateTime->format('H:i:s'),
+            'schedule_end_clock' => $endDateTime->format('H:i:s'),
+        ];
+    }
+
+    /**
+     * @param  array<string, string>  $schedulePayload
+     */
+    private function roomHasScheduleConflict(Room $room, array $schedulePayload): bool
+    {
+        $requestedIntervals = $this->buildRequestedDailyIntervals($schedulePayload);
+
+        if ($requestedIntervals === []) {
+            return false;
+        }
+
+        $rangeStart = Carbon::parse($schedulePayload['schedule_start_date'])->startOfDay();
+        $rangeEnd = Carbon::parse($schedulePayload['schedule_end_date'])->endOfDay();
+
+        $existingBookings = $room->bookings()
+            ->whereNotIn('status', ['rejected', 'cancelled'])
+            ->get();
+
+        foreach ($existingBookings as $booking) {
+            $existingIntervals = $booking->buildDailyIntervalsWithinRange($rangeStart, $rangeEnd);
+
+            foreach ($requestedIntervals as $requestedInterval) {
+                foreach ($existingIntervals as $existingInterval) {
+                    if (($requestedInterval['date'] ?? null) !== ($existingInterval['date'] ?? null)) {
+                        continue;
+                    }
+
+                    if ($this->intervalsOverlap($requestedInterval, $existingInterval)) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param  array<string, string>  $schedulePayload
+     * @return array<int, array<string, string>>
+     */
+    private function buildRequestedDailyIntervals(array $schedulePayload): array
+    {
+        $booking = new Booking([
+            'id' => 0,
+            'title' => 'Requested booking',
+            'status' => 'waiting',
+            'schedule_mode' => $schedulePayload['schedule_mode'],
+            'start_time' => $schedulePayload['start_time'],
+            'end_time' => $schedulePayload['end_time'],
+            'schedule_start_date' => $schedulePayload['schedule_start_date'],
+            'schedule_end_date' => $schedulePayload['schedule_end_date'],
+            'schedule_start_clock' => $schedulePayload['schedule_start_clock'],
+            'schedule_end_clock' => $schedulePayload['schedule_end_clock'],
+        ]);
+
+        return $booking->buildDailyIntervalsWithinRange(
+            Carbon::parse($schedulePayload['schedule_start_date'])->startOfDay(),
+            Carbon::parse($schedulePayload['schedule_end_date'])->endOfDay(),
+        );
+    }
+
+    /**
+     * @param  array<string, string|int>  $left
+     * @param  array<string, string|int>  $right
+     */
+    private function intervalsOverlap(array $left, array $right): bool
+    {
+        $date = (string) $left['date'];
+        $leftStart = Carbon::parse($date.' '.((string) $left['start']));
+        $leftEnd = Carbon::parse($date.' '.((string) $left['end']));
+        $rightStart = Carbon::parse($date.' '.((string) $right['start']));
+        $rightEnd = Carbon::parse($date.' '.((string) $right['end']));
+
+        return $leftStart->lt($rightEnd) && $leftEnd->gt($rightStart);
     }
 
     public function downloadAttachment(Booking $booking)

@@ -65,8 +65,6 @@
 <body>
 @php
     use Carbon\Carbon;
-    $start = Carbon::parse($booking->start_time)->locale('id');
-    $end = Carbon::parse($booking->end_time)->locale('id');
     $approvalDate = $approvedAt
         ? $approvedAt->copy()->locale('id')
         : Carbon::parse($generatedAt)->locale('id');
@@ -121,12 +119,12 @@
             <td>: {{ optional(optional(optional($booking->room)->building)->campus)->name }}</td>
         </tr>
         <tr>
-            <td class="label">Waktu Mulai</td>
-            <td>: {{ $start->translatedFormat('d F Y H:i') }} WIB</td>
+            <td class="label">Mode Jadwal</td>
+            <td>: {{ $booking->schedule_mode_label }}</td>
         </tr>
         <tr>
-            <td class="label">Waktu Selesai</td>
-            <td>: {{ $end->translatedFormat('d F Y H:i') }} WIB</td>
+            <td class="label">Jadwal Penggunaan</td>
+            <td>: {{ $booking->schedule_summary }}</td>
         </tr>
     </table>
 

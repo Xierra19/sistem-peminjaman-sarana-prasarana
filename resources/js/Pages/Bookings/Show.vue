@@ -144,10 +144,10 @@ const cancelBooking = () => {
                 <div>
                   <div class="text-xs font-semibold uppercase text-gray-500 dark:text-slate-400">Jadwal</div>
                   <p class="text-sm text-gray-700 dark:text-slate-300">
-                    Mulai: <span class="font-semibold text-gray-900 dark:text-white">{{ formatDateTime(booking.start_time) }}</span>
+                    Jenis: <span class="font-semibold text-gray-900 dark:text-white">{{ booking.schedule_mode_label }}</span>
                   </p>
                   <p class="text-sm text-gray-700 dark:text-slate-300">
-                    Selesai: <span class="font-semibold text-gray-900 dark:text-white">{{ formatDateTime(booking.end_time) }}</span>
+                    Detail: <span class="font-semibold text-gray-900 dark:text-white">{{ booking.schedule_summary }}</span>
                   </p>
                 </div>
                 <div>

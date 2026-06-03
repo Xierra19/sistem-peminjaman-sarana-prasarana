@@ -368,8 +368,8 @@ const perPageOptions = [5, 10, 25, 50]
                 </div>
               </td>
               <td class="px-5 py-4 text-sm">
-                <div>Mulai: <span class="font-medium text-slate-800 dark:text-slate-200">{{ formatDateTime(booking.start_time) }}</span></div>
-                <div>Selesai: <span class="font-medium text-slate-800 dark:text-slate-200">{{ formatDateTime(booking.end_time) }}</span></div>
+                <div>Jenis: <span class="font-medium text-slate-800 dark:text-slate-200">{{ booking.schedule_mode_label }}</span></div>
+                <div class="text-xs text-slate-500 dark:text-slate-400">{{ booking.schedule_summary }}</div>
               </td>
               <td class="px-5 py-4 text-center">
                 <span

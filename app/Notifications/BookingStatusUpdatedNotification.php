@@ -6,7 +6,6 @@ use App\Models\Booking;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 class BookingStatusUpdatedNotification extends Notification
@@ -35,9 +34,6 @@ class BookingStatusUpdatedNotification extends Notification
         $room = $booking->room;
         $building = $room?->building;
         $campus = $building?->campus;
-
-        $start = $booking->start_time ? Carbon::parse($booking->start_time) : null;
-        $end = $booking->end_time ? Carbon::parse($booking->end_time) : null;
 
         // Ubah status ke bahasa Indonesia
         $statusIndo = match($this->status) {
@@ -71,8 +67,8 @@ class BookingStatusUpdatedNotification extends Notification
             $mail->line('Ruangan: '.$location);
         }
 
-        if ($start && $end) {
-            $mail->line('Jadwal: '.$start->format('d M Y H:i').' - '.$end->format('d M Y H:i'));
+        if ($booking->schedule_summary) {
+            $mail->line('Jadwal: '.$booking->schedule_summary);
         }
 
         if ($this->moderatorName) {

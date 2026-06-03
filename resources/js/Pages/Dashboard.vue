@@ -785,7 +785,10 @@ const {
                       {{ booking.room?.building?.name ?? '-' }} - {{ booking.room?.building?.campus?.name ?? '-' }}
                     </div>
                   </td>
-                  <td class="px-4 py-3 text-slate-700 dark:text-slate-300" data-title="Mulai">{{ formatDateTime(booking.start_time) }}</td>
+                  <td class="px-4 py-3 text-slate-700 dark:text-slate-300" data-title="Mulai">
+                    <div class="font-medium">{{ booking.schedule_mode_label ?? 'Jadwal' }}</div>
+                    <div class="text-xs text-slate-500 dark:text-slate-400">{{ booking.schedule_short_summary ?? formatDateTime(booking.start_time) }}</div>
+                  </td>
                   <td class="px-4 py-3" data-title="Status">
                     <span
                       class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold capitalize"

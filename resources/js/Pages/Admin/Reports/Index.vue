@@ -214,11 +214,29 @@ const exportPdf = () => {
   window.open(url, '_blank')
 }
 
+const chartBookings = computed(() => {
+  const bookings = props.bookings ?? []
+  const today = new Date()
+  today.setHours(23, 59, 59, 999)
+
+  const startDate = new Date(today)
+  startDate.setDate(today.getDate() - 6)
+  startDate.setHours(0, 0, 0, 0)
+
+  return bookings.filter((booking) => {
+    if (!booking.created_at) return false
+
+    const createdAt = new Date(booking.created_at)
+    if (Number.isNaN(createdAt.getTime())) return false
+
+    return createdAt >= startDate && createdAt <= today
+  })
+})
+
 // =========================================
 // CHART DATA: STATUS DISTRIBUTION (PIE)
 // =========================================
 const statusChartData = computed(() => {
-  const bookings = props.bookings ?? []
   const counts = {
     approved: 0,
     waiting: 0,
@@ -226,15 +244,26 @@ const statusChartData = computed(() => {
     cancelled: 0,
   }
    
-  bookings.forEach(b => {
+  chartBookings.value.forEach(b => {
     const s = b.status || ''
     if (counts[s] !== undefined) {
       counts[s]++
     }
   })
 
+  const total = Object.values(counts).reduce((sum, count) => sum + count, 0)
+  const toPercentageLabel = (label, count) => {
+    const percentage = total > 0 ? ((count / total) * 100).toFixed(1) : '0.0'
+    return `${label} (${percentage}%)`
+  }
+
   return {
-    labels: ['Disetujui', 'Menunggu', 'Ditolak', 'Dibatalkan'],
+    labels: [
+      toPercentageLabel('Disetujui', counts.approved),
+      toPercentageLabel('Menunggu', counts.waiting),
+      toPercentageLabel('Ditolak', counts.rejected),
+      toPercentageLabel('Dibatalkan', counts.cancelled),
+    ],
     datasets: [{
       data: [counts.approved, counts.waiting, counts.rejected, counts.cancelled],
       backgroundColor: [
@@ -249,31 +278,42 @@ const statusChartData = computed(() => {
 })
 
 // =========================================
-// CHART DATA: MONTHLY BOOKINGS (BAR)
+// CHART DATA: WEEKLY BOOKINGS (BAR)
 // =========================================
-const monthlyChartData = computed(() => {
-  const bookings = props.bookings ?? []
-  const monthCounts = {}
-  
-  bookings.forEach(b => {
-    if (!b.created_at) return
-    const d = new Date(b.created_at)
-    if (isNaN(d.getTime())) return
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-    monthCounts[key] = (monthCounts[key] || 0) + 1
+const weeklyChartData = computed(() => {
+  const dayCounts = {}
+  const dates = []
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  for (let offset = 6; offset >= 0; offset -= 1) {
+    const date = new Date(today)
+    date.setDate(today.getDate() - offset)
+
+    const key = date.toISOString().split('T')[0]
+    dates.push(key)
+    dayCounts[key] = 0
+  }
+
+  chartBookings.value.forEach((booking) => {
+    const createdAt = new Date(booking.created_at)
+    if (Number.isNaN(createdAt.getTime())) return
+
+    const key = createdAt.toISOString().split('T')[0]
+    if (dayCounts[key] !== undefined) {
+      dayCounts[key] += 1
+    }
   })
 
-  // Sort months and take last 6
-  const sortedMonths = Object.keys(monthCounts).sort()
-  const last6 = sortedMonths.slice(-6)
-
-  const labels = last6.map(m => {
-    const [year, month] = m.split('-')
-    const date = new Date(year, month - 1, 1)
-    return date.toLocaleString('id-ID', { month: 'short', year: 'numeric' })
+  const labels = dates.map((dateString) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('id-ID', {
+      day: '2-digit',
+      month: 'short',
+    })
   })
 
-  const data = last6.map(m => monthCounts[m])
+  const data = dates.map((dateString) => dayCounts[dateString])
 
   return {
     labels,
@@ -375,15 +415,15 @@ const chartOptions = {
       <!-- Charts Section -->
       <div class="grid gap-6 md:grid-cols-2 mb-6">
         <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-          <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Distribusi Status Booking</h3>
+          <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Distribusi Status Booking 1 Minggu Terakhir</h3>
           <div class="h-64">
             <Pie :data="statusChartData" :options="chartOptions" />
           </div>
         </div>
         <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-          <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Tren Peminjaman 6 Bulan Terakhir</h3>
+          <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Tren Peminjaman 1 Minggu Terakhir</h3>
           <div class="h-64">
-            <Bar :data="monthlyChartData" :options="chartOptions" />
+            <Bar :data="weeklyChartData" :options="chartOptions" />
           </div>
         </div>
       </div>
@@ -520,8 +560,8 @@ const chartOptions = {
                   </div>
                 </td>
                 <td class="px-5 py-4">
-                  <div class="font-medium text-gray-900 dark:text-slate-100">{{ formatDateTime(booking.start_time) }}</div>
-                  <div class="text-xs text-gray-500 dark:text-slate-400">s.d {{ formatDateTime(booking.end_time) }}</div>
+                  <div class="font-medium text-gray-900 dark:text-slate-100">{{ booking.schedule_mode_label }}</div>
+                  <div class="text-xs text-gray-500 dark:text-slate-400">{{ booking.schedule_summary }}</div>
                 </td>
                 <td class="px-5 py-4">
                   <div class="font-medium text-gray-900 dark:text-slate-100">{{ booking.room?.name ?? '-' }}</div>

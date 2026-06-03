@@ -535,8 +535,11 @@ const chartOptions = {
                       {{ booking.room?.building?.name ?? '-' }} - {{ booking.room?.building?.campus?.name ?? '-' }}
                     </div>
                   </td>
-                  <td class="px-5 py-4 text-gray-700">{{ formatDateTime(booking.start_time) }}</td>
-                  <td class="px-5 py-4 text-gray-700">{{ formatDateTime(booking.end_time) }}</td>
+                  <td class="px-5 py-4 text-gray-700">
+                    <div class="font-medium text-gray-900 dark:text-white">{{ booking.schedule_mode_label ?? 'Jadwal' }}</div>
+                    <div class="text-xs text-gray-500 dark:text-slate-400">{{ booking.schedule_short_summary ?? formatDateTime(booking.start_time) }}</div>
+                  </td>
+                  <td class="px-5 py-4 text-gray-700">{{ booking.schedule_summary ?? formatDateTime(booking.end_time) }}</td>
                   <td class="px-5 py-4">
                     <span
                       class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold capitalize"

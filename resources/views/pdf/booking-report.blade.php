@@ -70,8 +70,8 @@
                 <th>Ruangan</th>
                 <th>Gedung</th>
                 <th>Kampus</th>
-                <th>Mulai</th>
-                <th>Selesai</th>
+                <th>Mode</th>
+                <th>Jadwal</th>
                 <th>Status</th>
             </tr>
         </thead>
@@ -84,8 +84,8 @@
                 <td>{{ optional($booking->room)->name }}</td>
                 <td>{{ optional(optional($booking->room)->building)->name }}</td>
                 <td>{{ optional(optional(optional($booking->room)->building)->campus)->name }}</td>
-                <td>{{ Carbon::parse($booking->start_time)->locale('id')->translatedFormat('d F Y H:i') }}</td>
-                <td>{{ Carbon::parse($booking->end_time)->locale('id')->translatedFormat('d F Y H:i') }}</td>
+                <td>{{ $booking->schedule_mode_label }}</td>
+                <td>{{ $booking->schedule_summary }}</td>
                 @php($status = $normalizeStatus($booking->status))
                 <td>{{ $statusLabels[$status] ?? ucfirst($status ?? '-') }}</td>
             </tr>
