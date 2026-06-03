@@ -124,7 +124,7 @@ const onSignedLetterChange = (event) => {
         </div>
         <Link
           :href="route('admin.item-borrowings.index')"
-          class="inline-flex items-center rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700"
+          class="inline-flex w-full items-center justify-center rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700 sm:w-auto"
         >
           Kembali ke Daftar
         </Link>
@@ -132,8 +132,8 @@ const onSignedLetterChange = (event) => {
 
       <div class="grid gap-6 lg:grid-cols-3">
         <div class="space-y-6 lg:col-span-2">
-          <section class="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
-            <header class="flex items-center justify-between border-b border-gray-100 px-6 py-4 dark:border-slate-700">
+          <section class="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+            <header class="flex flex-col gap-3 border-b border-gray-100 px-5 py-4 dark:border-slate-700 sm:flex-row sm:items-center sm:justify-between sm:px-6">
               <div class="space-y-1">
                 <h2 class="text-lg font-semibold text-gray-800 dark:text-white">Detail Pengajuan</h2>
                 <p class="text-sm text-gray-500 dark:text-slate-400">Informasi lengkap mengenai permintaan yang diajukan pengguna.</p>
@@ -145,7 +145,7 @@ const onSignedLetterChange = (event) => {
                 {{ statusLabels[normalizedStatus] ?? normalizedStatus }}
               </span>
             </header>
-            <div class="grid gap-6 px-6 py-5 sm:grid-cols-2">
+            <div class="grid gap-6 px-5 py-5 sm:grid-cols-2 sm:px-6">
               <div class="space-y-3">
                 <div>
                   <div class="text-xs font-semibold uppercase text-gray-500 dark:text-slate-400">Pemohon</div>
@@ -185,12 +185,12 @@ const onSignedLetterChange = (event) => {
             </div>
           </section>
 
-          <section class="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
-            <header class="border-b border-gray-100 px-6 py-4 dark:border-slate-700">
+          <section class="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+            <header class="border-b border-gray-100 px-5 py-4 dark:border-slate-700 sm:px-6">
               <h2 class="text-lg font-semibold text-gray-800 dark:text-white">Lampiran</h2>
               <p class="text-sm text-gray-500 dark:text-slate-400">Dokumen pendukung dari pemohon.</p>
             </header>
-            <div class="px-6 py-5 text-sm text-gray-600 dark:text-slate-300">
+            <div class="px-5 py-5 text-sm text-gray-600 dark:text-slate-300 sm:px-6">
               <template v-if="itemBorrowing.attachment">
                 <a
                   :href="route('item-borrowings.attachment', itemBorrowing.id)"
@@ -205,12 +205,12 @@ const onSignedLetterChange = (event) => {
             </div>
           </section>
 
-          <section class="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
-            <header class="border-b border-gray-100 px-6 py-4 dark:border-slate-700">
+          <section class="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+            <header class="border-b border-gray-100 px-5 py-4 dark:border-slate-700 sm:px-6">
               <h2 class="text-lg font-semibold text-gray-800 dark:text-white">Surat Admin Sarpras</h2>
               <p class="text-sm text-gray-500 dark:text-slate-400">Surat yang sudah ditandatangani admin untuk persetujuan atau penolakan.</p>
             </header>
-            <div class="space-y-3 px-6 py-5 text-sm text-gray-600 dark:text-slate-300">
+            <div class="space-y-3 px-5 py-5 text-sm text-gray-600 dark:text-slate-300 sm:px-6">
               <template v-if="itemBorrowing.signed_letter">
                 <a
                   :href="route('item-borrowings.signed-letter', itemBorrowing.id)"
@@ -230,12 +230,12 @@ const onSignedLetterChange = (event) => {
         </div>
 
         <aside class="space-y-6">
-          <section class="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
-            <header class="border-b border-gray-100 px-6 py-4 dark:border-slate-700">
+          <section class="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+            <header class="border-b border-gray-100 px-5 py-4 dark:border-slate-700 sm:px-6">
               <h2 class="text-lg font-semibold text-gray-800 dark:text-white">Tindakan Persetujuan</h2>
               <p class="text-sm text-gray-500 dark:text-slate-400">Setujui, tolak, batalkan, atau tandai telah kembali.</p>
             </header>
-            <div class="space-y-4 px-6 py-5">
+            <div class="space-y-4 px-5 py-5 sm:px-6">
               <textarea
                 v-model="approvalForm.notes"
                 class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:focus:border-blue-500 dark:focus:ring-blue-900/30"
@@ -324,12 +324,12 @@ const onSignedLetterChange = (event) => {
             </div>
           </section>
 
-          <section class="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
-            <header class="border-b border-gray-100 px-6 py-4 dark:border-slate-700">
+          <section class="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+            <header class="border-b border-gray-100 px-5 py-4 dark:border-slate-700 sm:px-6">
               <h2 class="text-lg font-semibold text-gray-800 dark:text-white">Riwayat Aktivitas</h2>
               <p class="text-sm text-gray-500 dark:text-slate-400">Jejak persetujuan untuk peminjaman ini.</p>
             </header>
-            <ul class="space-y-4 px-6 py-5">
+            <ul class="space-y-4 px-5 py-5 sm:px-6">
               <li
                 v-for="log in itemBorrowing.logs ?? []"
                 :key="log.id"

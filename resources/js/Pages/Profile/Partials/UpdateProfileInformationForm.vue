@@ -27,11 +27,11 @@ const form = useForm({
     <section>
         <header>
             <h2 class="text-lg font-medium text-gray-900 dark:text-white">
-                Profile Information
+                Informasi Profil
             </h2>
 
             <p class="mt-1 text-sm text-gray-600 dark:text-slate-300">
-                Update your account's profile information and email address.
+                Perbarui nama, email kampus, dan nomor telepon yang dipakai untuk proses booking dan verifikasi.
             </p>
         </header>
 
@@ -40,12 +40,12 @@ const form = useForm({
             class="mt-6 space-y-6"
         >
             <div>
-                <InputLabel for="name" value="Name" />
+                <InputLabel for="name" value="Nama Lengkap" />
 
                 <TextInput
                     id="name"
                     type="text"
-                    class="mt-1 block w-full"
+                    class="mt-1 block h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 shadow-sm transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100"
                     v-model="form.name"
                     required
                     autofocus
@@ -56,12 +56,12 @@ const form = useForm({
             </div>
 
             <div>
-                <InputLabel for="email" value="Email" />
+                <InputLabel for="email" value="Email Kampus" />
 
                 <TextInput
                     id="email"
                     type="email"
-                    class="mt-1 block w-full"
+                    class="mt-1 block h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 shadow-sm transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100"
                     v-model="form.email"
                     required
                     autocomplete="username"
@@ -76,7 +76,7 @@ const form = useForm({
                 <TextInput
                     id="phone"
                     type="tel"
-                    class="mt-1 block w-full"
+                    class="mt-1 block h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 shadow-sm transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100"
                     v-model="form.phone"
                     required
                     autocomplete="tel"
@@ -87,14 +87,14 @@ const form = useForm({
 
             <div v-if="mustVerifyEmail && user.email_verified_at === null">
                     <p class="mt-2 text-sm text-gray-800 dark:text-slate-200">
-                        Your email address is unverified.
+                        Email Anda belum terverifikasi.
                         <Link
                             :href="route('verification.send')"
                             method="post"
                             as="button"
                             class="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:text-slate-300 dark:hover:text-white"
                         >
-                            Click here to re-send the verification email.
+                            Kirim ulang email verifikasi.
                         </Link>
                     </p>
 
@@ -102,12 +102,14 @@ const form = useForm({
                     v-show="status === 'verification-link-sent'"
                         class="mt-2 text-sm font-medium text-green-600 dark:text-green-400"
                 >
-                    A new verification link has been sent to your email address.
+                    Tautan verifikasi baru sudah dikirim ke email Anda.
                 </div>
             </div>
 
-            <div class="flex items-center gap-4">
-                <PrimaryButton :disabled="form.processing">Save</PrimaryButton>
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <PrimaryButton :disabled="form.processing" class="!flex !h-12 !w-full !justify-center !rounded-2xl !bg-indigo-600 !px-4 !text-sm !font-semibold !normal-case !tracking-normal sm:!w-auto">
+                    {{ form.processing ? 'Menyimpan…' : 'Simpan Perubahan' }}
+                </PrimaryButton>
 
                 <Transition
                     enter-active-class="transition ease-in-out"
@@ -119,7 +121,7 @@ const form = useForm({
                             v-if="form.recentlySuccessful"
                             class="text-sm text-gray-600 dark:text-slate-300"
                         >
-                            Saved.
+                            Perubahan tersimpan.
                         </p>
                 </Transition>
             </div>

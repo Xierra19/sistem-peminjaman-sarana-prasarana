@@ -242,7 +242,7 @@ const cancelBorrowing = (borrowing) => {
         </div>
 
         <div class="overflow-x-auto">
-          <table class="mobile-friendly-table min-w-full divide-y divide-slate-200 text-sm text-slate-700 dark:divide-slate-700 dark:text-slate-300">
+          <table class="request-mobile-table mobile-friendly-table min-w-full divide-y divide-slate-200 text-sm text-slate-700 dark:divide-slate-700 dark:text-slate-300">
             <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-700 dark:text-slate-400">
               <tr>
                 <SortableTh
@@ -306,23 +306,24 @@ const cancelBorrowing = (borrowing) => {
             </thead>
             <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
               <tr v-for="(borrowing, index) in paginatedItems" :key="borrowing.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
-                <td class="px-4 py-3 text-slate-500 dark:text-slate-400" data-title="#">
+                <td class="mobile-id-cell px-4 py-3 text-slate-500 dark:text-slate-400" data-title="#">
                   {{ pageMeta.from + index }}
                 </td>
-                <td class="px-4 py-3" data-title="Keperluan">
-                  <div class="font-semibold text-slate-900 dark:text-slate-100">{{ borrowing.title }}</div>
+                <td class="mobile-primary-cell mobile-span-2 px-4 py-3" data-title="Keperluan">
+                  <div class="mobile-primary-label">Keperluan</div>
+                  <div class="mobile-primary-title">{{ borrowing.title }}</div>
                   <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ borrowing.description || 'Tidak ada deskripsi tambahan.' }}</div>
                 </td>
-                <td class="px-4 py-3" data-title="Barang">
+                <td class="px-4 py-3 mobile-compact-meta" data-title="Barang">
                   <div class="font-medium text-slate-900 dark:text-slate-100">{{ getItemNames(borrowing) }}</div>
                   <div v-if="borrowing.items && borrowing.items.length > 1" class="text-xs text-slate-500 dark:text-slate-400">
                     {{ borrowing.items.length }} jenis barang
                   </div>
                 </td>
                 <td class="px-4 py-3 text-slate-700 dark:text-slate-300" data-title="Qty">{{ getTotalQuantity(borrowing) }}</td>
-                <td class="px-4 py-3 text-slate-700 dark:text-slate-300" data-title="Pinjam">{{ formatDate(getBorrowDates(borrowing)) }}</td>
-                <td class="px-4 py-3 text-slate-700 dark:text-slate-300" data-title="Kembali">{{ formatDate(getReturnDates(borrowing)) }}</td>
-                <td class="px-4 py-3" data-title="Status">
+                <td class="px-4 py-3 text-slate-700 dark:text-slate-300 mobile-compact-meta" data-title="Pinjam">{{ formatDate(getBorrowDates(borrowing)) }}</td>
+                <td class="px-4 py-3 text-slate-700 dark:text-slate-300 mobile-compact-meta" data-title="Kembali">{{ formatDate(getReturnDates(borrowing)) }}</td>
+                <td class="mobile-status-cell px-4 py-3" data-title="Status">
                   <span
                     class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold"
                     :class="statusClasses[borrowing.status] ?? 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600'"
@@ -330,7 +331,7 @@ const cancelBorrowing = (borrowing) => {
                     {{ statusLabels[borrowing.status] ?? borrowing.status }}
                   </span>
                 </td>
-                <td class="px-4 py-3" data-title="Aksi">
+                <td class="mobile-action-cell px-4 py-3" data-title="Aksi">
                   <div class="flex flex-col gap-2">
                     <Link
                       :href="route('item-borrowings.show', borrowing.id)"

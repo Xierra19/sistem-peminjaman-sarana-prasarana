@@ -183,7 +183,10 @@ async function resend() {
         <Head title="Reset melalui OTP" />
 
         <div class="mb-6">
-            <h1 class="text-2xl font-semibold text-gray-900">
+            <div class="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-indigo-600">
+                Reset OTP
+            </div>
+            <h1 class="mt-3 text-2xl font-semibold text-gray-900">
                 Reset kata sandi dengan OTP
             </h1>
             <p class="mt-2 text-sm text-gray-600">
@@ -200,12 +203,12 @@ async function resend() {
 
         <form class="space-y-4" @submit.prevent="resetPassword">
             <div>
-                <InputLabel for="email" value="Email" />
+                <InputLabel for="email" value="Email kampus" />
                 <TextInput
                     id="email"
                     v-model="state.email"
                     type="email"
-                    class="mt-1 block w-full"
+                    class="mt-1 block h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100"
                     required
                     autocomplete="username"
                 />
@@ -224,7 +227,7 @@ async function resend() {
                     type="text"
                     inputmode="numeric"
                     maxlength="6"
-                    class="mt-1 block w-full tracking-[0.7em] text-center text-2xl"
+                    class="mt-1 block h-14 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-center text-2xl tracking-[0.55em] text-slate-900 shadow-sm focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100"
                     :required="!state.magicToken"
                     :disabled="!!state.magicToken"
                 />
@@ -237,7 +240,7 @@ async function resend() {
                     id="new_password"
                     v-model="state.newPassword"
                     type="password"
-                    class="mt-1 block w-full"
+                    class="mt-1 block h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100"
                     required
                     autocomplete="new-password"
                 />
@@ -249,7 +252,7 @@ async function resend() {
                     id="confirm_password"
                     v-model="state.confirmPassword"
                     type="password"
-                    class="mt-1 block w-full"
+                    class="mt-1 block h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100"
                     required
                 />
             </div>
@@ -260,7 +263,7 @@ async function resend() {
                     id="captcha"
                     v-model="state.captchaToken"
                     type="text"
-                    class="mt-1 block w-full"
+                    class="mt-1 block h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100"
                     placeholder="Diisi otomatis oleh widget CAPTCHA"
                 />
                 <p class="mt-1 text-xs text-gray-500">
@@ -269,13 +272,14 @@ async function resend() {
             </div>
 
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <PrimaryButton :disabled="state.loadingVerify">
+                <PrimaryButton :disabled="state.loadingVerify" class="!flex !h-12 !w-full !justify-center !rounded-2xl !bg-indigo-600 !px-4 !text-sm !font-semibold !normal-case !tracking-normal sm:!w-auto">
                     <span v-if="state.loadingVerify">Memproses...</span>
                     <span v-else>Reset kata sandi</span>
                 </PrimaryButton>
 
                 <SecondaryButton
                     type="button"
+                    class="!flex !h-12 !w-full !justify-center !rounded-2xl !border-slate-200 !px-4 !text-sm !font-semibold !normal-case !tracking-normal sm:!w-auto"
                     :disabled="state.loadingResend || state.cooldownRemaining > 0"
                     @click="resend"
                 >

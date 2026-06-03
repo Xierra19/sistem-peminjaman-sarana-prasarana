@@ -128,6 +128,18 @@ const scheduleDateLabels = computed(() =>
 const selectedAvailabilityDateLabel = computed(() =>
   availabilityDate.value ? formatDateLabel(availabilityDate.value) : '',
 )
+const bookingDateSummary = computed(() => {
+  if (!form.start_date) return 'Pilih tanggal peminjaman'
+  if (!form.end_date || form.end_date === form.start_date) {
+    return formatDateLabel(form.start_date)
+  }
+
+  return `${formatDateLabel(form.start_date)} - ${formatDateLabel(form.end_date)}`
+})
+const bookingTimeSummary = computed(() => {
+  if (!form.start_time || !form.end_time) return 'Pilih jam mulai dan selesai'
+  return `${form.start_time} - ${form.end_time}`
+})
 const availabilityRangeSummary = computed(() =>
   dailyBookedIntervals.value.map((entry) => ({
     ...entry,
@@ -571,7 +583,7 @@ onBeforeUnmount(() => {
                 </p>
             </div>
 
-        <div class="grid gap-3 rounded-2xl bg-slate-50 p-4 text-xs text-slate-600 sm:grid-cols-3 dark:bg-slate-700/50 dark:text-slate-300">
+        <div class="hidden gap-3 rounded-2xl bg-slate-50 p-4 text-xs text-slate-600 sm:grid sm:grid-cols-3 dark:bg-slate-700/50 dark:text-slate-300">
           <div class="flex items-start gap-3">
             <span class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">1</span>
             <div>
@@ -596,6 +608,15 @@ onBeforeUnmount(() => {
         </div>
 
         <form @submit.prevent="submit" class="space-y-8">
+          <section class="space-y-5">
+            <div class="flex items-center gap-3">
+              <span class="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white shadow-sm">1</span>
+              <div>
+                <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Lokasi Peminjaman</h2>
+                <p class="text-sm text-slate-500 dark:text-slate-400">Tentukan kampus, gedung, dan ruangan yang akan dipakai.</p>
+              </div>
+            </div>
+
           <div class="grid gap-6 md:grid-cols-2">
             <div class="space-y-2">
               <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Kampus</label>
@@ -665,6 +686,7 @@ onBeforeUnmount(() => {
               </p>
             </div>
           </div>
+          </section>
 
           <div
             v-if="selectedRoom"
@@ -690,6 +712,15 @@ onBeforeUnmount(() => {
               </div>
             </div>
           </div>
+
+          <section class="space-y-5">
+            <div class="flex items-center gap-3">
+              <span class="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white shadow-sm">2</span>
+              <div>
+                <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Jadwal Penggunaan</h2>
+                <p class="text-sm text-slate-500 dark:text-slate-400">Pilih tipe jadwal, tanggal, dan jam yang sesuai.</p>
+              </div>
+            </div>
 
           <div class="space-y-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-700/50">
             <div>
@@ -813,6 +844,16 @@ onBeforeUnmount(() => {
               <p v-if="form.errors.end_time">{{ form.errors.end_time }}</p>
             </div>
           </div>
+          </section>
+
+          <section class="space-y-5">
+            <div class="flex items-center gap-3">
+              <span class="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white shadow-sm">3</span>
+              <div>
+                <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Cek Ketersediaan</h2>
+                <p class="text-sm text-slate-500 dark:text-slate-400">Lihat bentrok per hari sebelum pengajuan dikirim.</p>
+              </div>
+            </div>
 
           <div class="space-y-4 rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-700/50 dark:text-slate-300">
             <div class="flex items-center justify-between gap-4">
@@ -899,6 +940,42 @@ onBeforeUnmount(() => {
               </div>
             </div>
           </div>
+          </section>
+
+          <section class="space-y-5">
+            <div class="flex items-center gap-3">
+              <span class="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white shadow-sm">4</span>
+              <div>
+                <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Detail Pengajuan</h2>
+                <p class="text-sm text-slate-500 dark:text-slate-400">Lengkapi informasi kegiatan dan periksa ringkasannya.</p>
+              </div>
+            </div>
+
+            <div class="grid gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-2 dark:border-slate-700 dark:bg-slate-800">
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Lokasi</p>
+                <p class="mt-1 text-sm font-medium text-slate-900 dark:text-slate-100">
+                  {{ selectedRoom?.name ?? 'Belum memilih ruangan' }}
+                </p>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                  {{ selectedBuilding?.name ?? '-' }} - {{ currentCampus?.name ?? '-' }}
+                </p>
+              </div>
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Tanggal</p>
+                <p class="mt-1 text-sm font-medium text-slate-900 dark:text-slate-100">{{ bookingDateSummary }}</p>
+              </div>
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Waktu</p>
+                <p class="mt-1 text-sm font-medium text-slate-900 dark:text-slate-100">{{ bookingTimeSummary }}</p>
+              </div>
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Mode Jadwal</p>
+                <p class="mt-1 text-sm font-medium text-slate-900 dark:text-slate-100">
+                  {{ scheduleModeOptions.find((option) => option.value === form.schedule_mode)?.label ?? '-' }}
+                </p>
+              </div>
+            </div>
 
             <div class="space-y-2">
               <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Judul Kegiatan *</label>
@@ -937,15 +1014,22 @@ onBeforeUnmount(() => {
               </label>
               <div v-if="form.errors.attachment" class="text-sm text-red-500">{{ form.errors.attachment }}</div>
             </div>
+          </section>
 
-          <div class="flex flex-col gap-3 sm:flex-row sm:justify-end">
-            <button
-              type="submit"
-              class="inline-flex w-full items-center justify-center rounded-2xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 sm:w-auto"
-              :disabled="form.processing"
-            >
-              Ajukan Peminjaman
-            </button>
+          <div class="sticky bottom-0 z-10 -mx-5 border-t border-slate-200 bg-white/95 px-5 py-4 backdrop-blur sm:-mx-6 sm:px-6 dark:border-slate-700 dark:bg-slate-800/95">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div class="text-sm text-slate-500 dark:text-slate-400">
+                <p class="font-medium text-slate-700 dark:text-slate-200">{{ selectedRoom?.name ?? 'Ruangan belum dipilih' }}</p>
+                <p>{{ bookingDateSummary }} - {{ bookingTimeSummary }}</p>
+              </div>
+              <button
+                type="submit"
+                class="inline-flex w-full items-center justify-center rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 sm:w-auto"
+                :disabled="form.processing"
+              >
+                {{ form.processing ? 'Mengajukan...' : 'Ajukan Peminjaman' }}
+              </button>
+            </div>
           </div>
         </form>
       </div>

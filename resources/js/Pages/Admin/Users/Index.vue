@@ -77,6 +77,9 @@ const {
   changePage,
 } = usePagination(sortedUsers)
 
+const canGoToPreviousPage = computed(() => currentPage.value > 1 && usersList.value.length > 0)
+const canGoToNextPage = computed(() => currentPage.value < pages.value.length && usersList.value.length > 0)
+
 const perPageOptions = [5, 10, 25, 50]
 
 const deleteForm = useForm({})
@@ -122,10 +125,10 @@ const formatDate = (value) => formatDateTimeToDDMMYY(value)
           <h1 class="text-2xl font-semibold text-gray-800 dark:text-gray-200">Manajemen User</h1>
           <p class="text-sm text-gray-500 dark:text-gray-400">Pantau dan kelola akses pengguna aplikasi booking ruangan.</p>
         </div>
-        <div class="flex flex-wrap items-center gap-3">
+        <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
           <Link
             :href="route('admin.users.index')"
-            class="inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 shadow-sm transition hover:border-gray-300 hover:text-gray-800 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-200"
+            class="inline-flex w-full items-center justify-center gap-2 rounded-md border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 shadow-sm transition hover:border-gray-300 hover:text-gray-800 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-200 sm:w-auto"
             :only="['users', 'stats', 'currentUserId']"
           >
             Refresh
@@ -139,44 +142,44 @@ const formatDate = (value) => formatDateTimeToDDMMYY(value)
         </div>
       </div>
 
-      <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+      <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
           <p class="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Total User</p>
           <p class="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">{{ stats.total }}</p>
           <p class="text-xs text-slate-500 dark:text-slate-400">Seluruh pengguna terdaftar</p>
         </div>
-        <div class="rounded-xl border border-indigo-200 bg-white p-5 shadow-sm dark:border-indigo-800 dark:bg-slate-800">
+        <div class="rounded-2xl border border-indigo-200 bg-white p-4 shadow-sm dark:border-indigo-800 dark:bg-slate-800">
           <p class="text-xs font-medium uppercase tracking-wide text-indigo-500 dark:text-indigo-400">Super Admin</p>
           <p class="mt-2 text-2xl font-semibold text-indigo-600 dark:text-indigo-400">{{ stats.super_admins }}</p>
           <p class="text-xs text-indigo-500 dark:text-indigo-400">Akses menu seluruh modul</p>
         </div>
-        <div class="rounded-xl border border-blue-200 bg-white p-5 shadow-sm dark:border-blue-800 dark:bg-slate-800">
+        <div class="rounded-2xl border border-blue-200 bg-white p-4 shadow-sm dark:border-blue-800 dark:bg-slate-800">
           <p class="text-xs font-medium uppercase tracking-wide text-blue-500 dark:text-blue-400">Admin BAP</p>
           <p class="mt-2 text-2xl font-semibold text-blue-600 dark:text-blue-400">{{ stats.admin_bap }}</p>
           <p class="text-xs text-blue-500 dark:text-blue-400">Kelola ruangan dan akademik</p>
         </div>
-        <div class="rounded-xl border border-amber-200 bg-white p-5 shadow-sm dark:border-amber-800 dark:bg-slate-800">
+        <div class="rounded-2xl border border-amber-200 bg-white p-4 shadow-sm dark:border-amber-800 dark:bg-slate-800">
           <p class="text-xs font-medium uppercase tracking-wide text-amber-500 dark:text-amber-400">Admin Sarpras</p>
           <p class="mt-2 text-2xl font-semibold text-amber-600 dark:text-amber-400">{{ stats.admin_sarpras }}</p>
           <p class="text-xs text-amber-500 dark:text-amber-400">Kelola barang dan inventaris</p>
         </div>
-        <div class="rounded-xl border border-emerald-200 bg-white p-5 shadow-sm dark:border-emerald-800 dark:bg-slate-800">
+        <div class="rounded-2xl border border-emerald-200 bg-white p-4 shadow-sm dark:border-emerald-800 dark:bg-slate-800">
           <p class="text-xs font-medium uppercase tracking-wide text-emerald-500 dark:text-emerald-400">User Biasa</p>
           <p class="mt-2 text-2xl font-semibold text-emerald-600 dark:text-emerald-400">{{ stats.members }}</p>
           <p class="text-xs text-emerald-500 dark:text-emerald-400">Akses standar booking</p>
         </div>
       </div>
 
-      <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+      <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
         <div class="flex flex-col gap-3 border-b border-gray-100 px-5 py-4 md:flex-row md:items-center md:justify-between dark:border-slate-700">
           <div class="text-sm font-semibold text-gray-700 dark:text-gray-300">Daftar User Terdaftar</div>
-          <div class="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
+          <div class="flex flex-col gap-2 text-sm text-gray-600 dark:text-gray-400 sm:flex-row sm:items-center">
             <label class="font-medium text-gray-700 dark:text-gray-300" for="admin-users-rows">Rows per page</label>
             <div class="relative">
               <select
                 id="admin-users-rows"
                 v-model.number="rowsPerPage"
-                class="w-20 rounded border border-gray-300 bg-white px-3 py-1.5 pr-8 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
+                class="w-full rounded border border-gray-300 bg-white px-3 py-1.5 pr-8 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 sm:w-20"
               >
                 <option v-for="option in perPageOptions" :key="`rows-${option}`" :value="option">
                   {{ option }}
@@ -186,7 +189,7 @@ const formatDate = (value) => formatDateTimeToDDMMYY(value)
           </div>
         </div>
 
-        <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-slate-700">
+        <table class="master-mobile-table mobile-friendly-table min-w-full divide-y divide-gray-200 text-sm dark:divide-slate-700">
           <thead class="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:bg-slate-700 dark:text-slate-400">
             <tr>
               <SortableTh class="px-5 py-3 text-left" column="name" label="Nama" :direction="userSortDirection('name')" :aria-sort="userAriaSortValue('name')" @toggle="toggleUserSort" />
@@ -199,20 +202,21 @@ const formatDate = (value) => formatDateTimeToDDMMYY(value)
           </thead>
           <tbody class="divide-y divide-gray-100 text-gray-700 dark:divide-slate-700 dark:text-slate-300">
             <tr v-for="user in paginatedUsers" :key="user.id" class="transition hover:bg-gray-50 dark:hover:bg-slate-700/50" :class="{ 'bg-blue-50/50': isCurrentUser(user.id) }">
-              <td class="px-5 py-4">
-                <div class="font-medium text-gray-900 dark:text-slate-100">{{ user.name }}</div>
+              <td class="mobile-primary-cell mobile-span-2 px-5 py-4" data-title="Nama">
+                <div class="mobile-primary-label">Nama</div>
+                <div class="mobile-primary-title">{{ user.name }}</div>
                 <div v-if="isCurrentUser(user.id)" class="text-xs font-semibold uppercase text-blue-500 dark:text-blue-400">Anda</div>
               </td>
-              <td class="px-5 py-4 text-sm text-gray-700 dark:text-slate-300">{{ user.email }}</td>
-              <td class="px-5 py-4 text-sm text-gray-700 dark:text-slate-300">{{ user.phone || '-' }}</td>
-              <td class="px-5 py-4">
+              <td class="px-5 py-4 text-sm text-gray-700 dark:text-slate-300 mobile-meta-cell mobile-compact-meta" data-title="Email">{{ user.email }}</td>
+              <td class="px-5 py-4 text-sm text-gray-700 dark:text-slate-300 mobile-meta-cell mobile-compact-meta" data-title="No. Telp">{{ user.phone || '-' }}</td>
+              <td class="mobile-status-cell px-5 py-4" data-title="Role">
                 <span class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold" :class="roleBadgeClasses[user.role] ?? 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600'">
                   {{ user.roleLabel }}
                 </span>
               </td>
-              <td class="px-5 py-4 text-sm text-gray-700 dark:text-slate-300">{{ formatDate(user.created_at) }}</td>
-              <td class="px-5 py-4 text-right">
-                <div class="flex items-center justify-end gap-2">
+              <td class="px-5 py-4 text-sm text-gray-700 dark:text-slate-300 mobile-compact-meta" data-title="Dibuat">{{ formatDate(user.created_at) }}</td>
+              <td class="mobile-action-cell px-5 py-4 text-right" data-title="Aksi">
+                <div class="flex flex-col gap-2 sm:flex-row sm:justify-end">
                   <Link
                     :href="route('admin.users.edit', user.id)"
                     class="inline-flex items-center rounded-md border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:border-blue-300 hover:text-blue-800 dark:border-blue-800 dark:text-blue-300 dark:hover:border-blue-700 dark:hover:text-blue-200"
@@ -244,23 +248,30 @@ const formatDate = (value) => formatDateTimeToDDMMYY(value)
             <span v-if="pageMeta.of">Menampilkan {{ pageMeta.from }}-{{ pageMeta.to }} dari {{ pageMeta.of }} user</span>
             <span v-else>Menampilkan 0 data</span>
           </div>
-          <div class="flex items-center gap-2">
-            <button type="button" class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(1)" :disabled="currentPage === 1 || !usersList.length">«</button>
-            <button type="button" class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(currentPage - 1)" :disabled="currentPage === 1 || !usersList.length">‹</button>
-            <template v-if="usersList.length">
-              <button
-                v-for="page in pages"
-                :key="`user-page-${page}`"
-                type="button"
-                class="rounded border px-3 py-1 text-sm transition"
-                :class="currentPage === page ? 'border-blue-500 bg-blue-500 text-white' : 'border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400'"
-                @click="changePage(page)"
-              >
-                {{ page }}
-              </button>
-            </template>
-            <button type="button" class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(currentPage + 1)" :disabled="currentPage === pages.length || !usersList.length">›</button>
-            <button type="button" class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(pages.length)" :disabled="currentPage === pages.length || !usersList.length">»</button>
+          <div class="w-full sm:w-auto">
+            <div class="mobile-pagination-compact sm:hidden">
+              <button type="button" class="rounded border border-gray-300 px-3 py-2 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(currentPage - 1)" :disabled="!canGoToPreviousPage">Sebelumnya</button>
+              <button type="button" class="rounded border border-gray-300 px-3 py-2 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(currentPage + 1)" :disabled="!canGoToNextPage">Berikutnya</button>
+            </div>
+            <div class="hidden items-center gap-2 sm:flex">
+              <button type="button" class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(1)" :disabled="currentPage === 1 || !usersList.length">«</button>
+              <button type="button" class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(currentPage - 1)" :disabled="currentPage === 1 || !usersList.length">‹</button>
+              <template v-if="usersList.length">
+                <button
+                  v-for="page in pages"
+                  :key="`user-page-${page}`"
+                  type="button"
+                  class="rounded border px-3 py-1 text-sm transition"
+                  :class="currentPage === page ? 'border-blue-500 bg-blue-500 text-white' : 'border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400'"
+                  :disabled="typeof page !== 'number'"
+                  @click="changePage(page)"
+                >
+                  {{ page }}
+                </button>
+              </template>
+              <button type="button" class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(currentPage + 1)" :disabled="currentPage === pages.length || !usersList.length">›</button>
+              <button type="button" class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(pages.length)" :disabled="currentPage === pages.length || !usersList.length">»</button>
+            </div>
           </div>
         </div>
       </div>

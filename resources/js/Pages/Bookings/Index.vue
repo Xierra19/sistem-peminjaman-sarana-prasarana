@@ -160,6 +160,8 @@ const totalPages = computed(() => props.bookings.last_page || 1)
 
 // Skeleton rows (max 5 even if rowsPerPage is larger)
 const skeletonRows = computed(() => Math.min(rowsPerPage.value, 5))
+const canGoToPreviousPage = computed(() => currentPage.value > 1 && pageMeta.value.of > 0)
+const canGoToNextPage = computed(() => currentPage.value < totalPages.value && pageMeta.value.of > 0)
 
 // Limit pagination to max 5 visible pages with ellipsis
 const pages = computed(() => {
@@ -222,7 +224,7 @@ const changePage = (page) => {
     <Head title="Permintaan Peminjaman Ruangan" />
 
     <div class="space-y-6">
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 class="text-2xl font-semibold text-slate-900 dark:text-slate-100">Permintaan Peminjaman Ruangan</h1>
           <p class="text-sm text-slate-500 dark:text-slate-400">
@@ -235,6 +237,24 @@ const changePage = (page) => {
         >
           + Buat Request Baru
         </Link>
+      </div>
+
+      <div class="grid gap-3 sm:grid-cols-3">
+        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Total</p>
+          <p class="mt-2 text-3xl font-semibold text-slate-900 dark:text-slate-100">{{ isLoading ? '...' : pageMeta.of }}</p>
+          <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Permintaan sesuai filter aktif.</p>
+        </div>
+        <div class="rounded-2xl border border-blue-200 bg-white p-4 shadow-sm dark:border-blue-900 dark:bg-slate-800">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-blue-600 dark:text-blue-300">Status Filter</p>
+          <p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{{ statusFilter || 'Semua status' }}</p>
+          <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Gunakan filter untuk fokus ke status tertentu.</p>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Per Halaman</p>
+          <p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{{ rowsPerPage }} baris</p>
+          <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Atur kepadatan daftar sesuai kebutuhan.</p>
+        </div>
       </div>
 
       <div class="card-surface overflow-hidden">
@@ -308,7 +328,7 @@ const changePage = (page) => {
         </div>
 
         <div class="overflow-x-auto">
-          <table class="mobile-friendly-table min-w-full divide-y divide-slate-200 text-sm text-slate-700 dark:divide-slate-700 dark:text-slate-300">
+          <table class="request-mobile-table mobile-friendly-table min-w-full divide-y divide-slate-200 text-sm text-slate-700 dark:divide-slate-700 dark:text-slate-300">
             <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-700 dark:text-slate-400">
               <tr>
                 <SortableTh
@@ -374,27 +394,28 @@ const changePage = (page) => {
               
               <template v-else>
                 <tr v-for="(booking, index) in paginatedBookings" :key="booking.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
-                  <td class="px-4 py-3 text-slate-500 dark:text-slate-400" data-title="#">
+                  <td class="mobile-id-cell px-4 py-3 text-slate-500 dark:text-slate-400" data-title="#">
                     {{ (pageMeta.from || 1) + index }}
                   </td>
-                  <td class="px-4 py-3" data-title="Judul">
-                    <div class="font-semibold text-slate-900 dark:text-slate-100">{{ booking.title }}</div>
+                  <td class="mobile-primary-cell mobile-span-2 px-4 py-3" data-title="Judul">
+                    <div class="mobile-primary-label">Judul</div>
+                    <div class="mobile-primary-title">{{ booking.title }}</div>
                     <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ booking.description || 'Tidak ada deskripsi tambahan.' }}</div>
                   </td>
-                <td class="px-4 py-3" data-title="Ruangan">
+                <td class="mobile-compact-meta px-4 py-3" data-title="Ruangan">
                   <div class="font-medium text-slate-900 dark:text-slate-100">{{ booking.room_name ?? '-' }}</div>
                   <div class="text-xs text-slate-500 dark:text-slate-400">
                     {{ booking.building_name ?? '-' }} - {{ booking.campus_name ?? '-' }}
                   </div>
                 </td>
-                  <td class="px-4 py-3 text-slate-700 dark:text-slate-300" data-title="Mulai">
+                  <td class="mobile-span-2 px-4 py-3 text-slate-700 dark:text-slate-300" data-title="Mulai">
                     <div class="font-medium">{{ booking.schedule_mode_label ?? 'Jadwal' }}</div>
                     <div class="text-xs text-slate-500 dark:text-slate-400">{{ booking.schedule_short_summary ?? formatDateTime(booking.start_time) }}</div>
                   </td>
-                  <td class="px-4 py-3 text-slate-700 dark:text-slate-300" data-title="Selesai">
+                  <td class="px-4 py-3 text-slate-700 dark:text-slate-300 mobile-compact-meta" data-title="Selesai">
                     {{ booking.schedule_summary ?? formatDateTime(booking.end_time) }}
                   </td>
-                  <td class="px-4 py-3" data-title="Status">
+                  <td class="mobile-status-cell px-4 py-3" data-title="Status">
                     <span
                       class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold"
                       :class="statusClasses[normalizeStatus(booking.status)] ?? 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600'"
@@ -402,7 +423,7 @@ const changePage = (page) => {
                       {{ statusLabels[normalizeStatus(booking.status)] ?? booking.status }}
                     </span>
                   </td>
-                  <td class="px-4 py-3" data-title="Aksi">
+                  <td class="mobile-action-cell px-4 py-3" data-title="Aksi">
                     <div class="flex flex-col gap-2">
                       <Link
                         :href="route('bookings.show', booking.id)"
@@ -464,58 +485,78 @@ const changePage = (page) => {
               Menampilkan 0 data
             </template>
           </div>
-          <div class="flex items-center gap-2">
-            <button
-              type="button"
-              class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400"
-              @click="changePage(1)"
-              :disabled="isLoading || currentPage === 1 || !pageMeta.of"
-            >
-              «
-            </button>
-            <button
-              type="button"
-              class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400"
-              @click="changePage(currentPage - 1)"
-              :disabled="isLoading || currentPage === 1 || !pageMeta.of"
-            >
-              ‹
-            </button>
-            <template v-if="pageMeta.of">
+          <div class="w-full sm:w-auto">
+            <div class="mobile-pagination-compact sm:hidden">
               <button
-                v-for="(page, index) in pages"
-                :key="`bookings-page-${page}-${index}`"
                 type="button"
-                class="rounded border px-3 py-1 text-sm transition"
-                :class="
-                  page === '...'
-                    ? 'cursor-default border-transparent text-slate-400'
-                    : currentPage === page
-                    ? 'border-blue-500 bg-blue-500 text-white'
-                    : 'border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400'
-                "
-                @click="changePage(page)"
-                :disabled="isLoading || page === '...'"
+                class="rounded border border-gray-300 px-3 py-2 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400"
+                @click="changePage(currentPage - 1)"
+                :disabled="isLoading || !canGoToPreviousPage"
               >
-                {{ page }}
+                Sebelumnya
               </button>
-            </template>
-            <button
-              type="button"
-              class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400"
-              @click="changePage(currentPage + 1)"
-              :disabled="isLoading || currentPage === totalPages.value || !pageMeta.of"
-            >
-              ›
-            </button>
-            <button
-              type="button"
-              class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400"
-              @click="changePage(totalPages.value)"
-              :disabled="isLoading || currentPage === totalPages.value || !pageMeta.of"
-            >
-              »
-            </button>
+              <button
+                type="button"
+                class="rounded border border-gray-300 px-3 py-2 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400"
+                @click="changePage(currentPage + 1)"
+                :disabled="isLoading || !canGoToNextPage"
+              >
+                Berikutnya
+              </button>
+            </div>
+            <div class="hidden items-center gap-2 sm:flex">
+              <button
+                type="button"
+                class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400"
+                @click="changePage(1)"
+                :disabled="isLoading || currentPage === 1 || !pageMeta.of"
+              >
+                «
+              </button>
+              <button
+                type="button"
+                class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400"
+                @click="changePage(currentPage - 1)"
+                :disabled="isLoading || currentPage === 1 || !pageMeta.of"
+              >
+                ‹
+              </button>
+              <template v-if="pageMeta.of">
+                <button
+                  v-for="(page, index) in pages"
+                  :key="`bookings-page-${page}-${index}`"
+                  type="button"
+                  class="rounded border px-3 py-1 text-sm transition"
+                  :class="
+                    page === '...'
+                      ? 'cursor-default border-transparent text-slate-400'
+                      : currentPage === page
+                      ? 'border-blue-500 bg-blue-500 text-white'
+                      : 'border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400'
+                  "
+                  @click="changePage(page)"
+                  :disabled="isLoading || page === '...'"
+                >
+                  {{ page }}
+                </button>
+              </template>
+              <button
+                type="button"
+                class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400"
+                @click="changePage(currentPage + 1)"
+                :disabled="isLoading || currentPage === totalPages.value || !pageMeta.of"
+              >
+                ›
+              </button>
+              <button
+                type="button"
+                class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400"
+                @click="changePage(totalPages.value)"
+                :disabled="isLoading || currentPage === totalPages.value || !pageMeta.of"
+              >
+                »
+              </button>
+            </div>
           </div>
         </div>
       </div>

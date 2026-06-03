@@ -42,30 +42,28 @@ const closeModal = () => {
     <section class="space-y-6">
         <header>
             <h2 class="text-lg font-medium text-gray-900 dark:text-white">
-                Delete Account
+                Hapus Akun
             </h2>
 
             <p class="mt-1 text-sm text-gray-600 dark:text-slate-300">
-                Once your account is deleted, all of its resources and data will
-                be permanently deleted. Before deleting your account, please
-                download any data or information that you wish to retain.
+                Jika akun dihapus, seluruh data terkait akses dan riwayat akan dihapus permanen. Pastikan keputusan ini memang final.
             </p>
         </header>
 
-        <DangerButton @click="confirmUserDeletion">Delete Account</DangerButton>
+        <DangerButton @click="confirmUserDeletion" class="!flex !h-12 !w-full !justify-center !rounded-2xl !px-4 !text-sm !font-semibold !normal-case !tracking-normal sm:!w-auto">
+            Hapus Akun
+        </DangerButton>
 
         <Modal :show="confirmingUserDeletion" @close="closeModal">
-            <div class="bg-white p-6 dark:bg-slate-800 dark:border dark:border-slate-700">
+            <div class="bg-white p-5 dark:border dark:border-slate-700 dark:bg-slate-800 sm:p-6">
                 <h2
                     class="text-lg font-medium text-gray-900 dark:text-white"
                 >
-                    Are you sure you want to delete your account?
+                    Yakin ingin menghapus akun?
                 </h2>
 
                 <p class="mt-1 text-sm text-gray-600 dark:text-slate-300">
-                    Once your account is deleted, all of its resources and data
-                    will be permanently deleted. Please enter your password to
-                    confirm you would like to permanently delete your account.
+                    Semua data akun akan dihapus permanen. Masukkan password untuk mengonfirmasi tindakan ini.
                 </p>
 
                 <div class="mt-6">
@@ -80,26 +78,26 @@ const closeModal = () => {
                         ref="passwordInput"
                         v-model="form.password"
                         type="password"
-                        class="mt-1 block w-3/4"
-                        placeholder="Password"
+                        class="mt-1 block h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 shadow-sm transition focus:border-rose-500 focus:bg-white focus:ring-4 focus:ring-rose-100 sm:w-3/4"
+                        placeholder="Masukkan password"
                         @keyup.enter="deleteUser"
                     />
 
                     <InputError :message="form.errors.password" class="mt-2" />
                 </div>
 
-                <div class="mt-6 flex justify-end">
-                    <SecondaryButton @click="closeModal">
-                        Cancel
+                <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
+                    <SecondaryButton @click="closeModal" class="!flex !h-12 !w-full !justify-center !rounded-2xl !px-4 !text-sm !font-semibold !normal-case !tracking-normal sm:!w-auto">
+                        Batal
                     </SecondaryButton>
 
                     <DangerButton
-                        class="ms-3"
+                        class="!flex !h-12 !w-full !justify-center !rounded-2xl !px-4 !text-sm !font-semibold !normal-case !tracking-normal sm:!w-auto"
                         :class="{ 'opacity-25': form.processing }"
                         :disabled="form.processing"
                         @click="deleteUser"
                     >
-                        Delete Account
+                        {{ form.processing ? 'Menghapus…' : 'Ya, Hapus Akun' }}
                     </DangerButton>
                 </div>
             </div>

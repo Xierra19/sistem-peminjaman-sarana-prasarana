@@ -5,7 +5,7 @@ import SortableTh from '@/Components/SortableTh.vue'
 import { usePagination } from '@/Composables/usePagination'
 import { useTableSort } from '@/Composables/useTableSort'
 import { Head, router } from '@inertiajs/vue3'
-import { computed, reactive, watch, ref, onMounted } from 'vue'
+import { computed, reactive, watch, ref, onMounted, onBeforeUnmount } from 'vue'
 import { formatToDDMMYY, formatDateTimeToDDMMYY } from '@/Composables/useDateFormatter'
 import flatpickr from 'flatpickr'
 import 'flatpickr/dist/flatpickr.css'
@@ -64,9 +64,18 @@ watch(
 // Referensi untuk elemen date range picker
 const dateRangePicker = ref(null)
 const flatpickrInstance = ref(null)
+const isMobileViewport = ref(false)
+
+const syncMobileViewport = () => {
+  if (typeof window === 'undefined') return
+  isMobileViewport.value = window.innerWidth < 640
+}
 
 // Inisialisasi Flatpickr untuk Date Range Picker
 onMounted(() => {
+  syncMobileViewport()
+  window.addEventListener('resize', syncMobileViewport)
+
   if (dateRangePicker.value) {
     flatpickrInstance.value = flatpickr(dateRangePicker.value, {
       mode: 'range',
@@ -104,6 +113,12 @@ onMounted(() => {
         }
       },
     })
+  }
+})
+
+onBeforeUnmount(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('resize', syncMobileViewport)
   }
 })
 
@@ -288,15 +303,26 @@ const monthlyChartData = computed(() => {
   }
 })
 
-const chartOptions = {
+const chartOptions = computed(() => ({
   responsive: true,
   maintainAspectRatio: false,
   plugins: {
     legend: {
       position: 'bottom',
+      labels: {
+        usePointStyle: true,
+        boxWidth: isMobileViewport.value ? 10 : 14,
+        padding: isMobileViewport.value ? 10 : 16,
+        font: {
+          size: isMobileViewport.value ? 10 : 12,
+        },
+      },
     },
   },
-}
+}))
+
+const canGoToPreviousPage = computed(() => currentPage.value > 1 && itemBorrowings.value.length > 0)
+const canGoToNextPage = computed(() => currentPage.value < pages.value.length && itemBorrowings.value.length > 0)
 </script>
 
 <template>
@@ -304,10 +330,10 @@ const chartOptions = {
     <Head title="Report Peminjaman Barang" />
 
     <div class="space-y-6">
-      <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 class="text-2xl font-semibold text-gray-800 dark:text-gray-200">Report Peminjaman Barang</h1>
-          <p class="text-sm text-gray-500 dark:text-gray-400">
+          <h1 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 sm:text-3xl">Report Peminjaman Barang</h1>
+          <p class="mt-1 max-w-2xl text-sm leading-relaxed text-gray-500 dark:text-gray-400">
             Rekap lengkap pengajuan barang beserta status terbaru dan data pemohon.
           </p>
         </div>
@@ -315,7 +341,7 @@ const chartOptions = {
           <template #trigger>
             <button
               type="button"
-              class="inline-flex items-center justify-center gap-2 rounded-2xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-100 dark:border-blue-800 dark:bg-slate-700 dark:text-blue-300"
+              class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-medium text-blue-700 transition hover:bg-blue-100 dark:border-blue-800 dark:bg-slate-700 dark:text-blue-300 sm:w-auto"
             >
               <span>Export</span>
               <svg class="h-4 w-4" fill="none" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
@@ -350,28 +376,28 @@ const chartOptions = {
         </Dropdown>
       </div>
 
-      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+      <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
           <p class="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Total Data</p>
-          <p class="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">{{ summary.total }}</p>
-          <p class="text-xs text-slate-500 dark:text-slate-400">Seluruh hasil sesuai filter aktif</p>
+          <p class="mt-3 text-3xl font-semibold text-slate-900 dark:text-slate-100">{{ summary.total }}</p>
+          <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Seluruh hasil sesuai filter aktif</p>
         </div>
-        <div class="rounded-xl border border-amber-200 bg-white p-5 shadow-sm dark:border-amber-800 dark:bg-slate-800">
+        <div class="rounded-2xl border border-amber-200 bg-white p-4 shadow-sm dark:border-amber-800 dark:bg-slate-800">
           <p class="text-xs font-medium uppercase tracking-wide text-amber-500 dark:text-amber-400">Menunggu</p>
           <p class="mt-2 text-2xl font-semibold text-amber-600 dark:text-amber-400">{{ summary.waiting }}</p>
           <p class="text-xs text-amber-500 dark:text-amber-400">Booking belum diputuskan</p>
         </div>
-        <div class="rounded-xl border border-emerald-200 bg-white p-5 shadow-sm dark:border-emerald-800 dark:bg-slate-800">
+        <div class="rounded-2xl border border-emerald-200 bg-white p-4 shadow-sm dark:border-emerald-800 dark:bg-slate-800">
           <p class="text-xs font-medium uppercase tracking-wide text-emerald-500 dark:text-emerald-400">Disetujui</p>
           <p class="mt-2 text-2xl font-semibold text-emerald-600 dark:text-emerald-400">{{ summary.approved }}</p>
           <p class="text-xs text-emerald-500 dark:text-emerald-400">Booking aktif</p>
         </div>
-        <div class="rounded-xl border border-blue-200 bg-white p-5 shadow-sm dark:border-blue-800 dark:bg-slate-800">
+        <div class="rounded-2xl border border-blue-200 bg-white p-4 shadow-sm dark:border-blue-800 dark:bg-slate-800">
           <p class="text-xs font-medium uppercase tracking-wide text-blue-500 dark:text-blue-400">Dikembalikan</p>
           <p class="mt-2 text-2xl font-semibold text-blue-600 dark:text-blue-400">{{ summary.returned }}</p>
           <p class="text-xs text-blue-500 dark:text-blue-400">Barang yang sudah dikembalikan</p>
         </div>
-        <div class="rounded-xl border border-rose-200 bg-white p-5 shadow-sm dark:border-rose-800 dark:bg-slate-800">
+        <div class="rounded-2xl border border-rose-200 bg-white p-4 shadow-sm dark:border-rose-800 dark:bg-slate-800">
           <p class="text-xs font-medium uppercase tracking-wide text-rose-500 dark:text-rose-400">Ditolak / Batal</p>
           <p class="mt-2 text-2xl font-semibold text-rose-600 dark:text-rose-400">{{ summary.rejected + summary.cancelled }}</p>
           <p class="text-xs text-rose-500 dark:text-rose-400">Termasuk pembatalan admin</p>
@@ -379,22 +405,22 @@ const chartOptions = {
       </div>
 
       <!-- Charts Section -->
-      <div class="grid gap-6 md:grid-cols-2 mb-6">
-        <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-          <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Distribusi Status Peminjaman Barang</h3>
-          <div class="h-64">
+      <div class="grid gap-4 md:grid-cols-2">
+        <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+          <h3 class="mb-4 text-lg font-semibold text-gray-800 dark:text-gray-200">Distribusi Status Peminjaman Barang</h3>
+          <div class="h-48 sm:h-56">
             <Pie :data="statusChartData" :options="chartOptions" />
           </div>
         </div>
-        <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-          <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Tren Peminjaman Barang 6 Bulan Terakhir</h3>
-          <div class="h-64">
+        <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+          <h3 class="mb-4 text-lg font-semibold text-gray-800 dark:text-gray-200">Tren Peminjaman Barang 6 Bulan Terakhir</h3>
+          <div class="h-48 sm:h-56">
             <Bar :data="monthlyChartData" :options="chartOptions" />
           </div>
         </div>
       </div>
 
-      <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+      <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
         <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <div class="flex flex-col gap-2">
             <label class="text-sm font-medium text-gray-700 dark:text-gray-300" for="item-report-search">Pencarian bebas</label>
@@ -433,17 +459,17 @@ const chartOptions = {
             </p>
           </div>
         </div>
-        <div class="mt-4 flex flex-wrap items-center justify-end gap-3">
+        <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
           <button
             type="button"
-            class="rounded-md border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 transition hover:border-gray-300 hover:text-gray-800 dark:border-slate-600 dark:text-slate-400 dark:hover:border-slate-500 dark:hover:text-slate-300"
+            class="w-full rounded-md border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 transition hover:border-gray-300 hover:text-gray-800 dark:border-slate-600 dark:text-slate-400 dark:hover:border-slate-500 dark:hover:text-slate-300 sm:w-auto"
             @click="resetFilters"
           >
             Reset
           </button>
           <button
             type="button"
-            class="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+            class="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 sm:w-auto"
             @click="applyFilters"
           >
             Terapkan Filter
@@ -451,15 +477,15 @@ const chartOptions = {
         </div>
       </div>
 
-      <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+      <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
         <div class="flex flex-col gap-3 border-b border-gray-100 px-5 py-4 md:flex-row md:items-center md:justify-between dark:border-slate-700">
           <div class="text-sm font-semibold text-gray-700 dark:text-gray-300">Hasil Report</div>
-          <div class="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
+          <div class="flex flex-col gap-2 text-sm text-gray-600 dark:text-gray-400 sm:flex-row sm:items-center">
             <label class="font-medium text-gray-700 dark:text-gray-300" for="item-report-rows">Baris per halaman</label>
             <select
               id="item-report-rows"
               v-model.number="rowsPerPage"
-              class="w-28 appearance-none rounded border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
+              class="w-full appearance-none rounded border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 sm:w-28"
             >
               <option v-for="option in perPageOptions" :key="`item-report-rows-${option}`" :value="option">
                 {{ option }}
@@ -469,7 +495,7 @@ const chartOptions = {
         </div>
 
         <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-slate-700">
+          <table class="report-mobile-table mobile-friendly-table min-w-full divide-y divide-gray-200 text-sm dark:divide-slate-700">
             <thead class="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:bg-slate-700 dark:text-slate-400">
               <tr>
                 <SortableTh class="px-5 py-3 text-left" column="id" :direction="sortDirection('id')" :aria-sort="ariaSortValue('id')" @toggle="toggleSort">
@@ -497,25 +523,25 @@ const chartOptions = {
             </thead>
             <tbody class="divide-y divide-gray-100 text-gray-700 dark:divide-slate-700 dark:text-slate-300">
               <tr v-for="borrowing in paginatedItems" :key="borrowing.id" class="hover:bg-gray-50 dark:hover:bg-slate-700/50">
-                <td class="px-5 py-4">{{ borrowing.id }}</td>
-                <td class="px-5 py-4">{{ formatDateTime(borrowing.created_at) }}</td>
-                <td class="px-5 py-4">
+                <td class="px-5 py-4" data-title="ID">{{ borrowing.id }}</td>
+                <td class="px-5 py-4" data-title="Tanggal Pengajuan">{{ formatDateTime(borrowing.created_at) }}</td>
+                <td class="px-5 py-4" data-title="Pemohon">
                   <div class="font-medium text-gray-900 dark:text-slate-100">{{ borrowing.user?.name ?? '-' }}</div>
                   <div class="text-xs text-gray-500 dark:text-slate-400">{{ borrowing.user?.email ?? '-' }}</div>
                 </td>
-                <td class="px-5 py-4">
+                <td class="px-5 py-4" data-title="Keperluan">
                   <div class="font-medium text-gray-900 dark:text-slate-100">{{ borrowing.title }}</div>
                   <div class="text-xs text-gray-500 dark:text-slate-400">{{ borrowing.description || 'Tidak ada deskripsi.' }}</div>
                 </td>
-                <td class="px-5 py-4">
+                <td class="px-5 py-4" data-title="Barang">
                   <div class="font-medium text-gray-900 dark:text-slate-100">{{ borrowing.item?.name ?? '-' }}</div>
                   <div class="text-xs text-gray-500 dark:text-slate-400">{{ borrowing.item?.code ?? '-' }} • {{ borrowing.item?.category ?? '-' }}</div>
                 </td>
-                <td class="px-5 py-4">
+                <td class="px-5 py-4" data-title="Periode">
                   <div>Pinjam: <span class="font-medium text-gray-900 dark:text-slate-100">{{ formatDate(borrowing.borrow_date) }}</span></div>
                   <div>Kembali: <span class="font-medium text-gray-900 dark:text-slate-100">{{ formatDate(borrowing.return_date) }}</span></div>
                 </td>
-                <td class="px-5 py-4">
+                <td class="px-5 py-4" data-title="Status">
                   <span
                     class="inline-flex rounded-full px-3 py-1 text-xs font-semibold"
                     :class="statusBadgeClasses[borrowing.status] ?? 'bg-gray-100 text-gray-600 border border-gray-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600'"
@@ -538,23 +564,30 @@ const chartOptions = {
             <span v-if="pageMeta.of">Menampilkan {{ pageMeta.from }}-{{ pageMeta.to }} dari {{ pageMeta.of }} data</span>
             <span v-else>Menampilkan 0 data</span>
           </div>
-          <div class="flex items-center gap-2">
-            <button type="button" class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(1)" :disabled="currentPage === 1 || !itemBorrowings.length">«</button>
-            <button type="button" class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(currentPage - 1)" :disabled="currentPage === 1 || !itemBorrowings.length">‹</button>
-            <template v-if="itemBorrowings.length">
-              <button
-                v-for="page in pages"
-                :key="`item-report-page-${page}`"
-                type="button"
-                class="rounded border px-3 py-1 text-sm transition"
-                :class="currentPage === page ? 'border-blue-500 bg-blue-500 text-white' : 'border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400'"
-                @click="changePage(page)"
-              >
-                {{ page }}
-              </button>
-            </template>
-            <button type="button" class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(currentPage + 1)" :disabled="currentPage === pages.length || !itemBorrowings.length">›</button>
-            <button type="button" class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(pages.length)" :disabled="currentPage === pages.length || !itemBorrowings.length">»</button>
+          <div class="w-full sm:w-auto">
+            <div class="mobile-pagination-compact sm:hidden">
+              <button type="button" class="rounded border border-gray-300 px-3 py-2 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(currentPage - 1)" :disabled="!canGoToPreviousPage">Sebelumnya</button>
+              <button type="button" class="rounded border border-gray-300 px-3 py-2 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(currentPage + 1)" :disabled="!canGoToNextPage">Berikutnya</button>
+            </div>
+            <div class="hidden items-center gap-2 sm:flex">
+              <button type="button" class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(1)" :disabled="currentPage === 1 || !itemBorrowings.length">«</button>
+              <button type="button" class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(currentPage - 1)" :disabled="currentPage === 1 || !itemBorrowings.length">‹</button>
+              <template v-if="itemBorrowings.length">
+                <button
+                  v-for="page in pages"
+                  :key="`item-report-page-${page}`"
+                  type="button"
+                  class="rounded border px-3 py-1 text-sm transition"
+                  :class="currentPage === page ? 'border-blue-500 bg-blue-500 text-white' : 'border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400'"
+                  :disabled="typeof page !== 'number'"
+                  @click="changePage(page)"
+                >
+                  {{ page }}
+                </button>
+              </template>
+              <button type="button" class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(currentPage + 1)" :disabled="currentPage === pages.length || !itemBorrowings.length">›</button>
+              <button type="button" class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(pages.length)" :disabled="currentPage === pages.length || !itemBorrowings.length">»</button>
+            </div>
           </div>
         </div>
       </div>

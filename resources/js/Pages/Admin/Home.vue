@@ -47,17 +47,17 @@ const dynamicSubtitle = computed(() => {
     <div class="space-y-6">
       <div>
         <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Dashboard Admin</h1>
-<p class="text-sm text-slate-500 dark:text-slate-400">
-  {{ dynamicSubtitle }}
-</p>
+        <p class="text-sm text-slate-500 dark:text-slate-400">
+          {{ dynamicSubtitle }}
+        </p>
       </div>
 
-      <div class="grid gap-6" :class="visibleModuleCount === 1 ? 'grid-cols-1 max-w-2xl mx-auto' : 'lg:grid-cols-2'">
+      <div class="grid gap-4 md:gap-6" :class="visibleModuleCount === 1 ? 'grid-cols-1 max-w-2xl mx-auto' : 'lg:grid-cols-2'">
         <section
-          v-if="canManageItemModule"
-          class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800"
+          v-if="canManageRoomModule"
+          class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800 md:p-6"
         >
-          <div class="flex items-center justify-between">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Modul Ruangan</h2>
               <p class="text-sm text-slate-500 dark:text-slate-400">
@@ -66,26 +66,26 @@ const dynamicSubtitle = computed(() => {
             </div>
             <Link
               :href="route('admin.bookings.index')"
-              class="rounded-xl border border-blue-200 px-4 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-50"
+              class="inline-flex w-full items-center justify-center rounded-xl border border-blue-200 px-4 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-50 sm:w-auto"
             >
               Buka Modul
             </Link>
           </div>
 
-            <div class="mt-5 grid gap-4 sm:grid-cols-4">
-              <div class="rounded-xl bg-slate-50 p-4 dark:bg-slate-700">
+            <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-700">
                 <div class="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-400">Total</div>
                 <div class="mt-1 text-2xl font-semibold text-slate-900 dark:text-white">{{ roomSummary?.total ?? 0 }}</div>
               </div>
-              <div class="rounded-xl bg-amber-50 p-4 dark:bg-amber-900/30 dark:border dark:border-amber-800">
+              <div class="rounded-2xl bg-amber-50 p-4 dark:border dark:border-amber-800 dark:bg-amber-900/30">
                 <div class="text-xs uppercase tracking-wide text-amber-500 dark:text-amber-300">Menunggu</div>
                 <div class="mt-1 text-2xl font-semibold text-amber-700 dark:text-amber-100">{{ roomSummary?.waiting ?? 0 }}</div>
               </div>
-              <div class="rounded-xl bg-emerald-50 p-4 dark:bg-emerald-900/30 dark:border dark:border-emerald-800">
+              <div class="rounded-2xl bg-emerald-50 p-4 dark:border dark:border-emerald-800 dark:bg-emerald-900/30">
                 <div class="text-xs uppercase tracking-wide text-emerald-500 dark:text-emerald-300">Disetujui</div>
                 <div class="mt-1 text-2xl font-semibold text-emerald-700 dark:text-emerald-100">{{ roomSummary?.approved ?? 0 }}</div>
               </div>
-              <div class="rounded-xl bg-rose-50 p-4 dark:bg-rose-900/30 dark:border dark:border-rose-800">
+              <div class="rounded-2xl bg-rose-50 p-4 dark:border dark:border-rose-800 dark:bg-rose-900/30">
                 <div class="text-xs uppercase tracking-wide text-rose-500 dark:text-rose-300">Ditolak/Batal</div>
                 <div class="mt-1 text-2xl font-semibold text-rose-700 dark:text-rose-100">
                   {{ (roomSummary?.rejected ?? 0) + (roomSummary?.cancelled ?? 0) }}
@@ -96,39 +96,39 @@ const dynamicSubtitle = computed(() => {
 
         <section
           v-if="canManageItemModule"
-          class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800"
+          class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800 md:p-6"
         >
-          <div class="flex items-center justify-between">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Modul Barang</h2>
               <p class="text-sm text-slate-500 dark:text-slate-400">Approval, report, dan pemantauan peminjaman barang.</p>
             </div>
             <Link
               :href="route('admin.item-borrowings.index')"
-              class="rounded-xl border border-blue-200 px-4 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-50"
+              class="inline-flex w-full items-center justify-center rounded-xl border border-blue-200 px-4 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-50 sm:w-auto"
             >
               Buka Modul
             </Link>
           </div>
 
-            <div class="mt-5 grid gap-4 sm:grid-cols-5">
-              <div class="rounded-xl bg-slate-50 p-4 dark:bg-slate-700">
+            <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+              <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-700">
                 <div class="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-400">Total</div>
                 <div class="mt-1 text-2xl font-semibold text-slate-900 dark:text-white">{{ itemSummary?.total ?? 0 }}</div>
               </div>
-              <div class="rounded-xl bg-amber-50 p-4 dark:bg-amber-900/30 dark:border dark:border-amber-800">
+              <div class="rounded-2xl bg-amber-50 p-4 dark:border dark:border-amber-800 dark:bg-amber-900/30">
                 <div class="text-xs uppercase tracking-wide text-amber-500 dark:text-amber-300">Menunggu</div>
                 <div class="mt-1 text-2xl font-semibold text-amber-700 dark:text-amber-100">{{ itemSummary?.waiting ?? 0 }}</div>
               </div>
-              <div class="rounded-xl bg-emerald-50 p-4 dark:bg-emerald-900/30 dark:border dark:border-emerald-800">
+              <div class="rounded-2xl bg-emerald-50 p-4 dark:border dark:border-emerald-800 dark:bg-emerald-900/30">
                 <div class="text-xs uppercase tracking-wide text-emerald-500 dark:text-emerald-300">Disetujui</div>
                 <div class="mt-1 text-2xl font-semibold text-emerald-700 dark:text-emerald-100">{{ itemSummary?.approved ?? 0 }}</div>
               </div>
-              <div class="rounded-xl bg-blue-50 p-4 dark:bg-blue-900/30 dark:border dark:border-blue-800">
+              <div class="rounded-2xl bg-blue-50 p-4 dark:border dark:border-blue-800 dark:bg-blue-900/30">
                 <div class="text-xs uppercase tracking-wide text-blue-500 dark:text-blue-300">Kembali</div>
                 <div class="mt-1 text-2xl font-semibold text-blue-700 dark:text-blue-100">{{ itemSummary?.returned ?? 0 }}</div>
               </div>
-              <div class="rounded-xl bg-rose-50 p-4 dark:bg-rose-900/30 dark:border dark:border-rose-800">
+              <div class="rounded-2xl bg-rose-50 p-4 dark:border dark:border-rose-800 dark:bg-rose-900/30">
                 <div class="text-xs uppercase tracking-wide text-rose-500 dark:text-rose-300">Ditolak/Batal</div>
                 <div class="mt-1 text-2xl font-semibold text-rose-700 dark:text-rose-100">
                   {{ (itemSummary?.rejected ?? 0) + (itemSummary?.cancelled ?? 0) }}

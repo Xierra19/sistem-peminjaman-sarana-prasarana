@@ -54,7 +54,7 @@ const submit = () => {
         <div class="relative z-10 flex min-h-screen items-center justify-center px-4 py-10 sm:px-6 lg:px-10">
             <div class="w-full max-w-6xl">
                 <div class="grid gap-8 lg:grid-cols-[1.05fr_0.95fr]">
-                    <section class="rounded-[32px] border border-white/10 bg-gradient-to-b from-white/15 to-white/5 p-8 shadow-[0_25px_90px_rgba(15,23,42,0.55)] backdrop-blur">
+                    <section class="rounded-[32px] border border-white/10 bg-gradient-to-b from-white/15 to-white/5 p-6 shadow-[0_25px_90px_rgba(15,23,42,0.55)] backdrop-blur sm:p-8">
                         <p class="text-xs font-semibold uppercase tracking-[0.35em] text-indigo-200">Mulai Reservasi</p>
                         <h1 class="mt-4 text-4xl font-semibold leading-tight text-white md:text-5xl">
                             Buat Akun UEU Reservasi Ruangan & Barang

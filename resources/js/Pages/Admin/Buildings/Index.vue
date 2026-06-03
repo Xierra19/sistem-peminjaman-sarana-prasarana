@@ -211,6 +211,8 @@ const {
 } = usePagination(sortedBuildings)
 
 const perPageOptions = [5, 10, 25, 50]
+const canGoToPreviousPage = computed(() => currentPage.value > 1 && filteredBuildings.value.length > 0)
+const canGoToNextPage = computed(() => currentPage.value < pages.value.length && filteredBuildings.value.length > 0)
 </script>
 
 <template>
@@ -233,7 +235,7 @@ const perPageOptions = [5, 10, 25, 50]
         </button>
       </div>
 
-      <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+      <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
         <div class="flex flex-col gap-4 px-5 py-4 md:flex-row md:items-end md:justify-between dark:border-slate-700">
           <div class="flex flex-1 flex-col gap-3 md:flex-row md:items-center">
             <div class="w-full md:max-w-sm">
@@ -254,13 +256,13 @@ const perPageOptions = [5, 10, 25, 50]
               </div>
             </div>
           </div>
-          <div class="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
+          <div class="flex flex-col gap-2 text-sm text-gray-600 dark:text-gray-400 sm:flex-row sm:items-center">
             <label class="font-medium text-gray-700 dark:text-gray-300" for="admin-buildings-rows">Rows per page</label>
               <div class="relative">
                 <select
                   id="admin-buildings-rows"
                   v-model.number="rowsPerPage"
-                  class="w-20 rounded border border-gray-300 bg-white px-3 py-1.5 pr-8 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
+                  class="w-full rounded border border-gray-300 bg-white px-3 py-1.5 pr-8 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 sm:w-20"
                 >
                   <option v-for="option in perPageOptions" :key="`buildings-rows-${option}`" :value="option">
                     {{ option }}
@@ -270,7 +272,7 @@ const perPageOptions = [5, 10, 25, 50]
           </div>
         </div>
 
-        <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-slate-700">
+        <table class="master-mobile-table mobile-friendly-table min-w-full divide-y divide-gray-200 text-sm dark:divide-slate-700">
           <thead class="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:bg-slate-700 dark:text-slate-400">
             <tr>
               <SortableTh class="px-4 py-2 text-left" column="number" label="#" :direction="buildingSortDirection('number')" :aria-sort="buildingAriaSortValue('number')" @toggle="toggleBuildingSort" />
@@ -282,30 +284,31 @@ const perPageOptions = [5, 10, 25, 50]
           </thead>
           <tbody class="divide-y divide-gray-100 text-gray-700 dark:divide-slate-700 dark:text-slate-300">
             <tr v-for="(building, index) in paginatedBuildings" :key="building.id" class="transition hover:bg-gray-50 dark:hover:bg-slate-700/50">
-              <td class="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">{{ pageMeta.from ? pageMeta.from + index : index + 1 }}</td>
-              <td class="px-4 py-2">
-                <div class="font-semibold text-gray-900 dark:text-slate-100">{{ building.name }}</div>
+              <td class="mobile-id-cell px-4 py-2 text-sm text-gray-500 dark:text-gray-400" data-title="#">{{ pageMeta.from ? pageMeta.from + index : index + 1 }}</td>
+              <td class="mobile-primary-cell mobile-span-2 px-4 py-2" data-title="Nama Gedung">
+                <div class="mobile-primary-label">Nama Gedung</div>
+                <div class="mobile-primary-title">{{ building.name }}</div>
               </td>
-              <td class="px-4 py-2 text-sm">{{ building.campus?.name ?? '-' }}</td>
-              <td class="px-4 py-2 text-sm">{{ new Date(building.created_at).toLocaleDateString('id-ID') }}</td>
-              <td class="px-4 py-2 text-sm">
-                <div class="flex items-center gap-2">
+              <td class="px-4 py-2 text-sm mobile-meta-cell mobile-compact-meta" data-title="Campus">{{ building.campus?.name ?? '-' }}</td>
+              <td class="px-4 py-2 text-sm mobile-meta-cell mobile-compact-meta" data-title="Dibuat">{{ new Date(building.created_at).toLocaleDateString('id-ID') }}</td>
+              <td class="mobile-action-cell px-4 py-2 text-sm" data-title="Aksi">
+                <div class="flex flex-col gap-2 sm:flex-row">
                   <!-- Tombol Edit -->
                   <button
                     type="button"
-                    class="px-3 py-1 bg-yellow-400 text-white rounded hover:bg-yellow-500 mr-2"
+                    class="rounded-lg bg-yellow-400 px-3 py-2 text-sm font-semibold text-white hover:bg-yellow-500"
                     @click="openEditModal(building)"
                   >
-                    ✏️ Edit
+                    Edit
                   </button>
 
                   <!-- Tombol Delete yang sudah diperbaiki memanggil confirmDelete -->
                   <button
                     type="button"
-                    class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                    class="rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700"
                     @click="confirmDelete(building.id, building.name)"
                   >
-                    🗑 Hapus
+                    Hapus
                   </button>
                 </div>
               </td>
@@ -323,23 +326,30 @@ const perPageOptions = [5, 10, 25, 50]
             <span v-if="pageMeta.of">Menampilkan {{ pageMeta.from }}-{{ pageMeta.to }} dari {{ pageMeta.of }} data</span>
             <span v-else>Menampilkan 0 data</span>
           </div>
-          <div class="flex items-center gap-2">
-            <button type="button" class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(1)" :disabled="currentPage === 1 || !filteredBuildings.length">«</button>
-            <button type="button" class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(currentPage - 1)" :disabled="currentPage === 1 || !filteredBuildings.length">‹</button>
-            <template v-if="filteredBuildings.length">
-              <button
-                v-for="page in pages"
-                :key="`building-page-${page}`"
-                type="button"
-                class="rounded border px-2 py-1 text-sm transition"
-                :class="currentPage === page ? 'border-blue-500 bg-blue-500 text-white' : 'border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400'"
-                @click="changePage(page)"
-              >
-                {{ page }}
-              </button>
-            </template>
-            <button type="button" class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(currentPage + 1)" :disabled="currentPage === pages.length || !filteredBuildings.length">›</button>
-            <button type="button" class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(pages.length)" :disabled="currentPage === pages.length || !filteredBuildings.length">»</button>
+          <div class="w-full sm:w-auto">
+            <div class="mobile-pagination-compact sm:hidden">
+              <button type="button" class="rounded border border-gray-300 px-3 py-2 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(currentPage - 1)" :disabled="!canGoToPreviousPage">Sebelumnya</button>
+              <button type="button" class="rounded border border-gray-300 px-3 py-2 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(currentPage + 1)" :disabled="!canGoToNextPage">Berikutnya</button>
+            </div>
+            <div class="hidden items-center gap-2 sm:flex">
+              <button type="button" class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(1)" :disabled="currentPage === 1 || !filteredBuildings.length">«</button>
+              <button type="button" class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(currentPage - 1)" :disabled="currentPage === 1 || !filteredBuildings.length">‹</button>
+              <template v-if="filteredBuildings.length">
+                <button
+                  v-for="page in pages"
+                  :key="`building-page-${page}`"
+                  type="button"
+                  class="rounded border px-2 py-1 text-sm transition"
+                  :class="currentPage === page ? 'border-blue-500 bg-blue-500 text-white' : 'border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400'"
+                  :disabled="typeof page !== 'number'"
+                  @click="changePage(page)"
+                >
+                  {{ page }}
+                </button>
+              </template>
+              <button type="button" class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(currentPage + 1)" :disabled="currentPage === pages.length || !filteredBuildings.length">›</button>
+              <button type="button" class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(pages.length)" :disabled="currentPage === pages.length || !filteredBuildings.length">»</button>
+            </div>
           </div>
         </div>
       </div>

@@ -74,6 +74,9 @@ const {
   changePage,
 } = usePagination(sortedHistories)
 
+const canGoToPreviousPage = computed(() => currentPage.value > 1 && filteredHistories.value.length > 0)
+const canGoToNextPage = computed(() => currentPage.value < pages.value.length && filteredHistories.value.length > 0)
+
 const perPageOptions = [5, 10, 25, 50]
 
 const formatDateTime = (value) => {
@@ -139,6 +142,24 @@ onBeforeUnmount(() => {
         <p class="text-sm text-slate-500 dark:text-slate-400">Pantau semua perubahan booking ruangan yang terekam di sistem.</p>
       </div>
 
+      <div class="grid gap-3 sm:grid-cols-3">
+        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Total</p>
+          <p class="mt-3 text-3xl font-semibold text-slate-900 dark:text-slate-100">{{ filteredHistories.length }}</p>
+          <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Aktivitas sesuai kata kunci dan tanggal.</p>
+        </div>
+        <div class="rounded-2xl border border-blue-200 bg-white p-4 shadow-sm dark:border-blue-900 dark:bg-slate-800">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-blue-600 dark:text-blue-300">Rentang Awal</p>
+          <p class="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">{{ startDate || 'Semua tanggal' }}</p>
+          <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Batas awal aktivitas yang ditampilkan.</p>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Per Halaman</p>
+          <p class="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">{{ rowsPerPage }} baris</p>
+          <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Atur kepadatan daftar aktivitas.</p>
+        </div>
+      </div>
+
       <div class="card-surface overflow-hidden dark:border-slate-700 dark:bg-slate-800">
         <div class="flex flex-col gap-4 border-b border-slate-100 px-5 py-4 dark:border-slate-700">
           <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
@@ -190,7 +211,7 @@ onBeforeUnmount(() => {
               <template #trigger>
                 <button
                   type="button"
-                  class="inline-flex items-center justify-center gap-2 rounded-2xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-100 dark:border-slate-600 dark:bg-slate-700 dark:text-blue-300 dark:hover:border-slate-500 dark:hover:bg-slate-600"
+                  class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-100 dark:border-slate-600 dark:bg-slate-700 dark:text-blue-300 dark:hover:border-slate-500 dark:hover:bg-slate-600 sm:w-auto"
                 >
                   <span>Export</span>
                   <svg class="h-4 w-4" fill="none" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
@@ -224,13 +245,13 @@ onBeforeUnmount(() => {
               </template>
             </Dropdown>
           </div>
-          <div class="flex items-center justify-end gap-3 text-sm text-slate-600 dark:text-slate-300">
+          <div class="flex flex-col gap-2 text-sm text-slate-600 dark:text-slate-300 sm:flex-row sm:items-center sm:justify-end">
             <label class="font-medium text-slate-700 dark:text-slate-200" for="history-rows">Baris per halaman</label>
             <div class="relative">
               <select
                 id="history-rows"
                 v-model.number="rowsPerPage"
-                class="w-24 rounded-xl border border-slate-200 bg-white px-3 py-1.5 pr-8 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+                class="w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 pr-8 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white sm:w-24"
               >
                 <option v-for="option in perPageOptions" :key="`rows-${option}`" :value="option">
                   {{ option }}
@@ -337,7 +358,26 @@ onBeforeUnmount(() => {
             <span v-if="pageMeta.of">Menampilkan {{ pageMeta.from }}-{{ pageMeta.to }} dari {{ pageMeta.of }} data</span>
             <span v-else>Menampilkan 0 data</span>
           </div>
-          <div class="flex items-center gap-2">
+          <div class="w-full sm:w-auto">
+            <div class="mobile-pagination-compact sm:hidden">
+              <button
+                type="button"
+                class="rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-200"
+                @click="changePage(currentPage - 1)"
+                :disabled="!canGoToPreviousPage"
+              >
+                Sebelumnya
+              </button>
+              <button
+                type="button"
+                class="rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-200"
+                @click="changePage(currentPage + 1)"
+                :disabled="!canGoToNextPage"
+              >
+                Berikutnya
+              </button>
+            </div>
+            <div class="hidden items-center gap-2 sm:flex">
             <button
               type="button"
               class="rounded-xl border border-slate-300 px-3 py-1 text-sm text-slate-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-200"
@@ -385,6 +425,7 @@ onBeforeUnmount(() => {
             >
               »
             </button>
+            </div>
           </div>
         </div>
       </div>

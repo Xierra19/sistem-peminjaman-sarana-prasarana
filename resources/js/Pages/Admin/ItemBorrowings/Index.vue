@@ -54,6 +54,21 @@ const appliedFilters = reactive({
   end_date: '',
 })
 
+const hasActiveFilters = computed(() =>
+  Boolean(appliedFilters.search || appliedFilters.status || appliedFilters.start_date || appliedFilters.end_date),
+)
+
+const activeFilterBadges = computed(() => {
+  const badges = []
+
+  if (appliedFilters.search) badges.push(`Cari: ${appliedFilters.search}`)
+  if (appliedFilters.status) badges.push(`Status: ${statusLabels[appliedFilters.status] ?? appliedFilters.status}`)
+  if (appliedFilters.start_date) badges.push(`Dari: ${appliedFilters.start_date}`)
+  if (appliedFilters.end_date) badges.push(`Sampai: ${appliedFilters.end_date}`)
+
+  return badges
+})
+
 const applyFilters = () => {
   Object.assign(appliedFilters, { ...filterForm })
 }
@@ -154,7 +169,6 @@ const borrowingsList = computed(() => {
 
 // ── Summary cards (based on filtered list) ───────────────────────────────────
 const summary = computed(() => {
-  const all = props.itemBorrowings ?? []
   const filtered = borrowingsList.value
 
   const count = (arr, fn) => arr.filter(fn).length
@@ -200,6 +214,9 @@ const {
   pages,
   changePage,
 } = usePagination(sortedItems)
+
+const canGoToPreviousPage = computed(() => currentPage.value > 1 && borrowingsList.value.length > 0)
+const canGoToNextPage = computed(() => currentPage.value < pages.value.length && borrowingsList.value.length > 0)
 
 const perPageOptions = [5, 10, 25, 50]
 
@@ -253,43 +270,55 @@ onBeforeUnmount(() => {
     <Head title="Persetujuan Peminjaman Barang" />
 
     <div class="space-y-6">
-      <div>
+      <div class="space-y-1">
         <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Persetujuan Peminjaman Barang</h1>
         <p class="text-sm text-slate-500 dark:text-slate-400">Kelola permintaan peminjaman barang yang masuk.</p>
+        <p class="text-xs text-slate-500 dark:text-slate-400">
+          {{ hasActiveFilters ? `Menampilkan ${summary.total} hasil sesuai filter aktif.` : `Menampilkan seluruh ${summary.total} pengajuan yang tersedia.` }}
+        </p>
       </div>
 
       <!-- Summary Cards -->
-      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+      <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
           <p class="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Total Data</p>
-          <p class="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">{{ summary.total }}</p>
-          <p class="text-xs text-slate-500 dark:text-slate-400">Seluruh hasil sesuai filter aktif</p>
+          <p class="mt-3 text-3xl font-semibold text-slate-900 dark:text-white">{{ summary.total }}</p>
+          <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Jumlah pengajuan yang sedang tampil</p>
         </div>
-        <div class="rounded-xl border border-amber-200 bg-white p-5 shadow-sm dark:border-amber-800 dark:bg-amber-900/30">
+        <div class="rounded-2xl border border-amber-200 bg-white p-4 shadow-sm dark:border-amber-800 dark:bg-amber-900/30">
           <p class="text-xs font-medium uppercase tracking-wide text-amber-500 dark:text-amber-300">Menunggu</p>
-          <p class="mt-2 text-2xl font-semibold text-amber-600 dark:text-amber-400">{{ summary.waiting }}</p>
-          <p class="text-xs text-amber-500 dark:text-amber-400">Booking belum diputuskan</p>
+          <p class="mt-3 text-3xl font-semibold text-amber-600 dark:text-amber-400">{{ summary.waiting }}</p>
+          <p class="mt-2 text-xs text-amber-500 dark:text-amber-400">Perlu ditinjau lebih dulu</p>
         </div>
-        <div class="rounded-xl border border-emerald-200 bg-white p-5 shadow-sm dark:border-emerald-800 dark:bg-emerald-900/30">
+        <div class="rounded-2xl border border-emerald-200 bg-white p-4 shadow-sm dark:border-emerald-800 dark:bg-emerald-900/30">
           <p class="text-xs font-medium uppercase tracking-wide text-emerald-500 dark:text-emerald-300">Disetujui</p>
-          <p class="mt-2 text-2xl font-semibold text-emerald-600 dark:text-emerald-400">{{ summary.approved }}</p>
-          <p class="text-xs text-emerald-500 dark:text-emerald-400">Booking aktif</p>
+          <p class="mt-3 text-3xl font-semibold text-emerald-600 dark:text-emerald-400">{{ summary.approved }}</p>
+          <p class="mt-2 text-xs text-emerald-500 dark:text-emerald-400">Sudah mendapat persetujuan</p>
         </div>
-        <div class="rounded-xl border border-blue-200 bg-white p-5 shadow-sm dark:border-blue-800 dark:bg-blue-900/30">
+        <div class="rounded-2xl border border-blue-200 bg-white p-4 shadow-sm dark:border-blue-800 dark:bg-blue-900/30">
           <p class="text-xs font-medium uppercase tracking-wide text-blue-500 dark:text-blue-300">Dikembalikan</p>
-          <p class="mt-2 text-2xl font-semibold text-blue-600 dark:text-blue-400">{{ summary.returned }}</p>
-          <p class="text-xs text-blue-500 dark:text-blue-400">Barang yang sudah dikembalikan</p>
+          <p class="mt-3 text-3xl font-semibold text-blue-600 dark:text-blue-400">{{ summary.returned }}</p>
+          <p class="mt-2 text-xs text-blue-500 dark:text-blue-400">Sudah selesai diproses</p>
         </div>
-        <div class="rounded-xl border border-rose-200 bg-white p-5 shadow-sm dark:border-rose-800 dark:bg-rose-900/30">
+        <div class="rounded-2xl border border-rose-200 bg-white p-4 shadow-sm dark:border-rose-800 dark:bg-rose-900/30">
           <p class="text-xs font-medium uppercase tracking-wide text-rose-500 dark:text-rose-300">Ditolak / Batal</p>
-          <p class="mt-2 text-2xl font-semibold text-rose-600 dark:text-rose-400">{{ summary.rejected + summary.cancelled }}</p>
-          <p class="text-xs text-rose-500 dark:text-rose-400">Termasuk pembatalan admin</p>
+          <p class="mt-3 text-3xl font-semibold text-rose-600 dark:text-rose-400">{{ summary.rejected + summary.cancelled }}</p>
+          <p class="mt-2 text-xs text-rose-500 dark:text-rose-400">Termasuk pengajuan batal</p>
         </div>
       </div>
       <!-- End Summary Cards -->
 
       <!-- Filter Panel -->
-      <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+      <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+        <div v-if="hasActiveFilters" class="mb-4 flex flex-wrap gap-2">
+          <span
+            v-for="badge in activeFilterBadges"
+            :key="badge"
+            class="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+          >
+            {{ badge }}
+          </span>
+        </div>
         <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <div class="flex flex-col gap-2">
             <label class="text-sm font-medium text-slate-700 dark:text-slate-200" for="item-report-search">Pencarian bebas</label>
@@ -337,17 +366,17 @@ onBeforeUnmount(() => {
             />
           </div>
         </div>
-        <div class="mt-4 flex flex-wrap items-center justify-end gap-3">
+        <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
           <button
             type="button"
-            class="rounded-md border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-800 dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-200"
+            class="w-full rounded-md border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-800 dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-200 sm:w-auto"
             @click="resetFilters"
           >
             Reset
           </button>
           <button
             type="button"
-            class="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+            class="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 sm:w-auto"
             @click="applyFilters"
           >
             Terapkan Filter
@@ -356,17 +385,17 @@ onBeforeUnmount(() => {
       </div>
       <!-- End Filter Panel -->
 
-      <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+      <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
 
         <!-- Card Header -->
         <div class="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 md:flex-row md:items-center md:justify-between dark:border-slate-700">
           <div class="text-sm font-semibold text-slate-700 dark:text-slate-200">Daftar Permintaan Masuk</div>
-          <div class="flex items-center justify-end gap-3 text-sm text-slate-600 dark:text-slate-300">
+          <div class="flex flex-col gap-2 text-sm text-slate-600 dark:text-slate-300 sm:flex-row sm:items-center sm:justify-end">
             <label class="font-medium text-slate-700 dark:text-slate-200" for="admin-item-borrowings-rows">Rows per page</label>
             <select
               id="admin-item-borrowings-rows"
               v-model.number="rowsPerPage"
-              class="w-20 rounded border border-slate-300 bg-white px-3 py-1.5 pr-8 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+              class="w-full rounded border border-slate-300 bg-white px-3 py-1.5 pr-8 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white sm:w-20"
             >
               <option v-for="option in perPageOptions" :key="option" :value="option">
                 {{ option }}
@@ -377,7 +406,7 @@ onBeforeUnmount(() => {
         <!-- End Card Header -->
 
         <!-- Table -->
-        <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-700">
+        <table class="approval-mobile-table mobile-friendly-table min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-700">
           <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-700 dark:text-slate-300">
             <tr>
               <SortableTh
@@ -434,26 +463,27 @@ onBeforeUnmount(() => {
           </thead>
           <tbody class="divide-y divide-slate-100 text-slate-700 dark:divide-slate-700 dark:text-slate-300">
             <tr v-for="borrowing in paginatedItems" :key="borrowing.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
-              <td class="px-5 py-4">
-                <div class="font-medium text-slate-900 dark:text-white">{{ borrowing.title }}</div>
+              <td class="mobile-primary-cell mobile-span-2 px-5 py-4" data-title="Keperluan">
+                <div class="mobile-primary-label">Keperluan</div>
+                <div class="mobile-primary-title">{{ borrowing.title }}</div>
                 <div class="text-xs text-slate-500 dark:text-slate-400">{{ borrowing.description || 'Tidak ada deskripsi.' }}</div>
               </td>
-              <td class="px-5 py-4">
+              <td class="px-5 py-4" data-title="Pemohon">
                 <div class="font-medium text-slate-800 dark:text-slate-200">{{ borrowing.user?.name ?? '-' }}</div>
                 <div class="text-xs text-slate-500 dark:text-slate-400">{{ borrowing.user?.email ?? '-' }}</div>
               </td>
-              <td class="px-5 py-4">
+              <td class="px-5 py-4 mobile-compact-meta" data-title="Barang">
                 <div class="font-medium text-slate-800 dark:text-slate-200">{{ getItemNames(borrowing) }}</div>
                 <div v-if="borrowing.items && borrowing.items.length > 1" class="mt-1 text-xs text-slate-400 dark:text-slate-500">
                   {{ borrowing.items.length }} jenis barang
                 </div>
               </td>
-              <td class="px-5 py-4 text-sm">{{ getTotalQuantity(borrowing) }}</td>
-              <td class="px-5 py-4 text-sm">
+              <td class="px-5 py-4 text-sm" data-title="Qty">{{ getTotalQuantity(borrowing) }}</td>
+              <td class="mobile-span-2 px-5 py-4 text-sm" data-title="Periode">
                 <div>Pinjam: <span class="font-medium text-slate-800 dark:text-slate-200">{{ formatDate(getBorrowDates(borrowing)) }}</span></div>
                 <div>Kembali: <span class="font-medium text-slate-800 dark:text-slate-200">{{ formatDate(getReturnDates(borrowing)) }}</span></div>
               </td>
-              <td class="px-5 py-4 text-sm">
+              <td class="px-5 py-4 text-sm mobile-compact-meta" data-title="Dibuat">
                 <div>
                   Dibuat:
                   <span class="font-medium text-slate-800 dark:text-slate-200">
@@ -467,7 +497,7 @@ onBeforeUnmount(() => {
                   </span>
                 </div>
               </td>
-              <td class="px-5 py-4 text-center">
+              <td class="mobile-status-cell px-5 py-4 text-center" data-title="Status">
                 <span
                   class="inline-flex rounded-full px-3 py-1 text-xs font-semibold"
                   :class="badgeClasses[borrowing.status] ?? 'bg-slate-100 text-slate-600 border-slate-200'"
@@ -475,7 +505,7 @@ onBeforeUnmount(() => {
                   {{ statusLabels[borrowing.status] ?? borrowing.status }}
                 </span>
               </td>
-              <td class="px-5 py-4 text-right">
+              <td class="mobile-action-cell px-5 py-4 text-right" data-title="Aksi">
                 <Link
                   :href="route('admin.item-borrowings.show', borrowing.id)"
                   class="inline-flex items-center rounded-md border border-blue-200 px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 dark:border-slate-600 dark:text-blue-300 dark:hover:border-slate-500 dark:hover:bg-slate-600"
@@ -499,7 +529,26 @@ onBeforeUnmount(() => {
             <span v-if="pageMeta.of">Menampilkan {{ pageMeta.from }}-{{ pageMeta.to }} dari {{ pageMeta.of }} data</span>
             <span v-else>Menampilkan 0 data</span>
           </div>
-          <div class="flex items-center gap-2">
+          <div class="w-full sm:w-auto">
+            <div class="mobile-pagination-compact sm:hidden">
+              <button
+                type="button"
+                class="rounded border border-slate-300 px-3 py-2 text-sm text-slate-600 transition hover:border-slate-400 hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-200"
+                @click="changePage(currentPage - 1)"
+                :disabled="!canGoToPreviousPage"
+              >
+                Sebelumnya
+              </button>
+              <button
+                type="button"
+                class="rounded border border-slate-300 px-3 py-2 text-sm text-slate-600 transition hover:border-slate-400 hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-200"
+                @click="changePage(currentPage + 1)"
+                :disabled="!canGoToNextPage"
+              >
+                Berikutnya
+              </button>
+            </div>
+            <div class="hidden items-center gap-2 sm:flex">
             <button
               type="button"
               class="rounded border border-slate-300 px-3 py-1 text-sm text-slate-600 transition hover:border-slate-400 hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-200"
@@ -526,6 +575,7 @@ onBeforeUnmount(() => {
                   currentPage === page
                     ? 'border-blue-500 bg-blue-500 text-white'
                     : 'border-slate-300 text-slate-600 hover:border-slate-400 hover:text-slate-600 dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-200'"
+                :disabled="typeof page !== 'number'"
                 @click="changePage(page)"
               >
                 {{ page }}
@@ -547,6 +597,7 @@ onBeforeUnmount(() => {
             >
               »
             </button>
+            </div>
           </div>
         </div>
         <!-- End Pagination -->

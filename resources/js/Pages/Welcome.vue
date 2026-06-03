@@ -87,8 +87,8 @@ const aboutBadges = [
         </div>
 
         <header class="sticky top-0 z-10 border-b border-slate-200 bg-slate-50/80 backdrop-blur-sm dark:border-white/10 dark:bg-slate-950/80">
-            <div class="container mx-auto flex flex-wrap items-center justify-between gap-3 px-4 py-4">
-                <div class="flex items-center gap-3">
+            <div class="container mx-auto flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex items-center gap-3 self-start">
                     <img
                         src="/images/LOGO_UEU_BY_ASU-06.png"
                         alt="Logo Universitas Esa Unggul"
@@ -100,7 +100,7 @@ const aboutBadges = [
                         <p class="text-xs font-medium text-indigo-700 dark:text-indigo-300">{{ campusName }}</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-3">
+                <div class="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
                     <DarkModeSwitch />
                     <Link
                         v-if="props.canRegister"
@@ -130,7 +130,7 @@ const aboutBadges = [
                     enter-to-class="translate-y-0 opacity-100"
                 >
                     <div class="relative mx-auto max-w-4xl">
-                        <div class="relative overflow-hidden rounded-[40px] border border-slate-200 bg-white px-6 py-12 shadow-2xl shadow-indigo-500/20 backdrop-blur dark:border-white/10 dark:bg-white/5">
+                        <div class="relative overflow-hidden rounded-[32px] border border-slate-200 bg-white px-5 py-10 shadow-2xl shadow-indigo-500/20 backdrop-blur sm:rounded-[40px] sm:px-6 sm:py-12 dark:border-white/10 dark:bg-white/5">
                             <!-- Decorative Blur -->
                             <div aria-hidden="true" class="pointer-events-none absolute inset-0">
                                 <div class="absolute -top-24 left-10 h-56 w-56 rounded-full bg-indigo-200/20 blur-3xl"></div>
@@ -138,15 +138,15 @@ const aboutBadges = [
                             </div>
 
                             <div class="relative space-y-6 text-center">
-                                <div class="inline-flex items-center gap-2 rounded-full bg-indigo-100 px-4 py-2 text-sm font-semibold text-indigo-600 shadow-sm shadow-indigo-200/60 dark:bg-indigo-500/20 dark:text-indigo-200">
+                                <div class="inline-flex items-center gap-2 rounded-full bg-indigo-100 px-4 py-2 text-center text-xs font-semibold text-indigo-600 shadow-sm shadow-indigo-200/60 sm:text-sm dark:bg-indigo-500/20 dark:text-indigo-200">
                                     <span class="inline-flex size-2 rounded-full bg-indigo-500"></span>
                                     {{ heroContent.badge }}
                                 </div>
-                                <h1 class="text-4xl font-semibold text-slate-900 md:text-5xl lg:text-6xl dark:text-white">
+                                <h1 class="text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl md:text-5xl lg:text-6xl dark:text-white">
                                     {{ campusName }}
                                     <span class="block bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">{{ heroContent.title }}</span>
                                 </h1>
-                                <p class="mx-auto max-w-2xl text-base leading-relaxed text-slate-600 md:text-lg dark:text-indigo-100/80">
+                                <p class="mx-auto max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-base md:text-lg dark:text-indigo-100/80">
                                     {{ heroContent.subtitle }}
                                 </p>
                                 <div class="flex flex-col flex-wrap items-center justify-center gap-3 pt-5 sm:flex-row">

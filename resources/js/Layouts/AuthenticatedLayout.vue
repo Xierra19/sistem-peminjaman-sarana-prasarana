@@ -419,11 +419,11 @@ watch(
 
     <div class="flex min-h-screen flex-1 flex-col lg:ml-64">
       <nav class="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur dark:border-slate-700 dark:bg-slate-800/95">
-        <div class="page-shell flex h-16 items-center justify-between">
-          <div class="flex flex-1 items-center gap-3">
+        <div class="page-shell flex min-h-[4.25rem] items-center justify-between gap-3 py-2">
+          <div class="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
             <button
               type="button"
-              class="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:bg-slate-600 lg:hidden"
+              class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:bg-slate-600 lg:hidden"
               @click="toggleMobileMenu"
               :aria-expanded="isMobileMenuOpen"
               aria-controls="sidebar-navigation"
@@ -435,25 +435,25 @@ watch(
             </button>
             <Link
               :href="route('dashboard')"
-              class="group flex items-center gap-3 rounded-2xl border border-slate-200 bg-white/90 px-3 py-2 text-left shadow-sm transition hover:border-blue-200 hover:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 lg:hidden"
+              class="group flex min-w-0 items-center gap-2 rounded-2xl border border-slate-200 bg-white/90 px-2.5 py-2 text-left shadow-sm transition hover:border-blue-200 hover:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 lg:hidden"
             >
               <div
-                class="relative flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-100 bg-gradient-to-br from-blue-50 via-white to-blue-100 p-1 shadow-inner"
+                class="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-slate-100 bg-gradient-to-br from-blue-50 via-white to-blue-100 p-1 shadow-inner"
               >
                 <div class="flex h-full w-full items-center justify-center rounded-xl bg-white shadow-sm">
                   <ApplicationLogo class="!h-7 !w-7 object-contain" />
                 </div>
               </div>
-              <div class="hidden flex-col leading-tight sm:flex">
+              <div class="min-w-0 flex-col leading-tight sm:flex hidden">
                 <span class="text-[10px] font-semibold uppercase tracking-[0.45em] text-blue-500">Esa Unggul</span>
-                <span class="text-sm font-semibold text-slate-900 dark:text-slate-100">Sistem Peminjaman Sarana dan Prasarana</span>
+                <span class="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">Sistem Peminjaman Sarana dan Prasarana</span>
                 <span class="text-xs text-slate-500 dark:text-slate-400">Universitas Esa Unggul</span>
               </div>
             </Link>
           </div>
 
-          <div class="flex items-center gap-4">
-            <div class="hidden flex-col text-right sm:flex">
+          <div class="flex shrink-0 items-center gap-2 sm:gap-3">
+            <div class="hidden flex-col text-right md:flex">
               <span class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ user.name }}</span>
               <span class="text-xs text-slate-500 dark:text-slate-400">{{ roleLabel }}</span>
             </div>
@@ -463,14 +463,14 @@ watch(
                 <button
                   type="button"
                   :aria-label="'Buka menu akun ' + (user.name || '')"
-                  class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:bg-slate-600"
+                  class="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-2.5 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:bg-slate-600 sm:px-3"
                 >
                   <span
-                    class="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 text-sm font-semibold text-white shadow-inner"
+                    class="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 text-sm font-semibold text-white shadow-inner"
                   >
                     {{ userInitials }}
                   </span>
-                  <span class="text-sm font-semibold text-slate-900 sm:hidden dark:text-slate-100">{{ user.name }}</span>
+                  <span class="hidden text-sm font-semibold text-slate-900 sm:block md:hidden dark:text-slate-100">{{ user.name }}</span>
                   <svg class="h-4 w-4 text-slate-500 dark:text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                   </svg>

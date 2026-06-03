@@ -64,7 +64,7 @@ const submit = () => {
         <div class="relative z-10 flex min-h-screen items-center justify-center px-4 py-10 sm:px-6 lg:px-8">
             <div class="w-full max-w-5xl">
                 <div class="grid gap-8 lg:grid-cols-[1.05fr_0.95fr]">
-                    <section class="rounded-[32px] border border-white/10 bg-white/5 p-8 shadow-[0_20px_80px_rgba(15,23,42,0.55)] backdrop-blur">
+                    <section class="rounded-[32px] border border-white/10 bg-white/5 p-6 shadow-[0_20px_80px_rgba(15,23,42,0.55)] backdrop-blur sm:p-8">
                         <p class="text-xs font-semibold uppercase tracking-[0.35em] text-indigo-200">Universitas Esa Unggul</p>
                         <h1 class="mt-4 text-4xl font-semibold leading-tight text-white md:text-5xl">
                             Platform Reservasi Ruangan & Barang
@@ -104,7 +104,7 @@ const submit = () => {
                         </div>
                     </section>
 
-                    <section class="rounded-[32px] bg-white p-8 text-slate-900 shadow-2xl ring-1 ring-slate-100 lg:p-10">
+                    <section class="rounded-[32px] bg-white p-6 text-slate-900 shadow-2xl ring-1 ring-slate-100 sm:p-8 lg:p-10">
                         <div class="mb-8 space-y-2">
                             <p class="text-sm font-semibold uppercase tracking-[0.25em] text-indigo-500">Masuk Kembali</p>
                             <h2 class="text-3xl font-semibold text-slate-900">

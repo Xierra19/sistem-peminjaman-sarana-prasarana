@@ -4,7 +4,7 @@ import SortableTh from '@/Components/SortableTh.vue'
 import { usePagination } from '@/Composables/usePagination'
 import { useTableSort } from '@/Composables/useTableSort'
 import { Head, Link, usePage } from '@inertiajs/vue3'
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { formatDateTimeToDDMMYY } from '@/Composables/useDateFormatter'
 import { Bar, Pie } from 'vue-chartjs'
 import {
@@ -190,6 +190,8 @@ const {
   pages,
   changePage,
 } = usePagination(sortedBookings)
+const canGoToPreviousPage = computed(() => currentPage.value > 1 && filteredBookings.value.length > 0)
+const canGoToNextPage = computed(() => currentPage.value < pages.value.length && filteredBookings.value.length > 0)
 
 const applyFilters = () => {
   activeFilters.value = { ...filterDrafts.value }
@@ -212,6 +214,12 @@ const summary = computed(() => ({
 }))
 
 const formatDateTime = (value) => formatDateTimeToDDMMYY(value)
+const isMobileViewport = ref(false)
+
+const syncMobileViewport = () => {
+  if (typeof window === 'undefined') return
+  isMobileViewport.value = window.innerWidth < 640
+}
 
 // ==========================================
 // CHART DATA: STATUS DISTRIBUTION (PIE)
@@ -286,79 +294,93 @@ const monthlyChartData = computed(() => {
   }
 })
 
-const chartOptions = {
+const chartOptions = computed(() => ({
   responsive: true,
   maintainAspectRatio: false,
   plugins: {
     legend: {
       position: 'bottom',
+      labels: {
+        boxWidth: isMobileViewport.value ? 10 : 14,
+        font: {
+          size: isMobileViewport.value ? 10 : 12,
+        },
+      },
     },
   },
-}
+}))
+
+onMounted(() => {
+  syncMobileViewport()
+  window.addEventListener('resize', syncMobileViewport)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', syncMobileViewport)
+})
 </script>
 
 <template>
   <AuthenticatedLayout>
     <Head title="Dashboard" />
 
-    <div class="py-12">
+    <div class="py-8 sm:py-10 lg:py-12">
       <div class="mx-auto space-y-8 px-4 sm:px-6 lg:max-w-7xl lg:px-8">
         <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 class="text-3xl font-semibold text-gray-900 dark:text-white">Dashboard</h1>
-<p class="text-sm text-gray-500 dark:text-slate-400">
-  {{ isAdmin ? 'Lihat riwayat peminjaman seluruh pengguna.' : 'Pantau permintaan peminjaman yang telah kamu ajukan.' }}
-</p>
+            <p class="text-sm text-gray-500 dark:text-slate-400">
+              {{ isAdmin ? 'Lihat riwayat peminjaman seluruh pengguna.' : 'Pantau permintaan peminjaman yang telah kamu ajukan.' }}
+            </p>
           </div>
           <Link
             v-if="isUser"
             :href="route('bookings.create')"
-            class="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700"
+            class="inline-flex w-full items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700 sm:w-auto"
           >
             + Buat Booking
           </Link>
         </div>
 
-        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-<div class="rounded-xl border border-blue-100 bg-blue-50 p-4 text-blue-800 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-100">
-  <div class="text-sm font-medium">Total Pengajuan</div>
-  <div class="mt-2 text-3xl font-semibold">{{ summary.total }}</div>
-</div>
-<div class="rounded-xl border border-emerald-100 bg-emerald-50 p-4 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-100">
-  <div class="text-sm font-medium">Disetujui</div>
-  <div class="mt-2 text-3xl font-semibold">{{ summary.approved }}</div>
-</div>
-<div class="rounded-xl border border-amber-100 bg-amber-50 p-4 text-amber-700 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-100">
-  <div class="text-sm font-medium">Menunggu</div>
-  <div class="mt-2 text-3xl font-semibold">{{ summary.waiting }}</div>
-</div>
-<div class="rounded-xl border border-rose-100 bg-rose-50 p-4 text-rose-700 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-100">
-  <div class="text-sm font-medium">Ditolak</div>
-  <div class="mt-2 text-3xl font-semibold">{{ summary.rejected }}</div>
-</div>
-<div class="rounded-xl border border-slate-100 bg-slate-50 p-4 text-slate-700 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-200">
-  <div class="text-sm font-medium">Dibatalkan</div>
-  <div class="mt-2 text-3xl font-semibold">{{ summary.cancelled }}</div>
-</div>
+        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          <div class="rounded-2xl border border-blue-100 bg-blue-50 p-4 text-blue-800 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-100">
+            <div class="text-xs font-medium uppercase tracking-wide">Total Pengajuan</div>
+            <div class="mt-2 text-3xl font-semibold">{{ summary.total }}</div>
+          </div>
+          <div class="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-100">
+            <div class="text-xs font-medium uppercase tracking-wide">Disetujui</div>
+            <div class="mt-2 text-3xl font-semibold">{{ summary.approved }}</div>
+          </div>
+          <div class="rounded-2xl border border-amber-100 bg-amber-50 p-4 text-amber-700 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-100">
+            <div class="text-xs font-medium uppercase tracking-wide">Menunggu</div>
+            <div class="mt-2 text-3xl font-semibold">{{ summary.waiting }}</div>
+          </div>
+          <div class="rounded-2xl border border-rose-100 bg-rose-50 p-4 text-rose-700 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-100">
+            <div class="text-xs font-medium uppercase tracking-wide">Ditolak</div>
+            <div class="mt-2 text-3xl font-semibold">{{ summary.rejected }}</div>
+          </div>
+          <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-slate-700 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-200">
+            <div class="text-xs font-medium uppercase tracking-wide">Dibatalkan</div>
+            <div class="mt-2 text-3xl font-semibold">{{ summary.cancelled }}</div>
+          </div>
         </div>
 
-        <!-- Charts Section -->
-        <div class="grid gap-6 md:grid-cols-2 mb-6">
-<div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-  <h3 class="text-lg font-semibold text-gray-800 mb-4 dark:text-white">Distribusi Status Booking</h3>
-            <div class="h-64">
+        <div class="mb-6 grid gap-4 md:grid-cols-2 md:gap-6">
+          <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:p-5">
+            <h3 class="mb-4 text-lg font-semibold text-gray-800 dark:text-white">Distribusi Status Booking</h3>
+            <div class="h-56 sm:h-64">
               <Pie :data="statusChartData" :options="chartOptions" />
             </div>
           </div>
-<div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-  <h3 class="text-lg font-semibold text-gray-800 mb-4 dark:text-white">Tren Peminjaman 6 Bulan Terakhir</h3>
-            <div class="h-64">
+          <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:p-5">
+            <h3 class="mb-4 text-lg font-semibold text-gray-800 dark:text-white">Tren Peminjaman 6 Bulan Terakhir</h3>
+            <div class="h-56 sm:h-64">
               <Bar :data="monthlyChartData" :options="chartOptions" />
             </div>
           </div>
         </div>
 
-        <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+        <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
           <div class="border-b border-gray-100 px-5 py-4">
             <form class="grid gap-4 sm:grid-cols-2 xl:grid-cols-6" @submit.prevent="applyFilters">
               <div class="flex flex-col gap-1">
@@ -426,17 +448,17 @@ const chartOptions = {
                   </span>
                 </div>
               </div>
-              <div class="flex items-center justify-end gap-2 sm:col-span-2 xl:col-span-1">
+              <div class="flex flex-col gap-2 sm:col-span-2 sm:flex-row sm:items-center sm:justify-end xl:col-span-1">
                 <button
                   type="button"
-                  class="inline-flex items-center justify-center rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+                  class="inline-flex w-full items-center justify-center rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 sm:w-auto"
                   @click="resetFilters"
                 >
                   Reset
                 </button>
                 <button
                   type="submit"
-                  class="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700"
+                  class="inline-flex w-full items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700 sm:w-auto"
                 >
                   Cari
                 </button>
@@ -445,13 +467,13 @@ const chartOptions = {
           </div>
 
           <div class="border-b border-gray-100 px-5 py-4">
-            <div class="flex items-center justify-end gap-3 text-sm text-gray-600">
+            <div class="flex flex-col gap-2 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-end">
               <label class="font-medium text-gray-700" for="dashboard-rows">Rows per page</label>
               <div class="relative">
                 <select
                   id="dashboard-rows"
                   v-model.number="rowsPerPage"
-                  class="w-20 rounded border border-gray-300 bg-white px-3 py-1.5 pr-8 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  class="w-full rounded border border-gray-300 bg-white px-3 py-1.5 pr-8 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:w-20"
                 >
                   <option v-for="option in perPageOptions" :key="option" :value="option">
                     {{ option }}
@@ -462,7 +484,7 @@ const chartOptions = {
           </div>
 
           <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 text-sm text-gray-700 dark:divide-slate-700 dark:text-slate-300">
+            <table class="mobile-friendly-table min-w-full divide-y divide-gray-200 text-sm text-gray-700 dark:divide-slate-700 dark:text-slate-300">
               <thead class="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:bg-slate-800 dark:text-slate-400">
                 <tr>
                   <SortableTh
@@ -519,28 +541,28 @@ const chartOptions = {
               </thead>
               <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
                 <tr v-for="booking in paginatedBookings" :key="booking.id" class="hover:bg-gray-50 dark:hover:bg-slate-700">
-                  <td class="px-5 py-4">
+                  <td class="px-5 py-4" data-title="Judul">
                     <div class="font-semibold text-gray-900 dark:text-white">{{ booking.title }}</div>
                     <div class="text-xs text-gray-500 dark:text-slate-400">
                       {{ booking.description || 'Tidak ada deskripsi tambahan.' }}
                     </div>
                   </td>
-                  <td v-if="isAdmin" class="px-5 py-4">
+                  <td v-if="isAdmin" class="px-5 py-4" data-title="Pemohon">
                     <div class="font-medium text-gray-900 dark:text-white">{{ booking.user?.name ?? '-' }}</div>
                     <div class="text-xs text-gray-500 dark:text-slate-400">{{ booking.user?.email ?? '-' }}</div>
                   </td>
-                  <td class="px-5 py-4">
+                  <td class="px-5 py-4" data-title="Ruangan">
                     <div class="font-medium text-gray-900 dark:text-white">{{ booking.room?.name ?? '-' }}</div>
                     <div class="text-xs text-gray-500 dark:text-slate-400">
                       {{ booking.room?.building?.name ?? '-' }} - {{ booking.room?.building?.campus?.name ?? '-' }}
                     </div>
                   </td>
-                  <td class="px-5 py-4 text-gray-700">
+                  <td class="px-5 py-4 text-gray-700" data-title="Mulai">
                     <div class="font-medium text-gray-900 dark:text-white">{{ booking.schedule_mode_label ?? 'Jadwal' }}</div>
                     <div class="text-xs text-gray-500 dark:text-slate-400">{{ booking.schedule_short_summary ?? formatDateTime(booking.start_time) }}</div>
                   </td>
-                  <td class="px-5 py-4 text-gray-700">{{ booking.schedule_summary ?? formatDateTime(booking.end_time) }}</td>
-                  <td class="px-5 py-4">
+                  <td class="px-5 py-4 text-gray-700" data-title="Selesai">{{ booking.schedule_summary ?? formatDateTime(booking.end_time) }}</td>
+                  <td class="px-5 py-4" data-title="Status">
                     <span
                       class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold capitalize"
                       :class="statusBadgeClasses[booking.normalizedStatus] ?? 'bg-gray-100 text-gray-600 border border-gray-200'"
@@ -548,7 +570,7 @@ const chartOptions = {
                       {{ statusLabels[booking.normalizedStatus] ?? (booking.normalizedStatus || booking.status) }}
                     </span>
                   </td>
-                  <td v-if="isAdmin" class="px-5 py-4">
+                  <td v-if="isAdmin" class="px-5 py-4" data-title="Aksi">
                     <Link
                       :href="route('admin.bookings.show', booking.id)"
                       class="inline-flex items-center rounded-md border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-50"
@@ -573,55 +595,30 @@ const chartOptions = {
               <span v-if="pageMeta.of">Menampilkan {{ pageMeta.from }}-{{ pageMeta.to }} dari {{ pageMeta.of }} data</span>
               <span v-else>Menampilkan 0 data</span>
             </div>
-            <div class="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-                @click="changePage(1)"
-                :disabled="currentPage === 1 || !filteredBookings.length"
-              >
-                First
-              </button>
-              <button
-                type="button"
-                class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-                @click="changePage(currentPage - 1)"
-                :disabled="currentPage === 1 || !filteredBookings.length"
-              >
-                Prev
-              </button>
-              <template v-if="filteredBookings.length">
-                <button
-                  v-for="page in pages"
-                  :key="`dashboard-page-${page}`"
-                  type="button"
-                  class="rounded border px-3 py-1 text-sm transition"
-                  :class="
-                    currentPage === page
-                      ? 'border-blue-500 bg-blue-500 text-white'
-                      : 'border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600'
-                  "
-                  @click="changePage(page)"
-                >
-                  {{ page }}
-                </button>
-              </template>
-              <button
-                type="button"
-                class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-                @click="changePage(currentPage + 1)"
-                :disabled="currentPage === pages.length || !filteredBookings.length"
-              >
-                Next
-              </button>
-              <button
-                type="button"
-                class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-                @click="changePage(pages.length)"
-                :disabled="currentPage === pages.length || !filteredBookings.length"
-              >
-                Last
-              </button>
+            <div class="w-full sm:w-auto">
+              <div class="mobile-pagination-compact sm:hidden">
+                <button type="button" class="rounded border border-gray-300 px-3 py-2 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50" @click="changePage(currentPage - 1)" :disabled="!canGoToPreviousPage">Sebelumnya</button>
+                <button type="button" class="rounded border border-gray-300 px-3 py-2 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50" @click="changePage(currentPage + 1)" :disabled="!canGoToNextPage">Berikutnya</button>
+              </div>
+              <div class="hidden flex-wrap items-center gap-2 sm:flex">
+                <button type="button" class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50" @click="changePage(1)" :disabled="currentPage === 1 || !filteredBookings.length">«</button>
+                <button type="button" class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50" @click="changePage(currentPage - 1)" :disabled="currentPage === 1 || !filteredBookings.length">‹</button>
+                <template v-if="filteredBookings.length">
+                  <button
+                    v-for="page in pages"
+                    :key="`dashboard-page-${page}`"
+                    type="button"
+                    class="rounded border px-3 py-1 text-sm transition"
+                    :class="currentPage === page ? 'border-blue-500 bg-blue-500 text-white' : 'border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600'"
+                    :disabled="typeof page !== 'number'"
+                    @click="changePage(page)"
+                  >
+                    {{ page }}
+                  </button>
+                </template>
+                <button type="button" class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50" @click="changePage(currentPage + 1)" :disabled="currentPage === pages.length || !filteredBookings.length">›</button>
+                <button type="button" class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50" @click="changePage(pages.length)" :disabled="currentPage === pages.length || !filteredBookings.length">»</button>
+              </div>
             </div>
           </div>
         </div>

@@ -49,7 +49,7 @@ const submit = () => {
         <div class="relative z-10 flex min-h-screen items-center justify-center px-4 py-10 sm:px-6 lg:px-10">
             <div class="w-full max-w-5xl">
                 <div class="grid gap-8 lg:grid-cols-[1.05fr_0.95fr]">
-                    <section class="rounded-[32px] border border-white/10 bg-gradient-to-b from-white/15 to-white/5 p-8 shadow-[0_25px_90px_rgba(15,23,42,0.55)] backdrop-blur">
+                    <section class="rounded-[32px] border border-white/10 bg-gradient-to-b from-white/15 to-white/5 p-6 shadow-[0_25px_90px_rgba(15,23,42,0.55)] backdrop-blur sm:p-8">
                         <p class="text-xs font-semibold uppercase tracking-[0.35em] text-indigo-200">Pemulihan akun</p>
                         <h1 class="mt-4 text-4xl font-semibold leading-tight text-white">
                             Reset kata sandi dengan aman
@@ -87,7 +87,7 @@ const submit = () => {
                         </ul>
                     </section>
 
-                    <section class="rounded-[32px] bg-white p-8 text-slate-900 shadow-2xl ring-1 ring-slate-100 lg:p-10">
+                    <section class="rounded-[32px] bg-white p-6 text-slate-900 shadow-2xl ring-1 ring-slate-100 sm:p-8 lg:p-10">
                         <div class="mb-8 space-y-2">
                             <p class="text-sm font-semibold uppercase tracking-[0.35em] text-indigo-500">Lupa password</p>
                             <h2 class="text-3xl font-semibold text-slate-900">Kirim ulang tautan reset</h2>
