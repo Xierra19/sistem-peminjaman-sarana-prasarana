@@ -2,6 +2,11 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import { Head, Link, useForm } from '@inertiajs/vue3'
 import { computed } from 'vue'
+import {
+  getBookingStatusClasses,
+  getBookingStatusLabel,
+  normalizeBookingStatus,
+} from '@/Composables/useBookingStatus'
 import { formatDateTimeToDDMMYY } from '@/Composables/useDateFormatter'
 
 const props = defineProps({
@@ -15,30 +20,11 @@ const props = defineProps({
   },
 })
 
-const statusLabels = {
-  waiting: 'Menunggu Persetujuan',
-  approved: 'Disetujui',
-  rejected: 'Ditolak',
-  cancelled: 'Dibatalkan',
-}
-
-const statusColors = {
-  waiting: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
-  approved: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800',
-  rejected: 'bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-800',
-  cancelled: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600',
-}
-
-const normalizeStatus = (status) => {
-  if (!status) return ''
-  return status === 'pending' || status === 'requested' ? 'waiting' : status
-}
-
 const formatDateTime = (value) => formatDateTimeToDDMMYY(value)
 
-const normalizedStatus = computed(() => normalizeStatus(props.booking?.status))
+const normalizedStatus = computed(() => normalizeBookingStatus(props.booking?.status))
 
-const decisionStatus = computed(() => normalizeStatus(props.latestDecisionLog?.action))
+const decisionStatus = computed(() => normalizeBookingStatus(props.latestDecisionLog?.action))
 const hasDecision = computed(() => ['approved', 'rejected', 'cancelled'].includes(decisionStatus.value))
 
 const decisionNote = computed(() => {
@@ -86,9 +72,9 @@ const cancelBooking = () => {
         <div class="flex items-center gap-2">
           <span
             class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold"
-            :class="statusColors[normalizedStatus] ?? 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600'"
+            :class="getBookingStatusClasses(normalizedStatus)"
           >
-            {{ statusLabels[normalizedStatus] ?? booking.status }}
+            {{ getBookingStatusLabel(normalizedStatus) || booking.status }}
           </span>
           <button
             v-if="canCancelBooking"
@@ -199,9 +185,9 @@ const cancelBooking = () => {
               <template v-if="hasDecision">
                 <span
                   class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold"
-                  :class="statusColors[decisionStatus] ?? 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600'"
+                  :class="getBookingStatusClasses(decisionStatus)"
                 >
-                  {{ statusLabels[decisionStatus] ?? decisionStatus }}
+                  {{ getBookingStatusLabel(decisionStatus) }}
                 </span>
                 <p v-if="decisionNote" class="leading-relaxed text-gray-700 dark:text-slate-300">
                   {{ decisionNote }}
@@ -233,7 +219,7 @@ const cancelBooking = () => {
               >
                 <div
                   class="mt-1 h-2.5 w-2.5 flex-shrink-0 rounded-full"
-                  :class="statusColors[normalizeStatus(log.action)] ?? 'bg-gray-300 dark:bg-slate-600'"
+                  :class="getBookingStatusClasses(log.action)"
                 />
                 <div class="space-y-1 text-sm text-gray-600 dark:text-slate-300">
                   <div class="flex items-center justify-between gap-3">
@@ -241,7 +227,7 @@ const cancelBooking = () => {
                     <span class="text-xs text-gray-400 dark:text-slate-500">{{ formatDateTime(log.created_at) }}</span>
                   </div>
                   <p class="text-xs uppercase tracking-wide text-gray-400 dark:text-slate-500">
-                    {{ statusLabels[normalizeStatus(log.action)] ?? (normalizeStatus(log.action) || log.action) }}
+                    {{ getBookingStatusLabel(log.action) || log.action }}
                   </p>
                   <p class="leading-snug text-gray-600 dark:text-slate-300">{{ log.description ?? '-' }}</p>
                 </div>

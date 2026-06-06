@@ -2,6 +2,12 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import { Head, Link, useForm } from '@inertiajs/vue3'
 import { computed } from 'vue'
+import {
+  getItemBorrowingActionLabel,
+  getItemBorrowingStatusClasses,
+  getItemBorrowingStatusLabel,
+  normalizeItemBorrowingStatus,
+} from '@/Composables/useItemBorrowingStatus'
 
 const props = defineProps({
   itemBorrowing: {
@@ -16,27 +22,7 @@ const approvalForm = useForm({
   signed_letter: null,
 })
 
-const statusLabels = {
-  requested: 'Menunggu Persetujuan',
-  waiting: 'Menunggu Persetujuan',
-  approved: 'Disetujui',
-  rejected: 'Ditolak',
-  cancelled: 'Dibatalkan',
-  returned: 'Dikembalikan',
-}
-
-const statusColors = {
-  requested: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
-  waiting: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
-  approved: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800',
-  rejected: 'bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-800',
-  cancelled: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600',
-  returned: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800',
-}
-
-const normalizedStatus = computed(() =>
-  props.itemBorrowing.status === 'requested' ? 'waiting' : props.itemBorrowing.status,
-)
+const normalizedStatus = computed(() => normalizeItemBorrowingStatus(props.itemBorrowing.status))
 const borrowingItems = computed(() => {
   if (props.itemBorrowing.items?.length) {
     return [...props.itemBorrowing.items].sort((left, right) =>
@@ -140,9 +126,9 @@ const onSignedLetterChange = (event) => {
               </div>
               <span
                 class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold"
-                :class="statusColors[normalizedStatus] ?? 'bg-gray-100 text-gray-600 border-gray-200'"
+                :class="getItemBorrowingStatusClasses(normalizedStatus)"
               >
-                {{ statusLabels[normalizedStatus] ?? normalizedStatus }}
+                {{ getItemBorrowingStatusLabel(normalizedStatus) }}
               </span>
             </header>
             <div class="grid gap-6 px-5 py-5 sm:grid-cols-2 sm:px-6">
@@ -337,7 +323,7 @@ const onSignedLetterChange = (event) => {
               >
                 <div
                   class="mt-1 h-2.5 w-2.5 flex-shrink-0 rounded-full"
-                  :class="statusColors[log.action] ?? 'bg-gray-300 dark:bg-slate-600'"
+                  :class="getItemBorrowingStatusClasses(log.action)"
                 />
                 <div class="space-y-1 text-sm text-gray-600 dark:text-slate-300">
                   <div class="flex items-center justify-between gap-3">
@@ -345,7 +331,7 @@ const onSignedLetterChange = (event) => {
                     <span class="text-xs text-gray-400 dark:text-slate-500">{{ formatDateTime(log.created_at) }}</span>
                   </div>
                   <p class="text-xs uppercase tracking-wide text-gray-400 dark:text-slate-500">
-                    {{ statusLabels[log.action] ?? log.action }}
+                    {{ getItemBorrowingActionLabel(log.action) || log.action }}
                   </p>
                   <p class="leading-snug text-gray-600 dark:text-slate-300">{{ log.description ?? '-' }}</p>
                 </div>

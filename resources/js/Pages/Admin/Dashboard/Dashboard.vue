@@ -5,6 +5,11 @@ import { usePagination } from '@/Composables/usePagination'
 import { useTableSort } from '@/Composables/useTableSort'
 import { Head, Link, usePage } from '@inertiajs/vue3'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import {
+  getBookingStatusClasses,
+  getBookingStatusLabel,
+  normalizeBookingStatus,
+} from '@/Composables/useBookingStatus'
 import { formatDateTimeToDDMMYY } from '@/Composables/useDateFormatter'
 import { Bar, Pie } from 'vue-chartjs'
 import {
@@ -39,25 +44,6 @@ const props = defineProps({
   },
 })
 
-const normalizeStatus = (status) => {
-  if (!status) return ''
-  return status === 'pending' || status === 'requested' ? 'waiting' : status
-}
-
-const statusLabels = {
-  approved: 'Disetujui',
-  waiting: 'Menunggu Persetujuan',
-  rejected: 'Ditolak',
-  cancelled: 'Dibatalkan',
-}
-
-const statusBadgeClasses = {
-  approved: 'bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-100 dark:border-emerald-800',
-  waiting: 'bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-100 dark:border-amber-800',
-  rejected: 'bg-rose-100 text-rose-700 border border-rose-200 dark:bg-rose-900/30 dark:text-rose-100 dark:border-rose-800',
-  cancelled: 'bg-violet-100 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-100 dark:border-violet-800',
-}
-
 const isUser = computed(() => page.props.auth.user.role === 'user')
 const isAdmin = computed(() => Boolean(page.props.auth?.permissions?.is_admin))
 
@@ -75,7 +61,7 @@ const activeFilters = ref(createEmptyFilters())
 const normalizedBookings = computed(() =>
   (props.bookings ?? []).map((booking) => ({
     ...booking,
-    normalizedStatus: normalizeStatus(booking.status),
+    normalizedStatus: normalizeBookingStatus(booking.status),
   })),
 )
 
@@ -565,9 +551,9 @@ onBeforeUnmount(() => {
                   <td class="px-5 py-4" data-title="Status">
                     <span
                       class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold capitalize"
-                      :class="statusBadgeClasses[booking.normalizedStatus] ?? 'bg-gray-100 text-gray-600 border border-gray-200'"
+                      :class="getBookingStatusClasses(booking.normalizedStatus)"
                     >
-                      {{ statusLabels[booking.normalizedStatus] ?? (booking.normalizedStatus || booking.status) }}
+                      {{ getBookingStatusLabel(booking.normalizedStatus) || booking.status }}
                     </span>
                   </td>
                   <td v-if="isAdmin" class="px-5 py-4" data-title="Aksi">

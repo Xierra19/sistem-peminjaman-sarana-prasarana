@@ -94,6 +94,17 @@ html.dark .flatpickr-calendar .flatpickr-month {
   color: #f1f5f9 !important; /* slate-100 */
 }
 
+html.dark .flatpickr-calendar .flatpickr-current-month .flatpickr-monthDropdown-months,
+html.dark .flatpickr-calendar .flatpickr-current-month input.cur-year {
+  background-color: #1e293b !important; /* slate-800 */
+  color: #f1f5f9 !important; /* slate-100 */
+}
+
+html.dark .flatpickr-calendar .flatpickr-current-month .flatpickr-monthDropdown-month {
+  background-color: #1e293b !important; /* slate-800 */
+  color: #f1f5f9 !important; /* slate-100 */
+}
+
 html.dark .flatpickr-calendar .flatpickr-weekdays {
   background-color: #0f172a !important; /* slate-900 */
   border-bottom: 1px solid #334155 !important; /* slate-700 */
@@ -107,15 +118,41 @@ html.dark .flatpickr-calendar .flatpickr-day {
   color: #e2e8f0 !important; /* slate-200 */
 }
 
-html.dark .flatpickr-calendar .flatpickr-day:hover {
+html.dark .flatpickr-calendar .flatpickr-day.prevMonthDay,
+html.dark .flatpickr-calendar .flatpickr-day.nextMonthDay {
+  color: #64748b !important; /* slate-500 */
+}
+
+html.dark .flatpickr-calendar .flatpickr-day:hover,
+html.dark .flatpickr-calendar .flatpickr-day:focus {
   background-color: #334155 !important; /* slate-700 */
   border-color: #475569 !important; /* slate-600 */
 }
 
-html.dark .flatpickr-calendar .flatpickr-day.selected {
+html.dark .flatpickr-calendar .flatpickr-day.inRange {
+  background-color: #334155 !important; /* slate-700 */
+  border-color: #334155 !important;
+  color: #e2e8f0 !important; /* slate-200 */
+  box-shadow: -5px 0 0 #334155, 5px 0 0 #334155 !important;
+}
+
+html.dark .flatpickr-calendar .flatpickr-day.selected,
+html.dark .flatpickr-calendar .flatpickr-day.startRange,
+html.dark .flatpickr-calendar .flatpickr-day.endRange,
+html.dark .flatpickr-calendar .flatpickr-day.selected:hover,
+html.dark .flatpickr-calendar .flatpickr-day.startRange:hover,
+html.dark .flatpickr-calendar .flatpickr-day.endRange:hover,
+html.dark .flatpickr-calendar .flatpickr-day.selected:focus,
+html.dark .flatpickr-calendar .flatpickr-day.startRange:focus,
+html.dark .flatpickr-calendar .flatpickr-day.endRange:focus {
   background-color: #2563eb !important; /* blue-600 */
   border-color: #2563eb !important;
   color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+html.dark .flatpickr-calendar .flatpickr-day.startRange + .endRange:not(:nth-child(7n + 1)) {
+  box-shadow: -10px 0 0 #2563eb !important;
 }
 
 html.dark .flatpickr-calendar .flatpickr-day.today {
@@ -210,7 +247,62 @@ html.dark .flatpickr-calendar .flatpickr-time .flatpickr-time-separator {
     }
 
     .mobile-friendly-table.report-mobile-table tbody tr {
-      grid-template-columns: minmax(0, 1fr);
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+      padding: 1rem;
+      border-radius: 1.25rem;
+    }
+
+    .mobile-friendly-table.report-mobile-table tbody td {
+      gap: 0.3rem;
+      padding: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .mobile-friendly-table.report-mobile-table tbody td.mobile-report-span-2 {
+      grid-column: span 2 / span 2;
+    }
+
+    .mobile-friendly-table.report-mobile-table tbody td.mobile-report-primary {
+      order: -20;
+      gap: 0.25rem;
+      padding-bottom: 0.85rem;
+      border-bottom: 1px solid rgb(226 232 240 / 0.75);
+    }
+
+    html.dark .mobile-friendly-table.report-mobile-table tbody td.mobile-report-primary {
+      border-bottom-color: rgb(51 65 85 / 0.9);
+    }
+
+    .mobile-friendly-table.report-mobile-table tbody td.mobile-report-applicant {
+      order: -10;
+    }
+
+    .mobile-friendly-table.report-mobile-table tbody td.mobile-report-status {
+      align-items: center;
+      padding-top: 0.25rem;
+      text-align: center;
+    }
+
+    .mobile-friendly-table.report-mobile-table tbody td.mobile-report-status > span {
+      width: 100%;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .mobile-friendly-table.report-mobile-table tbody td.mobile-report-muted {
+      color: rgb(71 85 105);
+    }
+
+    html.dark .mobile-friendly-table.report-mobile-table tbody td.mobile-report-muted {
+      color: #cbd5e1;
+    }
+
+    .mobile-friendly-table.report-mobile-table tbody td[colspan] {
+      display: block;
+      grid-column: span 2 / span 2;
+      padding: 1.5rem 0;
+      text-align: center;
     }
 
     .mobile-friendly-table.approval-mobile-table tbody tr {

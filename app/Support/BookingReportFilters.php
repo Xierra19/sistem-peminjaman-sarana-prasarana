@@ -14,6 +14,8 @@ class BookingReportFilters
         $status = $filters['status'] ?? null;
         $startDate = $filters['start_date'] ?? null;
         $endDate = $filters['end_date'] ?? null;
+        $bookingStartDate = $filters['booking_start_date'] ?? null;
+        $bookingEndDate = $filters['booking_end_date'] ?? null;
         $search = trim((string) ($filters['search'] ?? ''));
 
         if ($status) {
@@ -33,6 +35,30 @@ class BookingReportFilters
 
         if ($endDate) {
             $query->whereDate('created_at', '<=', $endDate);
+        }
+
+        if ($bookingStartDate) {
+            $query->where(function (Builder $dateQuery) use ($bookingStartDate): void {
+                $dateQuery
+                    ->whereDate('schedule_end_date', '>=', $bookingStartDate)
+                    ->orWhere(function (Builder $legacyQuery) use ($bookingStartDate): void {
+                        $legacyQuery
+                            ->whereNull('schedule_end_date')
+                            ->whereDate('end_time', '>=', $bookingStartDate);
+                    });
+            });
+        }
+
+        if ($bookingEndDate) {
+            $query->where(function (Builder $dateQuery) use ($bookingEndDate): void {
+                $dateQuery
+                    ->whereDate('schedule_start_date', '<=', $bookingEndDate)
+                    ->orWhere(function (Builder $legacyQuery) use ($bookingEndDate): void {
+                        $legacyQuery
+                            ->whereNull('schedule_start_date')
+                            ->whereDate('start_time', '<=', $bookingEndDate);
+                    });
+            });
         }
 
         if ($search !== '') {

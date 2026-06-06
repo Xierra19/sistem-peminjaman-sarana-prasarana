@@ -1,13 +1,21 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
+import RowsPerPageSelect from '@/Components/RowsPerPageSelect.vue'
 import SortableTh from '@/Components/SortableTh.vue'
+import TablePagination from '@/Components/TablePagination.vue'
 import { Head, Link } from '@inertiajs/vue3'
-import { computed, reactive, ref, onMounted, onBeforeUnmount } from 'vue'
+import { computed } from 'vue'
+import { isDateWithinRange, useAppliedFilters } from '@/Composables/useAppliedFilters'
+import { useDateRangePickers } from '@/Composables/useDateRangePickers'
+import {
+  getItemBorrowingStatusClasses,
+  getItemBorrowingStatusLabel,
+  itemBorrowingStatusLabels,
+  normalizeItemBorrowingStatus,
+} from '@/Composables/useItemBorrowingStatus'
 import { usePagination } from '@/Composables/usePagination'
 import { useTableSort } from '@/Composables/useTableSort'
 import { formatToDDMMYY } from '@/Composables/useDateFormatter'
-import flatpickr from 'flatpickr'
-import 'flatpickr/dist/flatpickr.css'
 
 const props = defineProps({
   itemBorrowings: {
@@ -16,67 +24,18 @@ const props = defineProps({
   },
 })
 
-const statusLabels = {
-  requested: 'Menunggu Persetujuan',
-  waiting: 'Menunggu Persetujuan',
-  approved: 'Disetujui',
-  rejected: 'Ditolak',
-  cancelled: 'Dibatalkan',
-  returned: 'Dikembalikan',
-}
-
-const badgeClasses = {
-  requested: 'bg-amber-100 text-amber-700',
-  waiting: 'bg-amber-100 text-amber-700',
-  approved: 'bg-emerald-100 text-emerald-700',
-  rejected: 'bg-rose-100 text-rose-700',
-  cancelled: 'bg-slate-100 text-slate-700',
-  returned: 'bg-blue-100 text-blue-700',
-}
-
 const statusOptions = ['waiting', 'approved', 'returned', 'rejected', 'cancelled']
 
-// ── Filter state ──────────────────────────────────────────────────────
-const filterForm = reactive({
-  search: '',
-  status: '',
-  start_date: '',
-  end_date: '',
-})
+const {
+  filterForm,
+  appliedFilters,
+  hasActiveFilters,
+  activeFilterBadges,
+  applyFilters,
+  resetFilters,
+} = useAppliedFilters(itemBorrowingStatusLabels)
 
-const datePickers = ref({})
-
-// Applied filters (only updated when user clicks "Terapkan Filter")
-const appliedFilters = reactive({
-  search: '',
-  status: '',
-  start_date: '',
-  end_date: '',
-})
-
-const hasActiveFilters = computed(() =>
-  Boolean(appliedFilters.search || appliedFilters.status || appliedFilters.start_date || appliedFilters.end_date),
-)
-
-const activeFilterBadges = computed(() => {
-  const badges = []
-
-  if (appliedFilters.search) badges.push(`Cari: ${appliedFilters.search}`)
-  if (appliedFilters.status) badges.push(`Status: ${statusLabels[appliedFilters.status] ?? appliedFilters.status}`)
-  if (appliedFilters.start_date) badges.push(`Dari: ${appliedFilters.start_date}`)
-  if (appliedFilters.end_date) badges.push(`Sampai: ${appliedFilters.end_date}`)
-
-  return badges
-})
-
-const applyFilters = () => {
-  Object.assign(appliedFilters, { ...filterForm })
-}
-
-const resetFilters = () => {
-  Object.assign(filterForm, { search: '', status: '', start_date: '', end_date: '' })
-  Object.assign(appliedFilters, { search: '', status: '', start_date: '', end_date: '' })
-}
+const { startInput, endInput } = useDateRangePickers(filterForm)
 
 // ── Helpers ───────────────────────────────────────────────────────────
 const getItemNames = (borrowing) => {
@@ -125,8 +84,6 @@ const getReturnDates = (borrowing) => {
   return borrowing.return_date
 }
 
-const normalizeStatus = (status) => (status === 'requested' ? 'waiting' : status)
-
 // ── Filtered list (respects appliedFilters) ───────────────────────────────────
 const borrowingsList = computed(() => {
   let list = props.itemBorrowings ?? []
@@ -144,24 +101,13 @@ const borrowingsList = computed(() => {
   }
 
   if (appliedFilters.status) {
-    list = list.filter((b) => normalizeStatus(b.status) === appliedFilters.status)
+    list = list.filter((b) => normalizeItemBorrowingStatus(b.status) === appliedFilters.status)
   }
 
-  if (appliedFilters.start_date) {
-    const from = new Date(appliedFilters.start_date)
-    list = list.filter((b) => {
-      const d = b.created_at ? new Date(b.created_at) : null
-      return d && d >= from
-    })
-  }
-
-  if (appliedFilters.end_date) {
-    const to = new Date(appliedFilters.end_date)
-    to.setHours(23, 59, 59, 999)
-    list = list.filter((b) => {
-      const d = b.created_at ? new Date(b.created_at) : null
-      return d && d <= to
-    })
+  if (appliedFilters.start_date || appliedFilters.end_date) {
+    list = list.filter((b) =>
+      isDateWithinRange(b.created_at, appliedFilters.start_date, appliedFilters.end_date),
+    )
   }
 
   return list
@@ -202,7 +148,7 @@ const {
       return d ? new Date(d) : null
     },
     created_at: (b) => (b.created_at ? new Date(b.created_at) : null),
-    status: (b) => normalizeStatus(b.status) ?? '',
+    status: (b) => normalizeItemBorrowingStatus(b.status),
   },
 })
 
@@ -214,9 +160,6 @@ const {
   pages,
   changePage,
 } = usePagination(sortedItems)
-
-const canGoToPreviousPage = computed(() => currentPage.value > 1 && borrowingsList.value.length > 0)
-const canGoToNextPage = computed(() => currentPage.value < pages.value.length && borrowingsList.value.length > 0)
 
 const perPageOptions = [5, 10, 25, 50]
 
@@ -231,38 +174,6 @@ const formatTimeHHMM = (value) => {
   return `${hours}:${minutes}`
 }
 
-// Inisialisasi Flatpickr
-onMounted(() => {
-  // Flatpickr untuk Tanggal Pengajuan (Dari)
-  const startInput = document.getElementById('item-report-start-date')
-  if (startInput) {
-    datePickers.value.start = flatpickr(startInput, {
-      dateFormat: 'Y-m-d',
-      altInput: true,
-      altFormat: 'd-m-y',
-      onChange: (selectedDates, dateStr) => {
-        filterForm.start_date = dateStr
-      }
-    })
-  }
-
-  // Flatpickr untuk Tanggal Pengajuan (Sampai)
-  const endInput = document.getElementById('item-report-end-date')
-  if (endInput) {
-    datePickers.value.end = flatpickr(endInput, {
-      dateFormat: 'Y-m-d',
-      altInput: true,
-      altFormat: 'd-m-y',
-      onChange: (selectedDates, dateStr) => {
-        filterForm.end_date = dateStr
-      }
-    })
-  }
-})
-
-onBeforeUnmount(() => {
-  Object.values(datePickers.value).forEach(picker => picker?.destroy())
-})
 </script>
 
 <template>
@@ -339,7 +250,7 @@ onBeforeUnmount(() => {
             >
               <option value="">Semua status</option>
               <option v-for="status in statusOptions" :key="`item-status-${status}`" :value="status">
-                {{ statusLabels[status] ?? status }}
+                {{ getItemBorrowingStatusLabel(status) }}
               </option>
             </select>
           </div>
@@ -347,6 +258,7 @@ onBeforeUnmount(() => {
             <label class="text-sm font-medium text-slate-700 dark:text-slate-200" for="item-report-start-date">Tanggal pengajuan (dari)</label>
             <input
               id="item-report-start-date"
+              ref="startInput"
               v-model="filterForm.start_date"
               type="text"
               readonly
@@ -358,6 +270,7 @@ onBeforeUnmount(() => {
             <label class="text-sm font-medium text-slate-700 dark:text-slate-200" for="item-report-end-date">Tanggal pengajuan (sampai)</label>
             <input
               id="item-report-end-date"
+              ref="endInput"
               v-model="filterForm.end_date"
               type="text"
               readonly
@@ -390,18 +303,11 @@ onBeforeUnmount(() => {
         <!-- Card Header -->
         <div class="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 md:flex-row md:items-center md:justify-between dark:border-slate-700">
           <div class="text-sm font-semibold text-slate-700 dark:text-slate-200">Daftar Permintaan Masuk</div>
-          <div class="flex flex-col gap-2 text-sm text-slate-600 dark:text-slate-300 sm:flex-row sm:items-center sm:justify-end">
-            <label class="font-medium text-slate-700 dark:text-slate-200" for="admin-item-borrowings-rows">Rows per page</label>
-            <select
-              id="admin-item-borrowings-rows"
-              v-model.number="rowsPerPage"
-              class="w-full rounded border border-slate-300 bg-white px-3 py-1.5 pr-8 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white sm:w-20"
-            >
-              <option v-for="option in perPageOptions" :key="option" :value="option">
-                {{ option }}
-              </option>
-            </select>
-          </div>
+          <RowsPerPageSelect
+            v-model="rowsPerPage"
+            input-id="admin-item-borrowings-rows"
+            :options="perPageOptions"
+          />
         </div>
         <!-- End Card Header -->
 
@@ -500,9 +406,9 @@ onBeforeUnmount(() => {
               <td class="mobile-status-cell px-5 py-4 text-center" data-title="Status">
                 <span
                   class="inline-flex rounded-full px-3 py-1 text-xs font-semibold"
-                  :class="badgeClasses[borrowing.status] ?? 'bg-slate-100 text-slate-600 border-slate-200'"
+                  :class="getItemBorrowingStatusClasses(borrowing.status)"
                 >
-                  {{ statusLabels[borrowing.status] ?? borrowing.status }}
+                  {{ getItemBorrowingStatusLabel(borrowing.status) }}
                 </span>
               </td>
               <td class="mobile-action-cell px-5 py-4 text-right" data-title="Aksi">
@@ -523,84 +429,12 @@ onBeforeUnmount(() => {
         </table>
         <!-- End Table -->
 
-        <!-- Pagination -->
-        <div class="flex flex-col gap-3 border-t border-slate-100 px-5 py-4 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:text-slate-300">
-          <div>
-            <span v-if="pageMeta.of">Menampilkan {{ pageMeta.from }}-{{ pageMeta.to }} dari {{ pageMeta.of }} data</span>
-            <span v-else>Menampilkan 0 data</span>
-          </div>
-          <div class="w-full sm:w-auto">
-            <div class="mobile-pagination-compact sm:hidden">
-              <button
-                type="button"
-                class="rounded border border-slate-300 px-3 py-2 text-sm text-slate-600 transition hover:border-slate-400 hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-200"
-                @click="changePage(currentPage - 1)"
-                :disabled="!canGoToPreviousPage"
-              >
-                Sebelumnya
-              </button>
-              <button
-                type="button"
-                class="rounded border border-slate-300 px-3 py-2 text-sm text-slate-600 transition hover:border-slate-400 hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-200"
-                @click="changePage(currentPage + 1)"
-                :disabled="!canGoToNextPage"
-              >
-                Berikutnya
-              </button>
-            </div>
-            <div class="hidden items-center gap-2 sm:flex">
-            <button
-              type="button"
-              class="rounded border border-slate-300 px-3 py-1 text-sm text-slate-600 transition hover:border-slate-400 hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-200"
-              @click="changePage(1)"
-              :disabled="currentPage === 1 || !borrowingsList.length"
-            >
-              «
-            </button>
-            <button
-              type="button"
-              class="rounded border border-slate-300 px-3 py-1 text-sm text-slate-600 transition hover:border-slate-400 hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-200"
-              @click="changePage(currentPage - 1)"
-              :disabled="currentPage === 1 || !borrowingsList.length"
-            >
-              ‹
-            </button>
-            <template v-if="borrowingsList.length">
-              <button
-                v-for="page in pages"
-                :key="`admin-item-borrowings-page-${page}`"
-                type="button"
-                class="rounded border px-3 py-1 text-sm transition"
-                :class="
-                  currentPage === page
-                    ? 'border-blue-500 bg-blue-500 text-white'
-                    : 'border-slate-300 text-slate-600 hover:border-slate-400 hover:text-slate-600 dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-200'"
-                :disabled="typeof page !== 'number'"
-                @click="changePage(page)"
-              >
-                {{ page }}
-              </button>
-            </template>
-            <button
-              type="button"
-              class="rounded border border-slate-300 px-3 py-1 text-sm text-slate-600 transition hover:border-slate-400 hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-200"
-              @click="changePage(currentPage + 1)"
-              :disabled="currentPage === pages.length || !borrowingsList.length"
-            >
-              ›
-            </button>
-            <button
-              type="button"
-              class="rounded border border-slate-300 px-3 py-1 text-sm text-slate-600 transition hover:border-slate-400 hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-200"
-              @click="changePage(pages.length)"
-              :disabled="currentPage === pages.length || !borrowingsList.length"
-            >
-              »
-            </button>
-            </div>
-          </div>
-        </div>
-        <!-- End Pagination -->
+        <TablePagination
+          :page-meta="pageMeta"
+          :pages="pages"
+          :current-page="currentPage"
+          @change="changePage"
+        />
       </div>
     </div>
   </AuthenticatedLayout>

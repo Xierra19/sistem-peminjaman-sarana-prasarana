@@ -1,9 +1,16 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import Dropdown from '@/Components/Dropdown.vue'
+import RowsPerPageSelect from '@/Components/RowsPerPageSelect.vue'
 import SortableTh from '@/Components/SortableTh.vue'
+import TablePagination from '@/Components/TablePagination.vue'
+import {
+  getBookingStatusClasses,
+  getBookingStatusLabel,
+} from '@/Composables/useBookingStatus'
 import { usePagination } from '@/Composables/usePagination'
 import { useTableSort } from '@/Composables/useTableSort'
+import { formatDateToYMD } from '@/Composables/useDateFormatter'
 import { Head, router } from '@inertiajs/vue3'
 import { computed, reactive, watch, ref, onMounted, onBeforeUnmount } from 'vue'
 import { Bar, Pie } from 'vue-chartjs'
@@ -47,10 +54,14 @@ const filterForm = reactive({
   status: props.filters?.status ?? '',
   start_date: props.filters?.start_date ?? '',
   end_date: props.filters?.end_date ?? '',
+  booking_start_date: props.filters?.booking_start_date ?? '',
+  booking_end_date: props.filters?.booking_end_date ?? '',
 })
 
-// Referensi untuk elemen date range picker
 const dateRangePicker = ref(null)
+const bookingDateRangePicker = ref(null)
+const flatpickrInstance = ref(null)
+const bookingFlatpickrInstance = ref(null)
 const isMobileViewport = ref(false)
 
 const syncMobileViewport = () => {
@@ -58,52 +69,57 @@ const syncMobileViewport = () => {
   isMobileViewport.value = window.innerWidth < 640
 }
 
-// Inisialisasi Flatpickr untuk Date Range Picker
+const syncDateRange = (selectedDates, startKey, endKey) => {
+  if (selectedDates.length === 1) {
+    filterForm[startKey] = formatDateToYMD(selectedDates[0])
+    filterForm[endKey] = ''
+  } else if (selectedDates.length === 2) {
+    filterForm[startKey] = formatDateToYMD(selectedDates[0])
+    filterForm[endKey] = formatDateToYMD(selectedDates[1])
+  } else {
+    filterForm[startKey] = ''
+    filterForm[endKey] = ''
+  }
+}
+
+const createDateRangePicker = (element, startKey, endKey) => {
+  if (!element) return null
+
+  return flatpickr(element, {
+    mode: 'range',
+    dateFormat: 'Y-m-d',
+    locale: Indonesian,
+    allowInput: true,
+    showMonths: 1,
+    defaultDate:
+      filterForm[startKey] && filterForm[endKey]
+        ? [filterForm[startKey], filterForm[endKey]]
+        : filterForm[startKey] || filterForm[endKey] || null,
+    onChange: (selectedDates) => syncDateRange(selectedDates, startKey, endKey),
+    onClose: (selectedDates) => {
+      if (selectedDates.length === 0) {
+        syncDateRange([], startKey, endKey)
+      }
+    },
+  })
+}
+
 onMounted(() => {
   syncMobileViewport()
   window.addEventListener('resize', syncMobileViewport)
 
-  if (dateRangePicker.value) {
-    flatpickr(dateRangePicker.value, {
-      mode: 'range',
-      dateFormat: 'Y-m-d',
-      locale: Indonesian,
-      allowInput: true,
-      // Menampilkan dropdown bulan dan tahun untuk navigasi mudah
-      showMonths: 1,
-      // Inisialisasi dengan nilai awal jika ada
-      defaultDate: 
-        filterForm.start_date && filterForm.end_date 
-          ? [filterForm.start_date, filterForm.end_date] 
-          : filterForm.start_date || filterForm.end_date || null,
-      // Update filterForm ketika range dipilih
-      onChange: (selectedDates) => {
-        if (selectedDates.length === 1) {
-          // Jika hanya satu tanggal yang dipilih, gunakan untuk start_date
-          filterForm.start_date = selectedDates[0].toISOString().split('T')[0]
-          filterForm.end_date = ''
-        } else if (selectedDates.length === 2) {
-          // Jika dua tanggal dipilih, gunakan untuk start_date dan end_date
-          filterForm.start_date = selectedDates[0].toISOString().split('T')[0]
-          filterForm.end_date = selectedDates[1].toISOString().split('T')[0]
-        } else {
-          // Jika tidak ada tanggal yang dipilih
-          filterForm.start_date = ''
-          filterForm.end_date = ''
-        }
-      },
-      // Pastikan nilai tetap sinkron saat input manual
-      onClose: (selectedDates) => {
-        if (selectedDates.length === 0) {
-          filterForm.start_date = ''
-          filterForm.end_date = ''
-        }
-      },
-    })
-  }
+  flatpickrInstance.value = createDateRangePicker(dateRangePicker.value, 'start_date', 'end_date')
+  bookingFlatpickrInstance.value = createDateRangePicker(
+    bookingDateRangePicker.value,
+    'booking_start_date',
+    'booking_end_date',
+  )
 })
 
 onBeforeUnmount(() => {
+  flatpickrInstance.value?.destroy()
+  bookingFlatpickrInstance.value?.destroy()
+
   if (typeof window !== 'undefined') {
     window.removeEventListener('resize', syncMobileViewport)
   }
@@ -116,6 +132,17 @@ watch(
     filterForm.status = filters?.status ?? ''
     filterForm.start_date = filters?.start_date ?? ''
     filterForm.end_date = filters?.end_date ?? ''
+    filterForm.booking_start_date = filters?.booking_start_date ?? ''
+    filterForm.booking_end_date = filters?.booking_end_date ?? ''
+
+    flatpickrInstance.value?.setDate(
+      [filterForm.start_date, filterForm.end_date].filter(Boolean),
+      false,
+    )
+    bookingFlatpickrInstance.value?.setDate(
+      [filterForm.booking_start_date, filterForm.booking_end_date].filter(Boolean),
+      false,
+    )
   },
   { deep: true },
 )
@@ -159,22 +186,6 @@ const summary = computed(() => ({
   cancelled: props.statusSummary?.cancelled ?? 0,
 }))
 
-const statusLabels = {
-  waiting: 'Menunggu',
-  pending: 'Menunggu',
-  approved: 'Disetujui',
-  rejected: 'Ditolak',
-  cancelled: 'Dibatalkan',
-}
-
-const statusBadgeClasses = {
-  waiting: 'bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
-  pending: 'bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
-  approved: 'bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800',
-  rejected: 'bg-rose-100 text-rose-700 border border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-800',
-  cancelled: 'bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600',
-}
-
 const formatDateTime = (value) => {
   if (!value) return '-'
   
@@ -216,6 +227,10 @@ const resetFilters = () => {
   filterForm.status = ''
   filterForm.start_date = ''
   filterForm.end_date = ''
+  filterForm.booking_start_date = ''
+  filterForm.booking_end_date = ''
+  flatpickrInstance.value?.clear()
+  bookingFlatpickrInstance.value?.clear()
   applyFilters()
 }
 
@@ -229,23 +244,104 @@ const exportPdf = () => {
   window.open(url, '_blank')
 }
 
-const chartBookings = computed(() => {
-  const bookings = props.bookings ?? []
+const toDateKey = (date) => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+
+  return `${year}-${month}-${day}`
+}
+
+const parseDateKey = (value) => {
+  if (!value) return null
+
+  const datePart = String(value).split('T')[0].split(' ')[0]
+  const [year, month, day] = datePart.split('-').map(Number)
+  if (!year || !month || !day) return null
+
+  const parsed = new Date(year, month - 1, day)
+  parsed.setHours(0, 0, 0, 0)
+
+  return Number.isNaN(parsed.getTime()) ? null : parsed
+}
+
+const hasApplicationDateFilter = computed(
+  () => Boolean(props.filters?.start_date || props.filters?.end_date),
+)
+const hasBookingDateFilter = computed(
+  () => Boolean(props.filters?.booking_start_date || props.filters?.booking_end_date),
+)
+const chartDateBasis = ref('application')
+
+const chartRange = computed(() => {
   const today = new Date()
-  today.setHours(23, 59, 59, 999)
+  today.setHours(0, 0, 0, 0)
+  const defaultStart = new Date(today)
+  defaultStart.setDate(today.getDate() - 6)
 
-  const startDate = new Date(today)
-  startDate.setDate(today.getDate() - 6)
-  startDate.setHours(0, 0, 0, 0)
+  let start = new Date(defaultStart)
+  let end = new Date(today)
 
-  return bookings.filter((booking) => {
-    if (!booking.created_at) return false
+  if (chartDateBasis.value === 'booking' && hasBookingDateFilter.value) {
+    const scheduleStarts = bookings.value
+      .map((booking) => parseDateKey(booking.schedule_start_date || booking.start_time))
+      .filter(Boolean)
+    const scheduleEnds = bookings.value
+      .map((booking) => parseDateKey(booking.schedule_end_date || booking.end_time))
+      .filter(Boolean)
 
-    const createdAt = new Date(booking.created_at)
-    if (Number.isNaN(createdAt.getTime())) return false
+    start = parseDateKey(props.filters?.booking_start_date)
+      ?? (scheduleStarts.length ? new Date(Math.min(...scheduleStarts)) : defaultStart)
+    end = parseDateKey(props.filters?.booking_end_date)
+      ?? (scheduleEnds.length ? new Date(Math.max(...scheduleEnds)) : start)
+  } else if (chartDateBasis.value === 'application' && hasApplicationDateFilter.value) {
+    const applicationDates = bookings.value
+      .map((booking) => parseDateKey(booking.created_at))
+      .filter(Boolean)
 
-    return createdAt >= startDate && createdAt <= today
+    start = parseDateKey(props.filters?.start_date)
+      ?? (applicationDates.length ? new Date(Math.min(...applicationDates)) : defaultStart)
+    end = parseDateKey(props.filters?.end_date)
+      ?? (applicationDates.length ? new Date(Math.max(...applicationDates)) : start)
+  }
+
+  if (start > end) {
+    const previousStart = start
+    start = end
+    end = previousStart
+  }
+
+  return { start, end }
+})
+
+const chartBookings = computed(() => {
+  const { start, end } = chartRange.value
+
+  return bookings.value.filter((booking) => {
+    if (chartDateBasis.value === 'booking') {
+      const scheduleStart = parseDateKey(booking.schedule_start_date || booking.start_time)
+      const scheduleEnd = parseDateKey(booking.schedule_end_date || booking.end_time)
+
+      return Boolean(scheduleStart && scheduleEnd && scheduleStart <= end && scheduleEnd >= start)
+    }
+
+    const createdAt = parseDateKey(booking.created_at)
+    return Boolean(createdAt && createdAt >= start && createdAt <= end)
   })
+})
+
+const chartPeriodDescription = computed(() => {
+  if (chartDateBasis.value === 'booking' && hasBookingDateFilter.value) {
+    return 'Sesuai rentang tanggal peminjaman'
+  }
+
+  if (chartDateBasis.value === 'application' && hasApplicationDateFilter.value) {
+    return 'Sesuai rentang tanggal pengajuan'
+  }
+
+  return chartDateBasis.value === 'booking'
+    ? '7 hari terakhir berdasarkan jadwal peminjaman'
+    : '7 hari terakhir berdasarkan pengajuan'
 })
 
 // =========================================
@@ -260,7 +356,7 @@ const statusChartData = computed(() => {
   }
    
   chartBookings.value.forEach(b => {
-    const s = b.status || ''
+    const s = b.status === 'pending' ? 'waiting' : (b.status || '')
     if (counts[s] !== undefined) {
       counts[s]++
     }
@@ -298,30 +394,52 @@ const statusChartData = computed(() => {
 const weeklyChartData = computed(() => {
   const dayCounts = {}
   const dates = []
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  const { start: rangeStart, end: rangeEnd } = chartRange.value
 
-  for (let offset = 6; offset >= 0; offset -= 1) {
-    const date = new Date(today)
-    date.setDate(today.getDate() - offset)
-
-    const key = date.toISOString().split('T')[0]
+  for (
+    const date = new Date(rangeStart);
+    date <= rangeEnd;
+    date.setDate(date.getDate() + 1)
+  ) {
+    const key = toDateKey(date)
     dates.push(key)
     dayCounts[key] = 0
   }
 
   chartBookings.value.forEach((booking) => {
-    const createdAt = new Date(booking.created_at)
-    if (Number.isNaN(createdAt.getTime())) return
+    if (chartDateBasis.value === 'booking') {
+      const scheduleStart = parseDateKey(booking.schedule_start_date || booking.start_time)
+      const scheduleEnd = parseDateKey(booking.schedule_end_date || booking.end_time)
+      if (!scheduleStart || !scheduleEnd) return
 
-    const key = createdAt.toISOString().split('T')[0]
+      const bookingRangeStart = scheduleStart < rangeStart ? rangeStart : scheduleStart
+      const bookingRangeEnd = scheduleEnd > rangeEnd ? rangeEnd : scheduleEnd
+
+      for (
+        const date = new Date(bookingRangeStart);
+        date <= bookingRangeEnd;
+        date.setDate(date.getDate() + 1)
+      ) {
+        const key = toDateKey(date)
+        if (dayCounts[key] !== undefined) {
+          dayCounts[key] += 1
+        }
+      }
+
+      return
+    }
+
+    const createdAt = parseDateKey(booking.created_at)
+    if (!createdAt) return
+
+    const key = toDateKey(createdAt)
     if (dayCounts[key] !== undefined) {
       dayCounts[key] += 1
     }
   })
 
   const labels = dates.map((dateString) => {
-    const date = new Date(dateString)
+    const date = parseDateKey(dateString)
     return date.toLocaleDateString('id-ID', {
       day: '2-digit',
       month: 'short',
@@ -333,7 +451,7 @@ const weeklyChartData = computed(() => {
   return {
     labels,
     datasets: [{
-      label: 'Jumlah Peminjaman',
+      label: chartDateBasis.value === 'booking' ? 'Jadwal Aktif' : 'Jumlah Pengajuan',
       data,
       backgroundColor: '#3b82f6', // blue-500
       borderColor: '#2563eb', // blue-600
@@ -360,18 +478,16 @@ const chartOptions = computed(() => ({
   },
 }))
 
-const canGoToPreviousPage = computed(() => currentPage.value > 1 && pageMeta.value.of > 0)
-const canGoToNextPage = computed(() => currentPage.value < pages.value.length && pageMeta.value.of > 0)
 </script>
 
 <template>
   <AuthenticatedLayout>
     <Head title="Report Peminjaman Ruangan" />
 
-    <div class="space-y-6">
+    <div class="space-y-4 sm:space-y-6">
       <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 sm:text-3xl">Report Peminjaman Ruangan</h1>
+          <h1 class="text-xl font-semibold text-gray-800 dark:text-gray-200 sm:text-3xl">Report Peminjaman Ruangan</h1>
           <p class="mt-1 max-w-2xl text-sm leading-relaxed text-gray-500 dark:text-gray-400">
             Rekap lengkap pengajuan ruangan beserta status terbaru dan data pemohon.
           </p>
@@ -415,7 +531,7 @@ const canGoToNextPage = computed(() => currentPage.value < pages.value.length &&
         </Dropdown>
       </div>
 
-      <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div class="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
           <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Total Data</p>
           <div class="mt-3 flex items-end justify-between gap-3">
@@ -450,12 +566,45 @@ const canGoToNextPage = computed(() => currentPage.value < pages.value.length &&
         </div>
       </div>
 
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100">Periode Chart</h2>
+          <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            Pilih dasar tanggal untuk distribusi status dan tren peminjaman.
+          </p>
+        </div>
+        <div class="inline-flex w-full rounded-xl border border-slate-200 bg-slate-100 p-1 dark:border-slate-700 dark:bg-slate-800 sm:w-auto">
+          <button
+            type="button"
+            class="flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition sm:flex-none"
+            :class="chartDateBasis === 'application'
+              ? 'bg-white text-blue-700 shadow-sm dark:bg-slate-700 dark:text-blue-300'
+              : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'"
+            :aria-pressed="chartDateBasis === 'application'"
+            @click="chartDateBasis = 'application'"
+          >
+            Tanggal Pengajuan
+          </button>
+          <button
+            type="button"
+            class="flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition sm:flex-none"
+            :class="chartDateBasis === 'booking'
+              ? 'bg-white text-blue-700 shadow-sm dark:bg-slate-700 dark:text-blue-300'
+              : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'"
+            :aria-pressed="chartDateBasis === 'booking'"
+            @click="chartDateBasis = 'booking'"
+          >
+            Tanggal Peminjaman
+          </button>
+        </div>
+      </div>
+
       <div class="grid gap-4 md:grid-cols-2">
-        <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+        <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:p-5">
           <div class="mb-4 flex items-start justify-between gap-3">
             <div>
               <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Distribusi Status</h3>
-              <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Fokus 7 hari terakhir</p>
+              <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ chartPeriodDescription }}</p>
             </div>
             <span class="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500 dark:bg-slate-700 dark:text-slate-300">Pie</span>
           </div>
@@ -463,11 +612,11 @@ const canGoToNextPage = computed(() => currentPage.value < pages.value.length &&
             <Pie :data="statusChartData" :options="chartOptions" />
           </div>
         </div>
-        <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+        <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:p-5">
           <div class="mb-4 flex items-start justify-between gap-3">
             <div>
               <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Tren Peminjaman</h3>
-              <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Aktivitas 7 hari terakhir</p>
+              <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ chartPeriodDescription }}</p>
             </div>
             <span class="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500 dark:bg-slate-700 dark:text-slate-300">Bar</span>
           </div>
@@ -477,7 +626,7 @@ const canGoToNextPage = computed(() => currentPage.value < pages.value.length &&
         </div>
       </div>
 
-      <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+      <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:p-5">
         <div class="mb-4">
           <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100">Filter Report</h3>
           <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Saring data sebelum membaca detail tabel.</p>
@@ -502,7 +651,7 @@ const canGoToNextPage = computed(() => currentPage.value < pages.value.length &&
             >
               <option value="">Semua status</option>
               <option v-for="status in statusOptions" :key="`status-${status}`" :value="status">
-                {{ statusLabels[status] ?? status }}
+                {{ getBookingStatusLabel(status) }}
               </option>
             </select>
           </div>
@@ -517,6 +666,19 @@ const canGoToNextPage = computed(() => currentPage.value < pages.value.length &&
             />
             <p class="text-xs text-gray-500 mt-1 dark:text-gray-400">
               Dari: {{ filterForm.start_date || '-' }} | Sampai: {{ filterForm.end_date || '-' }}
+            </p>
+          </div>
+          <div class="flex flex-col gap-2">
+            <label for="report-booking-date-range" class="text-sm font-medium text-gray-700 dark:text-gray-300">Rentang Tanggal Peminjaman</label>
+            <input
+              id="report-booking-date-range"
+              ref="bookingDateRangePicker"
+              type="text"
+              placeholder="Pilih rentang tanggal..."
+              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
+            />
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Dari: {{ filterForm.booking_start_date || '-' }} | Sampai: {{ filterForm.booking_end_date || '-' }}
             </p>
           </div>
         </div>
@@ -541,20 +703,13 @@ const canGoToNextPage = computed(() => currentPage.value < pages.value.length &&
       <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
         <div class="flex flex-col gap-3 border-b border-gray-100 px-5 py-4 md:flex-row md:items-center md:justify-between dark:border-slate-700">
           <div class="text-sm font-semibold text-gray-700 dark:text-gray-300">Hasil Report</div>
-          <div class="flex flex-col gap-2 text-sm text-gray-600 dark:text-gray-400 sm:flex-row sm:items-center">
-            <label for="report-rows" class="font-medium text-gray-700 dark:text-gray-300">Baris per halaman</label>
-            <div class="relative">
-              <select
-                id="report-rows"
-                v-model.number="rowsPerPage"
-                class="w-full rounded border border-gray-300 bg-white px-3 py-1.5 pr-8 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 sm:w-28"
-              >
-                <option v-for="option in perPageOptions" :key="`rows-${option}`" :value="option">
-                  {{ option }}
-                </option>
-              </select>
-            </div>
-          </div>
+          <RowsPerPageSelect
+            v-model="rowsPerPage"
+            input-id="report-rows"
+            label="Baris per halaman"
+            :options="perPageOptions"
+            wide
+          />
         </div>
 
         <div class="overflow-x-auto">
@@ -589,22 +744,22 @@ const canGoToNextPage = computed(() => currentPage.value < pages.value.length &&
             </thead>
             <tbody class="divide-y divide-gray-100 text-gray-700 dark:divide-slate-700 dark:text-slate-300">
               <tr v-for="booking in paginatedBookings" :key="booking.id" class="transition hover:bg-gray-50 dark:hover:bg-slate-700/50">
-                <td class="px-5 py-4 font-semibold text-gray-900 dark:text-slate-100" data-title="ID">#{{ booking.id }}</td>
-                <td class="px-5 py-4" data-title="Tanggal Pengajuan">{{ formatDateTime(booking.created_at) }}</td>
-                <td class="px-5 py-4" data-title="Pemohon">
+                <td class="mobile-report-muted px-5 py-4 font-semibold text-gray-900 dark:text-slate-100" data-title="ID">#{{ booking.id }}</td>
+                <td class="mobile-report-muted px-5 py-4" data-title="Tanggal Pengajuan">{{ formatDateTime(booking.created_at) }}</td>
+                <td class="mobile-report-applicant mobile-report-span-2 px-5 py-4" data-title="Pemohon">
                   <div class="font-medium text-gray-900 dark:text-slate-100">{{ booking.user?.name ?? '-' }}</div>
                   <div class="text-xs text-gray-500 dark:text-slate-400">{{ booking.user?.email ?? '-' }}</div>
                   <div class="text-xs text-gray-500 dark:text-slate-400">Telp: {{ booking.user?.phone ?? '-' }}</div>
                 </td>
-                <td class="px-5 py-4" data-title="Status">
+                <td class="mobile-report-status mobile-report-span-2 px-5 py-4" data-title="Status">
                   <span
                     class="inline-flex rounded-full px-3 py-1 text-xs font-semibold"
-                    :class="statusBadgeClasses[booking.status] ?? 'bg-gray-100 text-gray-600 border border-gray-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600'"
+                    :class="getBookingStatusClasses(booking.status)"
                   >
-                    {{ statusLabels[booking.status] ?? booking.status }}
+                    {{ getBookingStatusLabel(booking.status) }}
                   </span>
                 </td>
-                <td class="px-5 py-4" data-title="No. Surat">
+                <td class="mobile-report-muted px-5 py-4" data-title="No. Surat">
                   <div class="font-medium text-gray-900 dark:text-slate-100">
                     {{ booking.letter_number ?? '-' }}
                   </div>
@@ -612,17 +767,17 @@ const canGoToNextPage = computed(() => currentPage.value < pages.value.length &&
                     Terbit {{ formatDateTime(booking.letter_generated_at) }}
                   </div>
                 </td>
-                <td class="px-5 py-4" data-title="Jadwal">
+                <td class="mobile-report-span-2 px-5 py-4" data-title="Jadwal">
                   <div class="font-medium text-gray-900 dark:text-slate-100">{{ booking.schedule_mode_label }}</div>
                   <div class="text-xs text-gray-500 dark:text-slate-400">{{ booking.schedule_summary }}</div>
                 </td>
-                <td class="px-5 py-4" data-title="Lokasi">
+                <td class="mobile-report-span-2 px-5 py-4" data-title="Lokasi">
                   <div class="font-medium text-gray-900 dark:text-slate-100">{{ booking.room?.name ?? '-' }}</div>
                   <div class="text-xs text-gray-500 dark:text-slate-400">
                     {{ booking.room?.building?.name ?? '-' }} - {{ booking.room?.building?.campus?.name ?? '-' }}
                   </div>
                 </td>
-                <td class="px-5 py-4" data-title="Detail Peminjaman">
+                <td class="mobile-report-primary mobile-report-span-2 px-5 py-4" data-title="Detail Peminjaman">
                   <div class="font-semibold text-gray-900 dark:text-slate-100">{{ booking.title ?? '-' }}</div>
                   <div class="text-xs text-gray-500 dark:text-slate-400">
                     {{ booking.description ?? 'Tidak ada keterangan tambahan' }}
@@ -638,51 +793,12 @@ const canGoToNextPage = computed(() => currentPage.value < pages.value.length &&
           </table>
         </div>
 
-        <div class="flex flex-col gap-3 border-t border-gray-100 px-5 py-4 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:text-slate-400">
-          <div>
-            <span v-if="pageMeta.of">Menampilkan {{ pageMeta.from }}-{{ pageMeta.to }} dari {{ pageMeta.of }} data</span>
-            <span v-else>Menampilkan 0 data</span>
-          </div>
-          <div class="w-full sm:w-auto">
-            <div class="mobile-pagination-compact sm:hidden">
-              <button
-                type="button"
-                class="rounded border border-gray-300 px-3 py-2 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400"
-                @click="changePage(currentPage - 1)"
-                :disabled="!canGoToPreviousPage"
-              >
-                Sebelumnya
-              </button>
-              <button
-                type="button"
-                class="rounded border border-gray-300 px-3 py-2 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400"
-                @click="changePage(currentPage + 1)"
-                :disabled="!canGoToNextPage"
-              >
-                Berikutnya
-              </button>
-            </div>
-            <div class="hidden items-center gap-2 sm:flex">
-              <button type="button" class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(1)" :disabled="currentPage === 1 || !pageMeta.of">«</button>
-              <button type="button" class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(currentPage - 1)" :disabled="currentPage === 1 || !pageMeta.of">‹</button>
-              <template v-if="pageMeta.of">
-                <button
-                  v-for="page in pages"
-                  :key="`report-page-${page}`"
-                  type="button"
-                  class="rounded border px-3 py-1 text-sm transition"
-                  :class="currentPage === page ? 'border-blue-500 bg-blue-500 text-white' : 'border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400'"
-                  :disabled="typeof page !== 'number'"
-                  @click="changePage(page)"
-                >
-                  {{ page }}
-                </button>
-              </template>
-              <button type="button" class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(currentPage + 1)" :disabled="currentPage === pages.length || !pageMeta.of">›</button>
-              <button type="button" class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(pages.length)" :disabled="currentPage === pages.length || !pageMeta.of">»</button>
-            </div>
-          </div>
-        </div>
+        <TablePagination
+          :page-meta="pageMeta"
+          :pages="pages"
+          :current-page="currentPage"
+          @change="changePage"
+        />
       </div>
     </div>
   </AuthenticatedLayout>

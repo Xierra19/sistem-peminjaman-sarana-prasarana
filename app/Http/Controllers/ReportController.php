@@ -108,6 +108,8 @@ class ReportController extends Controller
             'status' => ['nullable', Rule::in(self::STATUS_OPTIONS)],
             'start_date' => ['nullable', 'date'],
             'end_date' => ['nullable', 'date'],
+            'booking_start_date' => ['nullable', 'date'],
+            'booking_end_date' => ['nullable', 'date'],
         ]);
 
         $filters = array_merge([
@@ -115,6 +117,8 @@ class ReportController extends Controller
             'status' => null,
             'start_date' => null,
             'end_date' => null,
+            'booking_start_date' => null,
+            'booking_end_date' => null,
         ], $validated);
 
         foreach ($filters as $key => $value) {
@@ -125,6 +129,17 @@ class ReportController extends Controller
 
         if ($filters['start_date'] && $filters['end_date'] && $filters['start_date'] > $filters['end_date']) {
             [$filters['start_date'], $filters['end_date']] = [$filters['end_date'], $filters['start_date']];
+        }
+
+        if (
+            $filters['booking_start_date']
+            && $filters['booking_end_date']
+            && $filters['booking_start_date'] > $filters['booking_end_date']
+        ) {
+            [$filters['booking_start_date'], $filters['booking_end_date']] = [
+                $filters['booking_end_date'],
+                $filters['booking_start_date'],
+            ];
         }
 
         return $filters;

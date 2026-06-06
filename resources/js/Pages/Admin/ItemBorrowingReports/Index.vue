@@ -1,12 +1,23 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import Dropdown from '@/Components/Dropdown.vue'
+import RowsPerPageSelect from '@/Components/RowsPerPageSelect.vue'
 import SortableTh from '@/Components/SortableTh.vue'
+import TablePagination from '@/Components/TablePagination.vue'
+import {
+  getItemBorrowingStatusClasses,
+  getItemBorrowingStatusLabel,
+  normalizeItemBorrowingStatus,
+} from '@/Composables/useItemBorrowingStatus'
 import { usePagination } from '@/Composables/usePagination'
 import { useTableSort } from '@/Composables/useTableSort'
 import { Head, router } from '@inertiajs/vue3'
 import { computed, reactive, watch, ref, onMounted, onBeforeUnmount } from 'vue'
-import { formatToDDMMYY, formatDateTimeToDDMMYY } from '@/Composables/useDateFormatter'
+import {
+  formatDateToYMD,
+  formatToDDMMYY,
+  formatDateTimeToDDMMYY,
+} from '@/Composables/useDateFormatter'
 import flatpickr from 'flatpickr'
 import 'flatpickr/dist/flatpickr.css'
 import { Indonesian } from 'flatpickr/dist/l10n/id'
@@ -93,12 +104,12 @@ onMounted(() => {
       onChange: (selectedDates) => {
         if (selectedDates.length === 1) {
           // Jika hanya satu tanggal yang dipilih, gunakan untuk start_date
-          filterForm.start_date = selectedDates[0].toISOString().split('T')[0]
+          filterForm.start_date = formatDateToYMD(selectedDates[0])
           filterForm.end_date = ''
         } else if (selectedDates.length === 2) {
           // Jika dua tanggal dipilih, gunakan untuk start_date dan end_date
-          filterForm.start_date = selectedDates[0].toISOString().split('T')[0]
-          filterForm.end_date = selectedDates[1].toISOString().split('T')[0]
+          filterForm.start_date = formatDateToYMD(selectedDates[0])
+          filterForm.end_date = formatDateToYMD(selectedDates[1])
         } else {
           // Jika tidak ada tanggal yang dipilih
           filterForm.start_date = ''
@@ -117,6 +128,8 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  flatpickrInstance.value?.destroy()
+
   if (typeof window !== 'undefined') {
     window.removeEventListener('resize', syncMobileViewport)
   }
@@ -134,7 +147,7 @@ const {
     id: (row) => row.id ?? 0,
     created_at: (row) => (row.created_at ? new Date(row.created_at) : null),
     applicant: (row) => row.user?.name ?? '',
-    status: (row) => (row.status === 'requested' ? 'waiting' : row.status) ?? '',
+    status: (row) => normalizeItemBorrowingStatus(row.status),
     borrow_date: (row) => (row.borrow_date ? new Date(row.borrow_date) : null),
     return_date: (row) => (row.return_date ? new Date(row.return_date) : null),
     item: (row) => row.item?.name ?? '',
@@ -161,24 +174,6 @@ const summary = computed(() => ({
   cancelled: props.statusSummary?.cancelled ?? 0,
   returned: props.statusSummary?.returned ?? 0,
 }))
-
-const statusLabels = {
-  waiting: 'Menunggu',
-  requested: 'Menunggu',
-  approved: 'Disetujui',
-  rejected: 'Ditolak',
-  cancelled: 'Dibatalkan',
-  returned: 'Dikembalikan',
-}
-
-const statusBadgeClasses = {
-  waiting: 'bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
-  requested: 'bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
-  approved: 'bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800',
-  rejected: 'bg-rose-100 text-rose-700 border border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-800',
-  cancelled: 'bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600',
-  returned: 'bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800',
-}
 
 const formatDate = (value) => formatToDDMMYY(value)
 
@@ -232,7 +227,6 @@ const statusChartData = computed(() => {
   const borrowings = props.itemBorrowings ?? []
   const counts = {
     waiting: 0,
-    requested: 0,
     approved: 0,
     rejected: 0,
     cancelled: 0,
@@ -240,9 +234,7 @@ const statusChartData = computed(() => {
   }
   
   borrowings.forEach(b => {
-    const s = b.status || ''
-    // Normalize status (requested -> waiting)
-    const normalizedStatus = s === 'requested' ? 'waiting' : s
+    const normalizedStatus = normalizeItemBorrowingStatus(b.status)
     if (counts[normalizedStatus] !== undefined) {
       counts[normalizedStatus]++
     }
@@ -251,7 +243,7 @@ const statusChartData = computed(() => {
   return {
     labels: ['Menunggu', 'Disetujui', 'Dikembalikan', 'Ditolak', 'Dibatalkan'],
     datasets: [{
-      data: [counts.waiting + counts.requested, counts.approved, counts.returned, counts.rejected, counts.cancelled],
+      data: [counts.waiting, counts.approved, counts.returned, counts.rejected, counts.cancelled],
       backgroundColor: [
         '#f59e0b', // amber-500 (Menunggu)
         '#10b981', // emerald-500 (Disetujui)
@@ -321,18 +313,16 @@ const chartOptions = computed(() => ({
   },
 }))
 
-const canGoToPreviousPage = computed(() => currentPage.value > 1 && itemBorrowings.value.length > 0)
-const canGoToNextPage = computed(() => currentPage.value < pages.value.length && itemBorrowings.value.length > 0)
 </script>
 
 <template>
   <AuthenticatedLayout>
     <Head title="Report Peminjaman Barang" />
 
-    <div class="space-y-6">
+    <div class="space-y-4 sm:space-y-6">
       <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 sm:text-3xl">Report Peminjaman Barang</h1>
+          <h1 class="text-xl font-semibold text-gray-800 dark:text-gray-200 sm:text-3xl">Report Peminjaman Barang</h1>
           <p class="mt-1 max-w-2xl text-sm leading-relaxed text-gray-500 dark:text-gray-400">
             Rekap lengkap pengajuan barang beserta status terbaru dan data pemohon.
           </p>
@@ -376,7 +366,7 @@ const canGoToNextPage = computed(() => currentPage.value < pages.value.length &&
         </Dropdown>
       </div>
 
-      <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      <div class="grid grid-cols-2 gap-3 xl:grid-cols-5">
         <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
           <p class="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Total Data</p>
           <p class="mt-3 text-3xl font-semibold text-slate-900 dark:text-slate-100">{{ summary.total }}</p>
@@ -397,7 +387,7 @@ const canGoToNextPage = computed(() => currentPage.value < pages.value.length &&
           <p class="mt-2 text-2xl font-semibold text-blue-600 dark:text-blue-400">{{ summary.returned }}</p>
           <p class="text-xs text-blue-500 dark:text-blue-400">Barang yang sudah dikembalikan</p>
         </div>
-        <div class="rounded-2xl border border-rose-200 bg-white p-4 shadow-sm dark:border-rose-800 dark:bg-slate-800">
+        <div class="col-span-2 rounded-2xl border border-rose-200 bg-white p-4 shadow-sm dark:border-rose-800 dark:bg-slate-800 sm:col-span-1">
           <p class="text-xs font-medium uppercase tracking-wide text-rose-500 dark:text-rose-400">Ditolak / Batal</p>
           <p class="mt-2 text-2xl font-semibold text-rose-600 dark:text-rose-400">{{ summary.rejected + summary.cancelled }}</p>
           <p class="text-xs text-rose-500 dark:text-rose-400">Termasuk pembatalan admin</p>
@@ -406,13 +396,13 @@ const canGoToNextPage = computed(() => currentPage.value < pages.value.length &&
 
       <!-- Charts Section -->
       <div class="grid gap-4 md:grid-cols-2">
-        <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+        <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:p-5">
           <h3 class="mb-4 text-lg font-semibold text-gray-800 dark:text-gray-200">Distribusi Status Peminjaman Barang</h3>
           <div class="h-48 sm:h-56">
             <Pie :data="statusChartData" :options="chartOptions" />
           </div>
         </div>
-        <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+        <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:p-5">
           <h3 class="mb-4 text-lg font-semibold text-gray-800 dark:text-gray-200">Tren Peminjaman Barang 6 Bulan Terakhir</h3>
           <div class="h-48 sm:h-56">
             <Bar :data="monthlyChartData" :options="chartOptions" />
@@ -420,7 +410,7 @@ const canGoToNextPage = computed(() => currentPage.value < pages.value.length &&
         </div>
       </div>
 
-      <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+      <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:p-5">
         <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <div class="flex flex-col gap-2">
             <label class="text-sm font-medium text-gray-700 dark:text-gray-300" for="item-report-search">Pencarian bebas</label>
@@ -441,7 +431,7 @@ const canGoToNextPage = computed(() => currentPage.value < pages.value.length &&
             >
               <option value="">Semua status</option>
               <option v-for="status in statusOptions" :key="`item-status-${status}`" :value="status">
-                {{ statusLabels[status] ?? status }}
+                {{ getItemBorrowingStatusLabel(status) }}
               </option>
             </select>
           </div>
@@ -480,18 +470,13 @@ const canGoToNextPage = computed(() => currentPage.value < pages.value.length &&
       <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
         <div class="flex flex-col gap-3 border-b border-gray-100 px-5 py-4 md:flex-row md:items-center md:justify-between dark:border-slate-700">
           <div class="text-sm font-semibold text-gray-700 dark:text-gray-300">Hasil Report</div>
-          <div class="flex flex-col gap-2 text-sm text-gray-600 dark:text-gray-400 sm:flex-row sm:items-center">
-            <label class="font-medium text-gray-700 dark:text-gray-300" for="item-report-rows">Baris per halaman</label>
-            <select
-              id="item-report-rows"
-              v-model.number="rowsPerPage"
-              class="w-full appearance-none rounded border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 sm:w-28"
-            >
-              <option v-for="option in perPageOptions" :key="`item-report-rows-${option}`" :value="option">
-                {{ option }}
-              </option>
-            </select>
-          </div>
+          <RowsPerPageSelect
+            v-model="rowsPerPage"
+            input-id="item-report-rows"
+            label="Baris per halaman"
+            :options="perPageOptions"
+            wide
+          />
         </div>
 
         <div class="overflow-x-auto">
@@ -523,30 +508,30 @@ const canGoToNextPage = computed(() => currentPage.value < pages.value.length &&
             </thead>
             <tbody class="divide-y divide-gray-100 text-gray-700 dark:divide-slate-700 dark:text-slate-300">
               <tr v-for="borrowing in paginatedItems" :key="borrowing.id" class="hover:bg-gray-50 dark:hover:bg-slate-700/50">
-                <td class="px-5 py-4" data-title="ID">{{ borrowing.id }}</td>
-                <td class="px-5 py-4" data-title="Tanggal Pengajuan">{{ formatDateTime(borrowing.created_at) }}</td>
-                <td class="px-5 py-4" data-title="Pemohon">
+                <td class="mobile-report-muted px-5 py-4" data-title="ID">#{{ borrowing.id }}</td>
+                <td class="mobile-report-muted px-5 py-4" data-title="Tanggal Pengajuan">{{ formatDateTime(borrowing.created_at) }}</td>
+                <td class="mobile-report-applicant mobile-report-span-2 px-5 py-4" data-title="Pemohon">
                   <div class="font-medium text-gray-900 dark:text-slate-100">{{ borrowing.user?.name ?? '-' }}</div>
                   <div class="text-xs text-gray-500 dark:text-slate-400">{{ borrowing.user?.email ?? '-' }}</div>
                 </td>
-                <td class="px-5 py-4" data-title="Keperluan">
+                <td class="mobile-report-primary mobile-report-span-2 px-5 py-4" data-title="Keperluan">
                   <div class="font-medium text-gray-900 dark:text-slate-100">{{ borrowing.title }}</div>
                   <div class="text-xs text-gray-500 dark:text-slate-400">{{ borrowing.description || 'Tidak ada deskripsi.' }}</div>
                 </td>
-                <td class="px-5 py-4" data-title="Barang">
+                <td class="mobile-report-span-2 px-5 py-4" data-title="Barang">
                   <div class="font-medium text-gray-900 dark:text-slate-100">{{ borrowing.item?.name ?? '-' }}</div>
                   <div class="text-xs text-gray-500 dark:text-slate-400">{{ borrowing.item?.code ?? '-' }} • {{ borrowing.item?.category ?? '-' }}</div>
                 </td>
-                <td class="px-5 py-4" data-title="Periode">
+                <td class="mobile-report-span-2 px-5 py-4" data-title="Periode">
                   <div>Pinjam: <span class="font-medium text-gray-900 dark:text-slate-100">{{ formatDate(borrowing.borrow_date) }}</span></div>
                   <div>Kembali: <span class="font-medium text-gray-900 dark:text-slate-100">{{ formatDate(borrowing.return_date) }}</span></div>
                 </td>
-                <td class="px-5 py-4" data-title="Status">
+                <td class="mobile-report-status mobile-report-span-2 px-5 py-4" data-title="Status">
                   <span
                     class="inline-flex rounded-full px-3 py-1 text-xs font-semibold"
-                    :class="statusBadgeClasses[borrowing.status] ?? 'bg-gray-100 text-gray-600 border border-gray-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600'"
+                    :class="getItemBorrowingStatusClasses(borrowing.status)"
                   >
-                    {{ statusLabels[borrowing.status] ?? borrowing.status }}
+                    {{ getItemBorrowingStatusLabel(borrowing.status) }}
                   </span>
                 </td>
               </tr>
@@ -559,37 +544,12 @@ const canGoToNextPage = computed(() => currentPage.value < pages.value.length &&
           </table>
         </div>
 
-        <div class="flex flex-col gap-3 border-t border-gray-100 px-5 py-4 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:text-slate-400">
-          <div>
-            <span v-if="pageMeta.of">Menampilkan {{ pageMeta.from }}-{{ pageMeta.to }} dari {{ pageMeta.of }} data</span>
-            <span v-else>Menampilkan 0 data</span>
-          </div>
-          <div class="w-full sm:w-auto">
-            <div class="mobile-pagination-compact sm:hidden">
-              <button type="button" class="rounded border border-gray-300 px-3 py-2 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(currentPage - 1)" :disabled="!canGoToPreviousPage">Sebelumnya</button>
-              <button type="button" class="rounded border border-gray-300 px-3 py-2 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(currentPage + 1)" :disabled="!canGoToNextPage">Berikutnya</button>
-            </div>
-            <div class="hidden items-center gap-2 sm:flex">
-              <button type="button" class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(1)" :disabled="currentPage === 1 || !itemBorrowings.length">«</button>
-              <button type="button" class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(currentPage - 1)" :disabled="currentPage === 1 || !itemBorrowings.length">‹</button>
-              <template v-if="itemBorrowings.length">
-                <button
-                  v-for="page in pages"
-                  :key="`item-report-page-${page}`"
-                  type="button"
-                  class="rounded border px-3 py-1 text-sm transition"
-                  :class="currentPage === page ? 'border-blue-500 bg-blue-500 text-white' : 'border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400'"
-                  :disabled="typeof page !== 'number'"
-                  @click="changePage(page)"
-                >
-                  {{ page }}
-                </button>
-              </template>
-              <button type="button" class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(currentPage + 1)" :disabled="currentPage === pages.length || !itemBorrowings.length">›</button>
-              <button type="button" class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400" @click="changePage(pages.length)" :disabled="currentPage === pages.length || !itemBorrowings.length">»</button>
-            </div>
-          </div>
-        </div>
+        <TablePagination
+          :page-meta="pageMeta"
+          :pages="pages"
+          :current-page="currentPage"
+          @change="changePage"
+        />
       </div>
     </div>
   </AuthenticatedLayout>

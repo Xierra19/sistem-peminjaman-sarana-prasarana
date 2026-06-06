@@ -3,6 +3,23 @@
  */
 
 /**
+ * Format tanggal ke YYYY-MM-DD menggunakan zona waktu lokal.
+ * @param {string|Date} value - Nilai tanggal yang akan diformat
+ * @returns {string} Tanggal dalam format YYYY-MM-DD atau string kosong jika invalid
+ */
+export const formatDateToYMD = (value) => {
+  if (!value) return ''
+  const date = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+
+  return `${year}-${month}-${day}`
+}
+
+/**
  * Format tanggal ke DD-MM-YY
  * @param {string|Date} value - Nilai tanggal yang akan diformat
  * @returns {string} Tanggal dalam format DD-MM-YY atau '-' jika invalid

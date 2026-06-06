@@ -1,13 +1,21 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
+import RowsPerPageSelect from '@/Components/RowsPerPageSelect.vue'
 import SortableTh from '@/Components/SortableTh.vue'
+import TablePagination from '@/Components/TablePagination.vue'
+import { isDateWithinRange, useAppliedFilters } from '@/Composables/useAppliedFilters'
+import {
+  bookingStatusLabels,
+  getBookingStatusClasses,
+  getBookingStatusLabel,
+  normalizeBookingStatus,
+} from '@/Composables/useBookingStatus'
+import { useDateRangePickers } from '@/Composables/useDateRangePickers'
 import { usePagination } from '@/Composables/usePagination'
 import { useTableSort } from '@/Composables/useTableSort'
 import { Head, Link } from '@inertiajs/vue3'
-import { computed, reactive, ref, onMounted, onBeforeUnmount } from 'vue'
+import { computed } from 'vue'
 import { formatDateTimeToDDMMYY } from '@/Composables/useDateFormatter'
-import flatpickr from 'flatpickr'
-import 'flatpickr/dist/flatpickr.css'
 
 const props = defineProps({
   bookings: {
@@ -16,75 +24,26 @@ const props = defineProps({
   },
 })
 
-const statusLabels = {
-  waiting: 'Menunggu Persetujuan',
-  approved: 'Disetujui',
-  rejected: 'Ditolak',
-  cancelled: 'Dibatalkan',
-}
-
-const badgeClasses = {
-  waiting: 'bg-amber-100 text-amber-700',
-  approved: 'bg-emerald-100 text-emerald-700',
-  rejected: 'bg-rose-100 text-rose-700',
-  cancelled: 'bg-slate-100 text-slate-700',
-}
-
-const normalizeStatus = (status) => {
-  if (!status) return ''
-  return status === 'pending' || status === 'requested' ? 'waiting' : status
-}
-
 const formatDateTime = (value) => formatDateTimeToDDMMYY(value)
 
-// ── Filter state ──────────────────────────────────────────────────────
-const filterForm = reactive({
-  search: '',
-  status: '',
-  start_date: '',
-  end_date: '',
-})
+const statusOptions = Object.keys(bookingStatusLabels)
 
-const activeFilter = reactive({
-  search: '',
-  status: '',
-  start_date: '',
-  end_date: '',
-})
+const {
+  filterForm,
+  appliedFilters,
+  hasActiveFilters,
+  activeFilterBadges,
+  applyFilters,
+  resetFilters,
+} = useAppliedFilters(bookingStatusLabels)
 
-const datePickers = ref({})
-
-const statusOptions = Object.keys(statusLabels)
-
-const hasActiveFilters = computed(() =>
-  Boolean(activeFilter.search || activeFilter.status || activeFilter.start_date || activeFilter.end_date),
-)
-
-const activeFilterBadges = computed(() => {
-  const badges = []
-
-  if (activeFilter.search) badges.push(`Cari: ${activeFilter.search}`)
-  if (activeFilter.status) badges.push(`Status: ${statusLabels[activeFilter.status] ?? activeFilter.status}`)
-  if (activeFilter.start_date) badges.push(`Dari: ${activeFilter.start_date}`)
-  if (activeFilter.end_date) badges.push(`Sampai: ${activeFilter.end_date}`)
-
-  return badges
-})
-
-const applyFilters = () => {
-  Object.assign(activeFilter, filterForm)
-}
-
-const resetFilters = () => {
-  Object.assign(filterForm, { search: '', status: '', start_date: '', end_date: '' })
-  Object.assign(activeFilter, { search: '', status: '', start_date: '', end_date: '' })
-}
+const { startInput, endInput } = useDateRangePickers(filterForm)
 
 // ── All bookings (normalized) ──────────────────────────────────────────────────
 const allBookings = computed(() =>
   (props.bookings ?? []).map((booking) => ({
     ...booking,
-    normalizedStatus: normalizeStatus(booking.status),
+    normalizedStatus: normalizeBookingStatus(booking.status),
   })),
 )
 
@@ -103,8 +62,8 @@ const summary = computed(() => {
 const bookingsList = computed(() => {
   let list = allBookings.value
 
-  if (activeFilter.search) {
-    const q = activeFilter.search.toLowerCase()
+  if (appliedFilters.search) {
+    const q = appliedFilters.search.toLowerCase()
     list = list.filter(
       (b) =>
         b.title?.toLowerCase().includes(q) ||
@@ -114,19 +73,14 @@ const bookingsList = computed(() => {
     )
   }
 
-  if (activeFilter.status) {
-    list = list.filter((b) => b.normalizedStatus === activeFilter.status)
+  if (appliedFilters.status) {
+    list = list.filter((b) => b.normalizedStatus === appliedFilters.status)
   }
 
-  if (activeFilter.start_date) {
-    const from = new Date(activeFilter.start_date)
-    list = list.filter((b) => b.created_at && new Date(b.created_at) >= from)
-  }
-
-  if (activeFilter.end_date) {
-    const to = new Date(activeFilter.end_date)
-    to.setHours(23, 59, 59, 999)
-    list = list.filter((b) => b.created_at && new Date(b.created_at) <= to)
+  if (appliedFilters.start_date || appliedFilters.end_date) {
+    list = list.filter((b) =>
+      isDateWithinRange(b.created_at, appliedFilters.start_date, appliedFilters.end_date),
+    )
   }
 
   return list
@@ -156,42 +110,6 @@ const {
   pages,
   changePage,
 } = usePagination(sortedBookings)
-
-const canGoToPreviousPage = computed(() => currentPage.value > 1 && bookingsList.value.length > 0)
-const canGoToNextPage = computed(() => currentPage.value < pages.value.length && bookingsList.value.length > 0)
-
-// Inisialisasi Flatpickr
-onMounted(() => {
-  // Flatpickr untuk Tanggal Pengajuan (Dari)
-  const startInput = document.getElementById('report-start-date')
-  if (startInput) {
-    datePickers.value.start = flatpickr(startInput, {
-      dateFormat: 'Y-m-d',
-      altInput: true,
-      altFormat: 'd-m-y',
-      onChange: (selectedDates, dateStr) => {
-        filterForm.start_date = dateStr
-      }
-    })
-  }
-
-  // Flatpickr untuk Tanggal Pengajuan (Sampai)
-  const endInput = document.getElementById('report-end-date')
-  if (endInput) {
-    datePickers.value.end = flatpickr(endInput, {
-      dateFormat: 'Y-m-d',
-      altInput: true,
-      altFormat: 'd-m-y',
-      onChange: (selectedDates, dateStr) => {
-        filterForm.end_date = dateStr
-      }
-    })
-  }
-})
-
-onBeforeUnmount(() => {
-  Object.values(datePickers.value).forEach(picker => picker?.destroy())
-})
 
 const perPageOptions = [5, 10, 25, 50]
 </script>
@@ -264,7 +182,7 @@ const perPageOptions = [5, 10, 25, 50]
             >
               <option value="">Semua status</option>
               <option v-for="status in statusOptions" :key="`status-${status}`" :value="status">
-                {{ statusLabels[status] ?? status }}
+                {{ getBookingStatusLabel(status) }}
               </option>
             </select>
           </div>
@@ -272,6 +190,7 @@ const perPageOptions = [5, 10, 25, 50]
             <label class="text-sm font-medium text-slate-700 dark:text-slate-200" for="report-start-date">Tanggal pengajuan (dari)</label>
             <input
               id="report-start-date"
+              ref="startInput"
               v-model="filterForm.start_date"
               type="text"
               readonly
@@ -283,6 +202,7 @@ const perPageOptions = [5, 10, 25, 50]
             <label class="text-sm font-medium text-slate-700 dark:text-slate-200" for="report-end-date">Tanggal pengajuan (sampai)</label>
             <input
               id="report-end-date"
+              ref="endInput"
               v-model="filterForm.end_date"
               type="text"
               readonly
@@ -316,20 +236,11 @@ const perPageOptions = [5, 10, 25, 50]
         >
           <div class="text-sm font-semibold text-slate-700 dark:text-slate-200">Daftar Booking Masuk</div>
           <div class="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
-            <div class="flex flex-col gap-2 text-sm text-slate-600 dark:text-slate-300 sm:flex-row sm:items-center sm:justify-end">
-              <label class="font-medium text-slate-700 dark:text-slate-200" for="admin-bookings-rows">Rows per page</label>
-              <div class="relative">
-                <select
-                  id="admin-bookings-rows"
-                  v-model.number="rowsPerPage"
-                  class="w-full rounded border border-slate-300 bg-white px-3 py-1.5 pr-8 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white sm:w-20"
-                >
-                  <option v-for="option in perPageOptions" :key="option" :value="option">
-                    {{ option }}
-                  </option>
-                </select>
-              </div>
-            </div>
+            <RowsPerPageSelect
+              v-model="rowsPerPage"
+              input-id="admin-bookings-rows"
+              :options="perPageOptions"
+            />
           </div>
         </div>
 
@@ -404,9 +315,9 @@ const perPageOptions = [5, 10, 25, 50]
               <td class="mobile-status-cell px-5 py-4 text-center" data-title="Status">
                 <span
                   class="inline-flex rounded-full px-3 py-1 text-xs font-semibold"
-                  :class="badgeClasses[booking.normalizedStatus] ?? 'bg-slate-100 text-slate-600 border-slate-200'"
+                  :class="getBookingStatusClasses(booking.normalizedStatus)"
                 >
-                  {{ statusLabels[booking.normalizedStatus] ?? (booking.normalizedStatus || booking.status) }}
+                  {{ getBookingStatusLabel(booking.normalizedStatus) || booking.status }}
                 </span>
               </td>
               <td class="mobile-action-cell px-5 py-4 text-right" data-title="Aksi">
@@ -426,84 +337,12 @@ const perPageOptions = [5, 10, 25, 50]
           </tbody>
         </table>
 
-        <div
-          class="flex flex-col gap-3 border-t border-slate-100 px-5 py-4 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700"
-        >
-          <div>
-            <span v-if="pageMeta.of">Menampilkan {{ pageMeta.from }}-{{ pageMeta.to }} dari {{ pageMeta.of }} data</span>
-            <span v-else>Menampilkan 0 data</span>
-          </div>
-          <div class="w-full sm:w-auto">
-            <div class="mobile-pagination-compact sm:hidden">
-              <button
-                type="button"
-                class="rounded border border-slate-300 px-3 py-2 text-sm text-slate-600 transition hover:border-slate-400 hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-200"
-                @click="changePage(currentPage - 1)"
-                :disabled="!canGoToPreviousPage"
-              >
-                Sebelumnya
-              </button>
-              <button
-                type="button"
-                class="rounded border border-slate-300 px-3 py-2 text-sm text-slate-600 transition hover:border-slate-400 hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-200"
-                @click="changePage(currentPage + 1)"
-                :disabled="!canGoToNextPage"
-              >
-                Berikutnya
-              </button>
-            </div>
-            <div class="hidden items-center gap-2 sm:flex">
-            <button
-              type="button"
-              class="rounded border border-slate-300 px-3 py-1 text-sm text-slate-600 transition hover:border-slate-400 hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-200"
-              @click="changePage(1)"
-              :disabled="currentPage === 1 || !bookingsList.length"
-            >
-              «
-            </button>
-            <button
-              type="button"
-              class="rounded border border-slate-300 px-3 py-1 text-sm text-slate-600 transition hover:border-slate-400 hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-200"
-              @click="changePage(currentPage - 1)"
-              :disabled="currentPage === 1 || !bookingsList.length"
-            >
-              ‹
-            </button>
-            <template v-if="bookingsList.length">
-              <button
-                v-for="page in pages"
-                :key="`page-${page}`"
-                type="button"
-                class="rounded border px-3 py-1 text-sm transition"
-                :class="
-                  currentPage === page
-                    ? 'border-blue-500 bg-blue-500 text-white'
-                    : 'border-slate-300 text-slate-600 hover:border-slate-400 hover:text-slate-600 dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-200'"
-                :disabled="typeof page !== 'number'"
-                @click="changePage(page)"
-              >
-                {{ page }}
-              </button>
-            </template>
-            <button
-              type="button"
-              class="rounded border border-slate-300 px-3 py-1 text-sm text-slate-600 transition hover:border-slate-400 hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-200"
-              @click="changePage(currentPage + 1)"
-              :disabled="currentPage === pages.length || !bookingsList.length"
-            >
-              ›
-            </button>
-            <button
-              type="button"
-              class="rounded border border-slate-300 px-3 py-1 text-sm text-slate-600 transition hover:border-slate-400 hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-200"
-              @click="changePage(pages.length)"
-              :disabled="currentPage === pages.length || !bookingsList.length"
-            >
-              »
-            </button>
-            </div>
-          </div>
-        </div>
+        <TablePagination
+          :page-meta="pageMeta"
+          :pages="pages"
+          :current-page="currentPage"
+          @change="changePage"
+        />
       </div>
     </div>
   </AuthenticatedLayout>

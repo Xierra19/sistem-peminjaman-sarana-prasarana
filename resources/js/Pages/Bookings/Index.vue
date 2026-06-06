@@ -3,6 +3,11 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import SortableTh from '@/Components/SortableTh.vue'
 import { Head, Link, useForm, router } from '@inertiajs/vue3'
 import { ref, watch, computed, onBeforeUnmount } from 'vue'
+import {
+  getBookingStatusClasses,
+  getBookingStatusLabel,
+  normalizeBookingStatus,
+} from '@/Composables/useBookingStatus'
 import { formatDateTimeToDDMMYY } from '@/Composables/useDateFormatter'
 
 const props = defineProps({
@@ -30,25 +35,6 @@ onBeforeUnmount(() => {
   if (timer) clearTimeout(timer)
 })
 
-const statusLabels = {
-  waiting: 'Menunggu Persetujuan',
-  approved: 'Disetujui',
-  rejected: 'Ditolak',
-  cancelled: 'Dibatalkan',
-}
-
-const statusClasses = {
-  waiting: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
-  approved: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800',
-  rejected: 'bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-800',
-  cancelled: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600',
-}
-
-const normalizeStatus = (status) => {
-  if (!status) return ''
-  return status === 'pending' || status === 'requested' ? 'waiting' : status
-}
-
 const perPageOptions = [5, 10, 25, 50]
 const searchQuery = ref(props.filters.search || '')
 const statusFilter = ref(props.filters.status || '')
@@ -68,7 +54,7 @@ const formatDateTime = (value) => formatDateTimeToDDMMYY(value)
 const cancelForm = useForm({})
 const cancellingId = ref(null)
 
-const canCancelBooking = (booking) => normalizeStatus(booking.status) === 'waiting'
+const canCancelBooking = (booking) => normalizeBookingStatus(booking.status) === 'waiting'
 
 const cancelBooking = (booking) => {
   if (!canCancelBooking(booking)) {
@@ -418,9 +404,9 @@ const changePage = (page) => {
                   <td class="mobile-status-cell px-4 py-3" data-title="Status">
                     <span
                       class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold"
-                      :class="statusClasses[normalizeStatus(booking.status)] ?? 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600'"
+                      :class="getBookingStatusClasses(booking.status)"
                     >
-                      {{ statusLabels[normalizeStatus(booking.status)] ?? booking.status }}
+                      {{ getBookingStatusLabel(booking.status) }}
                     </span>
                   </td>
                   <td class="mobile-action-cell px-4 py-3" data-title="Aksi">
@@ -431,7 +417,7 @@ const changePage = (page) => {
                       >
                         Lihat Detail
                       </Link>
-                      <template v-if="normalizeStatus(booking.status) === 'approved'">
+                      <template v-if="normalizeBookingStatus(booking.status) === 'approved'">
                         <a
                           :href="route('bookings.letter', booking.id)"
                           target="_blank"
@@ -451,10 +437,10 @@ const changePage = (page) => {
                           {{ cancellingId === booking.id ? 'Membatalkan...' : 'Batalkan Permintaan' }}
                         </button>
                       </template>
-                      <template v-else-if="normalizeStatus(booking.status) === 'rejected'">
+                      <template v-else-if="normalizeBookingStatus(booking.status) === 'rejected'">
                         <span class="text-xs font-semibold text-rose-500 dark:text-rose-400">Permintaan ditolak</span>
                       </template>
-                      <template v-else-if="normalizeStatus(booking.status) === 'cancelled'">
+                      <template v-else-if="normalizeBookingStatus(booking.status) === 'cancelled'">
                         <span class="text-xs text-slate-400 dark:text-slate-500">Booking telah dibatalkan</span>
                       </template>
                       <template v-else>

@@ -3,6 +3,11 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import SortableTh from '@/Components/SortableTh.vue'
 import { Head, Link, usePage } from '@inertiajs/vue3'
 import { computed, ref, watch } from 'vue'
+import {
+  getBookingStatusClasses,
+  getBookingStatusLabel,
+  normalizeBookingStatus,
+} from '@/Composables/useBookingStatus'
 import { formatDateTimeToDDMMYY, formatToDDMMYY } from '@/Composables/useDateFormatter'
 import { useTableSort } from '@/Composables/useTableSort'
 
@@ -32,25 +37,6 @@ const props = defineProps({
     }),
   },
 })
-
-const normalizeStatus = (status) => {
-  if (!status) return ''
-  return status === 'pending' || status === 'requested' ? 'waiting' : status
-}
-
-const statusLabels = {
-  approved: 'Disetujui',
-  waiting: 'Menunggu Persetujuan',
-  rejected: 'Ditolak',
-  cancelled: 'Dibatalkan',
-}
-
-const statusBadgeClasses = {
-  approved: 'bg-emerald-100 text-emerald-700 border border-emerald-200',
-  waiting: 'bg-amber-100 text-amber-700 border border-amber-200',
-  rejected: 'bg-rose-100 text-rose-700 border border-rose-200',
-  cancelled: 'bg-slate-100 text-slate-700 border border-slate-200',
-}
 
 const formatDateTime = (value) => formatDateTimeToDDMMYY(value)
 
@@ -352,7 +338,7 @@ const activeFilterChips = computed(() => {
 const recentBookingsList = computed(() =>
   (props.recentBookings ?? []).map((booking) => ({
     ...booking,
-    normalizedStatus: normalizeStatus(booking.status),
+    normalizedStatus: normalizeBookingStatus(booking.status),
   })),
 )
 
@@ -792,9 +778,9 @@ const {
                   <td class="px-4 py-3" data-title="Status">
                     <span
                       class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold capitalize"
-                      :class="statusBadgeClasses[booking.normalizedStatus] ?? 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600'"
+                      :class="getBookingStatusClasses(booking.normalizedStatus)"
                     >
-                      {{ statusLabels[booking.normalizedStatus] ?? (booking.normalizedStatus || booking.status) }}
+                      {{ getBookingStatusLabel(booking.normalizedStatus) || booking.status }}
                     </span>
                   </td>
                 </tr>
