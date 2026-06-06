@@ -10,6 +10,17 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
+        <script>
+            (() => {
+                const storageKey = 'theme';
+                const storedTheme = window.localStorage.getItem(storageKey);
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                const shouldUseDark = storedTheme === 'dark' || (!storedTheme && prefersDark);
+
+                document.documentElement.classList.toggle('dark', shouldUseDark);
+            })();
+        </script>
+
         @routes
         @vite(['resources/js/app.js', 'resources/css/app.css'])
         @inertiaHead

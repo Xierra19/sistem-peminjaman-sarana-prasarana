@@ -6,9 +6,7 @@ import {
     ShieldCheck,
     Sparkles,
     Mail,
-    Phone,
-    Eye,
-    EyeOff
+    Phone
 } from 'lucide-vue-next';
 import DarkModeSwitch from '@/Components/DarkModeSwitch.vue';
 
@@ -78,15 +76,15 @@ const aboutBadges = [
 <template>
     <Head title="Selamat Datang" />
 
-    <div class="relative min-h-screen overflow-hidden bg-white text-slate-900 dark:bg-slate-950 dark:text-white">
+    <div class="relative min-h-screen overflow-hidden bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-white">
         <!-- Background Blur Effects -->
         <div class="absolute inset-0">
-            <div class="absolute -left-10 top-16 hidden h-64 w-64 rounded-full bg-indigo-500/20 blur-[120px] sm:block"></div>
-            <div class="absolute -right-10 bottom-10 h-80 w-80 rounded-full bg-blue-500/20 blur-[140px]"></div>
-            <div class="absolute inset-x-0 top-32 mx-auto h-72 w-[32rem] rounded-full bg-white/5 blur-[160px]"></div>
+            <div class="absolute -left-10 top-16 hidden h-64 w-64 rounded-full bg-indigo-400/10 blur-[120px] sm:block"></div>
+            <div class="absolute -right-10 bottom-10 h-80 w-80 rounded-full bg-blue-400/10 blur-[140px]"></div>
+            <div class="absolute inset-x-0 top-32 mx-auto h-72 w-[32rem] rounded-full bg-white/40 blur-[160px] dark:bg-white/5"></div>
         </div>
 
-        <header class="sticky top-0 z-10 border-b border-slate-200 bg-slate-50/80 backdrop-blur-sm dark:border-white/10 dark:bg-slate-950/80">
+        <header class="sticky top-0 z-10 border-b border-slate-200 bg-white/85 backdrop-blur-sm dark:border-white/10 dark:bg-slate-950/80">
             <div class="container mx-auto flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
                 <div class="flex items-center gap-3 self-start">
                     <img
@@ -96,8 +94,8 @@ const aboutBadges = [
                         loading="lazy"
                     />
                     <div>
-                        <p class="text-sm font-semibold text-indigo-600 dark:text-indigo-200">{{ appName }}</p>
-                        <p class="text-xs font-medium text-indigo-700 dark:text-indigo-300">{{ campusName }}</p>
+                        <p class="text-sm font-semibold text-slate-900 dark:text-indigo-100">{{ appName }}</p>
+                        <p class="text-xs font-medium text-slate-500 dark:text-indigo-300">{{ campusName }}</p>
                     </div>
                 </div>
                 <div class="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
@@ -105,14 +103,14 @@ const aboutBadges = [
                     <Link
                         v-if="props.canRegister"
                         :href="route('register')"
-                        class="w-full rounded-full border border-indigo-200/20 px-4 py-2 text-center text-sm font-semibold text-indigo-200 transition hover:border-indigo-400 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 sm:w-auto"
+                        class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-center text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 dark:border-white/15 dark:bg-white/5 dark:text-white dark:hover:bg-white/10 sm:w-auto"
                     >
                         Daftar Sekarang
                     </Link>
                     <Link
                         v-if="props.canLogin"
                         :href="route('login')"
-                        class="w-full rounded-full bg-indigo-600 px-4 py-2 text-center text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 sm:w-auto"
+                        class="w-full rounded-lg bg-indigo-500 px-4 py-2 text-center text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 sm:w-auto"
                     >
                         Masuk ke Sistem
                     </Link>
@@ -130,21 +128,21 @@ const aboutBadges = [
                     enter-to-class="translate-y-0 opacity-100"
                 >
                     <div class="relative mx-auto max-w-4xl">
-                        <div class="relative overflow-hidden rounded-[32px] border border-slate-200 bg-white px-5 py-10 shadow-2xl shadow-indigo-500/20 backdrop-blur sm:rounded-[40px] sm:px-6 sm:py-12 dark:border-white/10 dark:bg-white/5">
+                        <div class="relative overflow-hidden rounded-[28px] border border-slate-200 bg-white px-5 py-10 shadow-xl shadow-slate-200/80 backdrop-blur sm:px-8 sm:py-14 dark:border-white/10 dark:bg-white/5 dark:shadow-none">
                             <!-- Decorative Blur -->
                             <div aria-hidden="true" class="pointer-events-none absolute inset-0">
-                                <div class="absolute -top-24 left-10 h-56 w-56 rounded-full bg-indigo-200/20 blur-3xl"></div>
-                                <div class="absolute bottom-[-40px] right-0 h-48 w-48 rounded-full bg-purple-300/20 blur-2xl"></div>
+                                <div class="absolute -top-24 left-10 h-56 w-56 rounded-full bg-indigo-200/30 blur-3xl dark:bg-indigo-200/10"></div>
+                                <div class="absolute bottom-[-40px] right-0 h-48 w-48 rounded-full bg-purple-200/30 blur-2xl dark:bg-purple-300/10"></div>
                             </div>
 
                             <div class="relative space-y-6 text-center">
-                                <div class="inline-flex items-center gap-2 rounded-full bg-indigo-100 px-4 py-2 text-center text-xs font-semibold text-indigo-600 shadow-sm shadow-indigo-200/60 sm:text-sm dark:bg-indigo-500/20 dark:text-indigo-200">
+                                <div class="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-4 py-2 text-center text-xs font-semibold text-indigo-600 shadow-sm shadow-indigo-100 sm:text-sm dark:border-indigo-400/20 dark:bg-indigo-500/20 dark:text-indigo-200">
                                     <span class="inline-flex size-2 rounded-full bg-indigo-500"></span>
                                     {{ heroContent.badge }}
                                 </div>
-                                <h1 class="text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl md:text-5xl lg:text-6xl dark:text-white">
+                                <h1 class="text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl md:text-5xl dark:text-white">
                                     {{ campusName }}
-                                    <span class="block bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">{{ heroContent.title }}</span>
+                                    <span class="mt-2 block text-indigo-600 dark:text-indigo-300">{{ heroContent.title }}</span>
                                 </h1>
                                 <p class="mx-auto max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-base md:text-lg dark:text-indigo-100/80">
                                     {{ heroContent.subtitle }}
@@ -153,15 +151,15 @@ const aboutBadges = [
                                     <Link
                                         v-if="props.canRegister"
                                         :href="route('register')"
-                                        class="inline-flex w-full items-center justify-center gap-2 rounded-full border border-indigo-200/20 px-6 py-3 text-base font-semibold text-indigo-200 transition hover:border-indigo-400 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 sm:w-auto"
+                                        class="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-6 py-3 text-base font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 dark:border-white/15 dark:bg-white/5 dark:text-indigo-100 dark:hover:bg-white/10 sm:w-auto"
                                     >
-                                        <Sparkles class="size-4 text-indigo-300" />
+                                        <Sparkles class="size-4 text-indigo-500 dark:text-indigo-300" />
                                         Daftar Sekarang
                                     </Link>
                                     <Link
                                         v-if="props.canLogin"
                                         :href="route('login')"
-                                        class="group relative inline-flex w-full items-center justify-center rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 px-8 py-3 text-base font-semibold text-white shadow-lg shadow-indigo-500/30 transition hover:-translate-y-0.5 hover:from-indigo-700 hover:to-purple-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 sm:w-auto"
+                                        class="group relative inline-flex w-full items-center justify-center rounded-lg bg-indigo-500 px-8 py-3 text-base font-semibold text-white shadow-lg shadow-indigo-500/20 transition hover:-translate-y-0.5 hover:bg-indigo-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 sm:w-auto"
                                     >
                                         <span class="absolute inset-0 rounded-full bg-white/20 opacity-0 transition group-hover:opacity-100"></span>
                                         <span class="relative flex items-center gap-2">
@@ -173,7 +171,7 @@ const aboutBadges = [
                                         </span>
                                     </Link>
                                 </div>
-                                <p v-if="props.canRegister" class="text-xs font-semibold uppercase tracking-wide text-indigo-300">
+                                <p v-if="props.canRegister" class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-indigo-300">
                                     Registrasi hanya tersedia untuk email @student.esaunggul.ac.id.
                                 </p>
                             </div>
@@ -183,7 +181,7 @@ const aboutBadges = [
             </section>
 
             <!-- Features Section -->
-            <section class="container mx-auto px-4 py-16">
+            <section class="container mx-auto px-4 py-12 md:py-16">
                 <div class="mx-auto max-w-6xl">
                     <div class="mb-12 text-center">
                         <h2 class="mb-4 text-2xl font-semibold text-slate-900 dark:text-white">Fitur Utama</h2>
@@ -195,7 +193,7 @@ const aboutBadges = [
                         <article
                             v-for="feature in features"
                             :key="feature.title"
-                            class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:bg-slate-50 hover:shadow-lg dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
+                            class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:bg-slate-50 hover:shadow-md dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
                         >
                             <div class="mb-4 flex size-12 items-center justify-center rounded-lg bg-indigo-500/20">
                                 <component :is="feature.icon" class="size-6 text-indigo-600 dark:text-indigo-300" />
@@ -210,7 +208,7 @@ const aboutBadges = [
             <!-- About Section -->
             <section class="container mx-auto px-4 pb-16">
                 <div class="mx-auto max-w-4xl">
-                    <div class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg dark:border-white/10 dark:bg-white/5">
+                    <div class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg shadow-slate-200/70 dark:border-white/10 dark:bg-white/5 dark:shadow-none">
                         <div class="grid gap-8 md:grid-cols-2">
                             <div class="relative h-48 md:h-full">
                                 <img

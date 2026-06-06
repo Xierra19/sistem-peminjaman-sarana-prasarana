@@ -4,6 +4,7 @@ import './bootstrap'
 import { createInertiaApp } from '@inertiajs/vue3'
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers'
 import { createApp, h } from 'vue'
+import { initializeDarkMode } from '@/Composables/useDarkMode'
 import { ZiggyVue } from '../../vendor/tightenco/ziggy' // ← tambah ini
 import { Ziggy } from './ziggy'
 
@@ -12,6 +13,8 @@ if (typeof window !== 'undefined') {
 }
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel'
+
+initializeDarkMode()
 
 createInertiaApp({
   title: (title) => `${title} - ${appName}`,
