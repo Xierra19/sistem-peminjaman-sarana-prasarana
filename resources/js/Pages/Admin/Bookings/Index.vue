@@ -55,6 +55,7 @@ const summary = computed(() => {
     approved: list.filter((b) => b.normalizedStatus === 'approved').length,
     rejected: list.filter((b) => b.normalizedStatus === 'rejected').length,
     cancelled: list.filter((b) => b.normalizedStatus === 'cancelled').length,
+    expired: list.filter((b) => b.normalizedStatus === 'expired').length,
   }
 })
 
@@ -145,9 +146,9 @@ const perPageOptions = [5, 10, 25, 50]
           <p class="mt-2 text-xs text-emerald-500 dark:text-emerald-400">Sudah mendapat persetujuan</p>
         </div>
         <div class="rounded-2xl border border-rose-200 bg-white p-4 shadow-sm dark:border-rose-800 dark:bg-rose-900/30">
-          <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-rose-500 dark:text-rose-300">Ditolak / Batal</p>
-          <p class="mt-3 text-3xl font-semibold text-rose-600 dark:text-rose-400">{{ summary.rejected + summary.cancelled }}</p>
-          <p class="mt-2 text-xs text-rose-500 dark:text-rose-400">Termasuk booking yang dibatalkan</p>
+          <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-rose-500 dark:text-rose-300">Status Final Lain</p>
+          <p class="mt-3 text-3xl font-semibold text-rose-600 dark:text-rose-400">{{ summary.rejected + summary.cancelled + summary.expired }}</p>
+          <p class="mt-2 text-xs text-rose-500 dark:text-rose-400">Ditolak, dibatalkan, atau kedaluwarsa</p>
       </div>
       </div>
 

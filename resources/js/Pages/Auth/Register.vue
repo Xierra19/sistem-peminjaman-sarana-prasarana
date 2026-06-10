@@ -103,27 +103,27 @@ const submit = () => {
                         </ul>
                     </section>
 
-                    <section class="rounded-[32px] bg-white p-6 sm:p-8 text-slate-900 shadow-2xl ring-1 ring-slate-100 lg:p-10">
+                    <section class="rounded-[32px] bg-white p-6 text-slate-900 shadow-2xl ring-1 ring-slate-100 transition-colors sm:p-8 lg:p-10 dark:bg-slate-900/95 dark:text-slate-100 dark:ring-white/10">
                         <div class="mb-8 space-y-2">
-                            <p class="text-sm font-semibold uppercase tracking-[0.35em] text-indigo-500">Daftar akun</p>
-                            <h2 class="text-3xl font-semibold text-slate-900">Selangkah lagi untuk reservasi</h2>
-                            <p class="text-sm text-slate-500">
+                            <p class="text-sm font-semibold uppercase tracking-[0.35em] text-indigo-500 dark:text-indigo-300">Daftar akun</p>
+                            <h2 class="text-3xl font-semibold text-slate-900 dark:text-white">Selangkah lagi untuk reservasi</h2>
+                            <p class="text-sm text-slate-500 dark:text-slate-400">
                                 Lengkapi data diri menggunakan email kampus resmi Anda.
                             </p>
                         </div>
 
                         <form class="space-y-5" @submit.prevent="submit">
                             <div>
-                                <label for="name" class="text-sm font-medium text-slate-700">Nama lengkap</label>
+                                <label for="name" class="text-sm font-medium text-slate-700 dark:text-slate-300">Nama lengkap</label>
                                 <div class="relative mt-2">
-                                    <User class="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+                                    <User class="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 dark:text-slate-500" aria-hidden="true" />
                                     <input
                                         id="name"
                                         v-model="form.name"
                                         type="text"
                                         autocomplete="name"
                                         placeholder="Nama sesuai data kampus"
-                                        class="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/60 pl-12 pr-4 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100"
+                                        class="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/60 pl-12 pr-4 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-indigo-400 dark:focus:bg-slate-800 dark:focus:ring-indigo-500/20"
                                         :class="{ 'border-rose-500': form.errors.name }"
                                         :aria-invalid="!!form.errors.name"
                                         :aria-describedby="form.errors.name ? 'name-error' : undefined"
@@ -138,9 +138,9 @@ const submit = () => {
                             </div>
 
                             <div>
-                                <label for="email" class="text-sm font-medium text-slate-700">Email kampus</label>
+                                <label for="email" class="text-sm font-medium text-slate-700 dark:text-slate-300">Email kampus</label>
                                 <div class="relative mt-2">
-                                    <Mail class="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+                                    <Mail class="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 dark:text-slate-500" aria-hidden="true" />
                                     <input
                                         id="email"
                                         v-model="form.email"
@@ -149,14 +149,14 @@ const submit = () => {
                                         pattern="^[^@\s]+@student\.esaunggul\.ac\.id$"
                                         title="Gunakan email student.esaunggul.ac.id"
                                         placeholder="nama@student.esaunggul.ac.id"
-                                        class="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/60 pl-12 pr-4 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100"
+                                        class="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/60 pl-12 pr-4 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-indigo-400 dark:focus:bg-slate-800 dark:focus:ring-indigo-500/20"
                                         :class="{ 'border-rose-500': form.errors.email }"
                                         :aria-invalid="!!form.errors.email"
                                         :aria-describedby="form.errors.email ? 'email-error' : undefined"
                                         required
                                     />
                                 </div>
-                                <p class="mt-2 text-xs font-medium text-indigo-600">Hanya alamat @student.esaunggul.ac.id yang dapat melakukan registrasi.</p>
+                                <p class="mt-2 text-xs font-medium text-indigo-600 dark:text-indigo-300">Hanya alamat @student.esaunggul.ac.id yang dapat melakukan registrasi.</p>
                                 <p v-if="form.errors.email" id="email-error" class="mt-2 flex items-center gap-2 text-sm text-rose-500">
                                     <AlertCircle class="h-4 w-4 flex-shrink-0" />
                                     {{ form.errors.email }}
@@ -164,9 +164,9 @@ const submit = () => {
                             </div>
 
                             <div>
-                                <label for="phone" class="text-sm font-medium text-slate-700">Nomor telepon aktif</label>
+                                <label for="phone" class="text-sm font-medium text-slate-700 dark:text-slate-300">Nomor telepon aktif</label>
                                 <div class="relative mt-2">
-                                    <Phone class="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+                                    <Phone class="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 dark:text-slate-500" aria-hidden="true" />
                                     <input
                                         id="phone"
                                         v-model="form.phone"
@@ -175,14 +175,14 @@ const submit = () => {
                                         pattern="^(?:\+62\d{8,13}|0\d{8,13})$"
                                         title="Gunakan nomor Indonesia diawali 0 atau +62"
                                         placeholder="Contoh: 081234567890"
-                                        class="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/60 pl-12 pr-4 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100"
+                                        class="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/60 pl-12 pr-4 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-indigo-400 dark:focus:bg-slate-800 dark:focus:ring-indigo-500/20"
                                         :class="{ 'border-rose-500': form.errors.phone }"
                                         :aria-invalid="!!form.errors.phone"
                                         :aria-describedby="form.errors.phone ? 'phone-error' : undefined"
                                         required
                                     />
                                 </div>
-                                <p class="mt-2 text-xs text-slate-500">Pastikan nomor dapat dihubungi saat admin memverifikasi.</p>
+                                <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Pastikan nomor dapat dihubungi saat admin memverifikasi.</p>
                                 <p v-if="form.errors.phone" id="phone-error" class="mt-2 flex items-center gap-2 text-sm text-rose-500">
                                     <AlertCircle class="h-4 w-4 flex-shrink-0" />
                                     {{ form.errors.phone }}
@@ -190,16 +190,16 @@ const submit = () => {
                             </div>
 
                             <div>
-                                <label for="password" class="text-sm font-medium text-slate-700">Password</label>
+                                <label for="password" class="text-sm font-medium text-slate-700 dark:text-slate-300">Password</label>
                                 <div class="relative mt-2">
-                                    <Lock class="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+                                    <Lock class="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 dark:text-slate-500" aria-hidden="true" />
                                     <input
                                         id="password"
                                         v-model="form.password"
                                         :type="showPassword ? 'text' : 'password'"
                                         autocomplete="new-password"
                                         placeholder="Minimal 8 karakter"
-                                        class="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/60 pl-12 pr-12 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100"
+                                        class="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/60 pl-12 pr-12 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-indigo-400 dark:focus:bg-slate-800 dark:focus:ring-indigo-500/20"
                                         :class="{ 'border-rose-500': form.errors.password }"
                                         :aria-invalid="!!form.errors.password"
                                         :aria-describedby="form.errors.password ? 'password-error' : undefined"
@@ -207,7 +207,7 @@ const submit = () => {
                                     />
                                     <button
                                         type="button"
-                                        class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-600"
+                                        class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
                                         :aria-label="showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'"
                                         @click="showPassword = !showPassword"
                                     >
@@ -215,7 +215,7 @@ const submit = () => {
                                         <Eye v-else class="h-5 w-5" />
                                     </button>
                                 </div>
-                                <p class="mt-2 text-xs text-slate-500">Gunakan kombinasi huruf besar, kecil, dan angka.</p>
+                                <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Gunakan kombinasi huruf besar, kecil, dan angka.</p>
                                 <p v-if="form.errors.password" id="password-error" class="mt-2 flex items-center gap-2 text-sm text-rose-500">
                                     <AlertCircle class="h-4 w-4 flex-shrink-0" />
                                     {{ form.errors.password }}
@@ -223,16 +223,16 @@ const submit = () => {
                             </div>
 
                             <div>
-                                <label for="password_confirmation" class="text-sm font-medium text-slate-700">Konfirmasi password</label>
+                                <label for="password_confirmation" class="text-sm font-medium text-slate-700 dark:text-slate-300">Konfirmasi password</label>
                                 <div class="relative mt-2">
-                                    <Lock class="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+                                    <Lock class="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 dark:text-slate-500" aria-hidden="true" />
                                     <input
                                         id="password_confirmation"
                                         v-model="form.password_confirmation"
                                         :type="showConfirmPassword ? 'text' : 'password'"
                                         autocomplete="new-password"
                                         placeholder="Ulangi password"
-                                        class="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/60 pl-12 pr-12 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100"
+                                        class="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/60 pl-12 pr-12 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-indigo-400 dark:focus:bg-slate-800 dark:focus:ring-indigo-500/20"
                                         :class="{ 'border-rose-500': form.errors.password_confirmation }"
                                         :aria-invalid="!!form.errors.password_confirmation"
                                         :aria-describedby="form.errors.password_confirmation ? 'password-confirmation-error' : undefined"
@@ -240,7 +240,7 @@ const submit = () => {
                                     />
                                     <button
                                         type="button"
-                                        class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-600"
+                                        class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
                                         :aria-label="showConfirmPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'"
                                         @click="showConfirmPassword = !showConfirmPassword"
                                     >
@@ -257,7 +257,7 @@ const submit = () => {
                             <button
                                 type="submit"
                                 :disabled="form.processing"
-                                class="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition hover:bg-indigo-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-200 disabled:cursor-not-allowed disabled:opacity-60 disabled:pointer-events-none"
+                                class="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition hover:bg-indigo-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-200 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-60 dark:shadow-indigo-950/50 dark:focus-visible:ring-indigo-500/30"
                             >
                                 <svg v-if="form.processing" class="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -268,15 +268,15 @@ const submit = () => {
                             </button>
                         </form>
 
-                        <p class="mt-8 text-center text-sm text-slate-500">
+                        <p class="mt-8 text-center text-sm text-slate-500 dark:text-slate-400">
                             Sudah punya akun?
-                            <Link :href="route('login')" class="font-semibold text-indigo-600 hover:text-indigo-500">
+                            <Link :href="route('login')" class="font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-300 dark:hover:text-indigo-200">
                                 Masuk sekarang
                             </Link>
                         </p>
 
-                        <p class="mt-4 text-center text-xs text-slate-400">
-                            <Link href="/" class="font-semibold text-indigo-500 hover:text-indigo-400">
+                        <p class="mt-4 text-center text-xs text-slate-400 dark:text-slate-500">
+                            <Link href="/" class="font-semibold text-indigo-500 hover:text-indigo-400 dark:text-indigo-300 dark:hover:text-indigo-200">
                                 Kembali ke beranda
                             </Link>
                         </p>

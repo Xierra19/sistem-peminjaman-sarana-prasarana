@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\DB;
 
 use Inertia\Inertia;
 use App\Notifications\BookingRequestedNotification;
+use App\Services\ExpirePendingBookings;
 
 class BookingController extends Controller
 {
@@ -113,7 +114,7 @@ class BookingController extends Controller
         ]);
 
         $latestDecisionLog = $booking->logs
-            ->filter(fn (LogHistory $log) => in_array($log->action, ['approved', 'rejected', 'cancelled']))
+            ->filter(fn (LogHistory $log) => in_array($log->action, ['approved', 'rejected', 'cancelled', 'expired'], true))
             ->last();
 
         return Inertia::render('Bookings/Show', [
@@ -306,7 +307,7 @@ class BookingController extends Controller
         }
 
         $bookings = $room->bookings()
-            ->whereNotIn('status', ['rejected', 'cancelled'])
+            ->whereNotIn('status', ['rejected', 'cancelled', 'expired'])
             ->get();
 
         $dailyBookings = $this->buildDailyBookings($bookings, $queryStart, $queryEnd);
@@ -397,7 +398,7 @@ class BookingController extends Controller
         $rangeEnd = Carbon::parse($schedulePayload['schedule_end_date'])->endOfDay();
 
         $existingBookings = $room->bookings()
-            ->whereNotIn('status', ['rejected', 'cancelled'])
+            ->whereNotIn('status', ['rejected', 'cancelled', 'expired'])
             ->get();
 
         foreach ($existingBookings as $booking) {
@@ -478,7 +479,7 @@ class BookingController extends Controller
         return response()->download(Storage::disk('public')->path($booking->attachment), basename($booking->attachment));
     }
 
-    public function cancel(Booking $booking)
+    public function cancel(Booking $booking, ExpirePendingBookings $expirePendingBookings)
     {
         $user = Auth::user();
 
@@ -486,12 +487,21 @@ class BookingController extends Controller
             abort(403);
         }
 
+        if ($expirePendingBookings->expireIfPastDue($booking)) {
+            return redirect()->back()->with(
+                'error',
+                'Permintaan sudah kedaluwarsa karena hari peminjaman terakhir telah berakhir.'
+            );
+        }
+
         $cancellableStatuses = ['waiting', 'pending', 'requested'];
 
         if (! in_array($booking->status, $cancellableStatuses, true)) {
-            $message = $booking->status === 'cancelled'
-                ? 'Booking sudah dibatalkan sebelumnya.'
-                : 'Booking tidak dapat dibatalkan karena sudah diproses oleh admin.';
+            $message = match ($booking->status) {
+                'cancelled' => 'Booking sudah dibatalkan sebelumnya.',
+                'expired' => 'Permintaan sudah kedaluwarsa dan tidak dapat dibatalkan.',
+                default => 'Booking tidak dapat dibatalkan karena sudah diproses oleh admin.',
+            };
 
             return redirect()->back()->with('error', $message);
         }

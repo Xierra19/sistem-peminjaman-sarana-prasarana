@@ -25,7 +25,7 @@ const formatDateTime = (value) => formatDateTimeToDDMMYY(value)
 const normalizedStatus = computed(() => normalizeBookingStatus(props.booking?.status))
 
 const decisionStatus = computed(() => normalizeBookingStatus(props.latestDecisionLog?.action))
-const hasDecision = computed(() => ['approved', 'rejected', 'cancelled'].includes(decisionStatus.value))
+const hasDecision = computed(() => ['approved', 'rejected', 'cancelled', 'expired'].includes(decisionStatus.value))
 
 const decisionNote = computed(() => {
   const raw = props.latestDecisionLog?.description ?? ''
@@ -167,6 +167,9 @@ const cancelBooking = () => {
               </template>
               <p v-else-if="normalizedStatus === 'cancelled'" class="text-gray-500 dark:text-slate-400">
                 Peminjaman ini telah dibatalkan sehingga surat peminjaman tidak tersedia.
+              </p>
+              <p v-else-if="normalizedStatus === 'expired'" class="text-orange-600 dark:text-orange-400">
+                Permintaan telah kedaluwarsa karena belum diproses hingga hari peminjaman terakhir berakhir.
               </p>
               <p v-else class="text-gray-400 dark:text-slate-500">
                 Surat peminjaman tersedia setelah permintaan disetujui oleh admin.

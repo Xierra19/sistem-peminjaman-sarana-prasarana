@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Carbon\Carbon;
+use Carbon\CarbonInterface;
 
 /**
  * @property int $id
@@ -143,6 +144,23 @@ class Booking extends Model
     public function getScheduleEndClockValue(): string
     {
         return $this->schedule_end_clock ?: Carbon::parse($this->end_time)->format('H:i');
+    }
+
+    public function getExpirationDateValue(): Carbon
+    {
+        return $this->getScheduleEndDateValue()
+            ->setTimezone(\App\Services\ExpirePendingBookings::TIMEZONE)
+            ->startOfDay()
+            ->addDay();
+    }
+
+    public function isPastExpirationCutoff(?CarbonInterface $now = null): bool
+    {
+        $currentTime = ($now ?? now(\App\Services\ExpirePendingBookings::TIMEZONE))
+            ->copy()
+            ->setTimezone(\App\Services\ExpirePendingBookings::TIMEZONE);
+
+        return $currentTime->gte($this->getExpirationDateValue());
     }
 
     public function getScheduleSummaryAttribute(): string

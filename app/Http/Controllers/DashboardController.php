@@ -39,6 +39,7 @@ class DashboardController extends Controller
                     'waiting' => $bookings->whereIn('status', $waitingStatuses)->count(),
                     'rejected' => $bookings->where('status', 'rejected')->count(),
                     'cancelled' => $bookings->where('status', 'cancelled')->count(),
+                    'expired' => $bookings->where('status', 'expired')->count(),
                 ];
             }
 
@@ -70,6 +71,7 @@ class DashboardController extends Controller
             'waiting' => $bookings->whereIn('status', $waitingStatuses)->count(),
             'rejected' => $bookings->where('status', 'rejected')->count(),
             'cancelled' => $bookings->where('status', 'cancelled')->count(),
+            'expired' => $bookings->where('status', 'expired')->count(),
         ];
 
         $rooms = Room::query()

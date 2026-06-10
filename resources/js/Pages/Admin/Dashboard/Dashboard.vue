@@ -40,6 +40,7 @@ const props = defineProps({
       waiting: 0,
       rejected: 0,
       cancelled: 0,
+      expired: 0,
     }),
   },
 })
@@ -87,6 +88,10 @@ const matchesStatusFilter = (booking, status) => {
 
   if (status === 'cancelled') {
     return normalizedStatus === 'cancelled' || rawStatus === 'cancelled'
+  }
+
+  if (status === 'expired') {
+    return normalizedStatus === 'expired' || rawStatus === 'expired'
   }
 
   return normalizedStatus === status || rawStatus === status
@@ -197,6 +202,7 @@ const summary = computed(() => ({
   waiting: props.statusSummary?.waiting ?? 0,
   rejected: props.statusSummary?.rejected ?? 0,
   cancelled: props.statusSummary?.cancelled ?? 0,
+  expired: props.statusSummary?.expired ?? 0,
 }))
 
 const formatDateTime = (value) => formatDateTimeToDDMMYY(value)
@@ -217,6 +223,7 @@ const statusChartData = computed(() => {
     waiting: 0,
     rejected: 0,
     cancelled: 0,
+    expired: 0,
   }
   
   bookings.forEach(b => {
@@ -227,14 +234,15 @@ const statusChartData = computed(() => {
   })
 
   return {
-    labels: ['Disetujui', 'Menunggu', 'Ditolak', 'Dibatalkan'],
+    labels: ['Disetujui', 'Menunggu', 'Ditolak', 'Dibatalkan', 'Kedaluwarsa'],
     datasets: [{
-      data: [counts.approved, counts.waiting, counts.rejected, counts.cancelled],
+      data: [counts.approved, counts.waiting, counts.rejected, counts.cancelled, counts.expired],
       backgroundColor: [
         '#10b981', // emerald-500
         '#f59e0b', // amber-500
         '#f43f5e', // rose-500
         '#8b5cf6', // violet-500
+        '#f97316', // orange-500
       ],
       borderWidth: 1,
     }],
@@ -328,7 +336,7 @@ onBeforeUnmount(() => {
           </Link>
         </div>
 
-        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
           <div class="rounded-2xl border border-blue-100 bg-blue-50 p-4 text-blue-800 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-100">
             <div class="text-xs font-medium uppercase tracking-wide">Total Pengajuan</div>
             <div class="mt-2 text-3xl font-semibold">{{ summary.total }}</div>
@@ -348,6 +356,10 @@ onBeforeUnmount(() => {
           <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-slate-700 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-200">
             <div class="text-xs font-medium uppercase tracking-wide">Dibatalkan</div>
             <div class="mt-2 text-3xl font-semibold">{{ summary.cancelled }}</div>
+          </div>
+          <div class="rounded-2xl border border-orange-100 bg-orange-50 p-4 text-orange-700 dark:border-orange-800 dark:bg-orange-900/30 dark:text-orange-100">
+            <div class="text-xs font-medium uppercase tracking-wide">Kedaluwarsa</div>
+            <div class="mt-2 text-3xl font-semibold">{{ summary.expired }}</div>
           </div>
         </div>
 
@@ -422,6 +434,7 @@ onBeforeUnmount(() => {
                     <option value="waiting">Menunggu</option>
                     <option value="rejected">Ditolak</option>
                     <option value="cancelled">Dibatalkan</option>
+                    <option value="expired">Kedaluwarsa</option>
                   </select>
                   <span class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-gray-400">
                     <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">

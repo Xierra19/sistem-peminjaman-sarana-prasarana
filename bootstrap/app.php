@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Console\Scheduling\Schedule;
 use Inertia\Inertia;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
@@ -15,7 +16,14 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withCommands([
         \App\Console\Commands\RefreshOtpData::class,
+        \App\Console\Commands\ExpirePendingBookings::class,
     ])
+    ->withSchedule(function (Schedule $schedule): void {
+        $schedule
+            ->command('bookings:expire-pending')
+            ->dailyAt('00:00')
+            ->timezone(\App\Services\ExpirePendingBookings::TIMEZONE);
+    })
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,

@@ -55,6 +55,8 @@
         'waiting' => 'Menunggu Persetujuan',
         'approved' => 'Disetujui',
         'rejected' => 'Ditolak',
+        'cancelled' => 'Dibatalkan',
+        'expired' => 'Kedaluwarsa',
     ];
     $normalizeStatus = static fn (?string $status): ?string => in_array($status, ['pending', 'requested'], true) ? 'waiting' : $status;
 @endphp

@@ -87,34 +87,34 @@ const submit = () => {
                         </ul>
                     </section>
 
-                    <section class="rounded-[32px] bg-white p-6 text-slate-900 shadow-2xl ring-1 ring-slate-100 sm:p-8 lg:p-10">
+                    <section class="rounded-[32px] bg-white p-6 text-slate-900 shadow-2xl ring-1 ring-slate-100 transition-colors sm:p-8 lg:p-10 dark:bg-slate-900/95 dark:text-slate-100 dark:ring-white/10">
                         <div class="mb-8 space-y-2">
-                            <p class="text-sm font-semibold uppercase tracking-[0.35em] text-indigo-500">Lupa password</p>
-                            <h2 class="text-3xl font-semibold text-slate-900">Kirim ulang tautan reset</h2>
-                            <p class="text-sm text-slate-500">
+                            <p class="text-sm font-semibold uppercase tracking-[0.35em] text-indigo-500 dark:text-indigo-300">Lupa password</p>
+                            <h2 class="text-3xl font-semibold text-slate-900 dark:text-white">Kirim ulang tautan reset</h2>
+                            <p class="text-sm text-slate-500 dark:text-slate-400">
                                 Masukkan email kampus Anda dan kami akan kirim instruksi untuk membuat kata sandi baru.
                             </p>
                         </div>
 
                         <div
                             v-if="props.status"
-                            class="mb-6 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-medium text-emerald-800"
+                            class="mb-6 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-medium text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200"
                         >
                             {{ props.status }}
                         </div>
 
                         <form class="space-y-5" @submit.prevent="submit">
                             <div>
-                                <label for="email" class="text-sm font-medium text-slate-700">Email kampus</label>
+                                <label for="email" class="text-sm font-medium text-slate-700 dark:text-slate-300">Email kampus</label>
                                 <div class="relative mt-2">
-                                    <Mail class="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                                    <Mail class="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                                     <input
                                         id="email"
                                         v-model="form.email"
                                         type="email"
                                         autocomplete="username"
                                         placeholder="nama@student.esaunggul.ac.id"
-                                        class="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/60 pl-12 pr-4 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100"
+                                        class="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/60 pl-12 pr-4 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-indigo-400 dark:focus:bg-slate-800 dark:focus:ring-indigo-500/20"
                                         required
                                         autofocus
                                     />
@@ -127,22 +127,22 @@ const submit = () => {
                             <button
                                 type="submit"
                                 :disabled="form.processing"
-                                class="flex h-12 w-full items-center justify-center rounded-2xl bg-indigo-600 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition hover:bg-indigo-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-200 disabled:cursor-not-allowed disabled:opacity-60"
+                                class="flex h-12 w-full items-center justify-center rounded-2xl bg-indigo-600 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition hover:bg-indigo-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-200 disabled:cursor-not-allowed disabled:opacity-60 dark:shadow-indigo-950/50 dark:focus-visible:ring-indigo-500/30"
                             >
                                 <span v-if="form.processing">Mengirim tautan…</span>
                                 <span v-else>Kirim Tautan Reset Password </span>
                             </button>
                         </form>
 
-                        <p class="mt-8 text-center text-sm text-slate-500">
+                        <p class="mt-8 text-center text-sm text-slate-500 dark:text-slate-400">
                             Ingat kata sandi?
-                            <Link :href="route('login')" class="font-semibold text-indigo-600 hover:text-indigo-500">
+                            <Link :href="route('login')" class="font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-300 dark:hover:text-indigo-200">
                                 Kembali ke halaman masuk
                             </Link>
                         </p>
 
-                        <p class="mt-4 text-center text-xs text-slate-400">
-                            <Link href="/" class="font-semibold text-indigo-500 hover:text-indigo-400">
+                        <p class="mt-4 text-center text-xs text-slate-400 dark:text-slate-500">
+                            <Link href="/" class="font-semibold text-indigo-500 hover:text-indigo-400 dark:text-indigo-300 dark:hover:text-indigo-200">
                                 Kembali ke beranda
                             </Link>
                         </p>

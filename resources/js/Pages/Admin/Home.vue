@@ -86,9 +86,9 @@ const dynamicSubtitle = computed(() => {
                 <div class="mt-1 text-2xl font-semibold text-emerald-700 dark:text-emerald-100">{{ roomSummary?.approved ?? 0 }}</div>
               </div>
               <div class="rounded-2xl bg-rose-50 p-4 dark:border dark:border-rose-800 dark:bg-rose-900/30">
-                <div class="text-xs uppercase tracking-wide text-rose-500 dark:text-rose-300">Ditolak/Batal</div>
+                <div class="text-xs uppercase tracking-wide text-rose-500 dark:text-rose-300">Final Lain</div>
                 <div class="mt-1 text-2xl font-semibold text-rose-700 dark:text-rose-100">
-                  {{ (roomSummary?.rejected ?? 0) + (roomSummary?.cancelled ?? 0) }}
+                  {{ (roomSummary?.rejected ?? 0) + (roomSummary?.cancelled ?? 0) + (roomSummary?.expired ?? 0) }}
                 </div>
               </div>
             </div>

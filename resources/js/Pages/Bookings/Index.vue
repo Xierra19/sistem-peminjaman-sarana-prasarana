@@ -277,6 +277,7 @@ const changePage = (page) => {
                     <option value="approved">Disetujui</option>
                     <option value="rejected">Ditolak</option>
                     <option value="cancelled">Dibatalkan</option>
+                    <option value="expired">Kedaluwarsa</option>
                   </select>
                   <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-400">
                     <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
@@ -442,6 +443,9 @@ const changePage = (page) => {
                       </template>
                       <template v-else-if="normalizeBookingStatus(booking.status) === 'cancelled'">
                         <span class="text-xs text-slate-400 dark:text-slate-500">Booking telah dibatalkan</span>
+                      </template>
+                      <template v-else-if="normalizeBookingStatus(booking.status) === 'expired'">
+                        <span class="text-xs font-semibold text-orange-600 dark:text-orange-400">Permintaan telah kedaluwarsa</span>
                       </template>
                       <template v-else>
                         <span class="text-xs text-slate-400 dark:text-slate-500">Menunggu persetujuan admin</span>

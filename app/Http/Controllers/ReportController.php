@@ -13,7 +13,7 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class ReportController extends Controller
 {
-    private const STATUS_OPTIONS = ['waiting', 'approved', 'rejected', 'cancelled'];
+    private const STATUS_OPTIONS = ['waiting', 'approved', 'rejected', 'cancelled', 'expired'];
 
     public function index(Request $request)
     {
@@ -42,6 +42,7 @@ class ReportController extends Controller
             'waiting' => $bookings->whereIn('status', ['waiting', 'pending'])->count(),
             'rejected' => $bookings->where('status', 'rejected')->count(),
             'cancelled' => $bookings->where('status', 'cancelled')->count(),
+            'expired' => $bookings->where('status', 'expired')->count(),
         ];
 
         return Inertia::render('Admin/Reports/Index', [

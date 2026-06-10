@@ -45,6 +45,8 @@ class BookingExport implements FromCollection, WithHeadings, WithMapping
             'waiting' => 'Menunggu Persetujuan',
             'approved' => 'Disetujui',
             'rejected' => 'Ditolak',
+            'cancelled' => 'Dibatalkan',
+            'expired' => 'Kedaluwarsa',
         ];
 
         $status = $this->normalizeStatus($booking->status);

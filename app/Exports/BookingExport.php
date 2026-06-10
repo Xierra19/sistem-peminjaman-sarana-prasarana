@@ -36,6 +36,16 @@ class BookingExport implements FromCollection, WithHeadings, WithMapping, Should
 
     public function map($booking): array
     {
+        $statusLabels = [
+            'waiting' => 'Menunggu Persetujuan',
+            'pending' => 'Menunggu Persetujuan',
+            'requested' => 'Menunggu Persetujuan',
+            'approved' => 'Disetujui',
+            'rejected' => 'Ditolak',
+            'cancelled' => 'Dibatalkan',
+            'expired' => 'Kedaluwarsa',
+        ];
+
         return [
             $booking->id,
             optional($booking->user)->name,
@@ -47,7 +57,7 @@ class BookingExport implements FromCollection, WithHeadings, WithMapping, Should
             $booking->description,
             $booking->schedule_mode_label,
             $booking->schedule_summary,
-            $booking->status,
+            $statusLabels[$booking->status] ?? $booking->status,
         ];
     }
 }

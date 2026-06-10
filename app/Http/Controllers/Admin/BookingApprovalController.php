@@ -16,6 +16,7 @@ use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use App\Services\ExpirePendingBookings;
 
 class BookingApprovalController extends Controller
 {
@@ -29,9 +30,10 @@ class BookingApprovalController extends Controller
                 CASE
                     WHEN status IN ('waiting','pending') THEN 1
                     WHEN status = 'approved' THEN 2
-                    WHEN status = 'cancelled' THEN 3
-                    WHEN status = 'rejected' THEN 4
-                    ELSE 5
+                    WHEN status = 'expired' THEN 3
+                    WHEN status = 'cancelled' THEN 4
+                    WHEN status = 'rejected' THEN 5
+                    ELSE 6
                 END
             ")
             ->orderBy('start_time')
@@ -63,7 +65,7 @@ class BookingApprovalController extends Controller
     /**
      * Update the status of a booking (approve / reject).
      */
-    public function updateStatus(Request $request, Booking $booking)
+    public function updateStatus(Request $request, Booking $booking, ExpirePendingBookings $expirePendingBookings)
     {
         $validator = Validator::make(
             $request->all(),
@@ -81,6 +83,21 @@ class BookingApprovalController extends Controller
         });
 
         $data = $validator->validate();
+
+        if ($expirePendingBookings->expireIfPastDue($booking)) {
+            return back()
+                ->withErrors(['status' => 'Permintaan sudah kedaluwarsa karena hari peminjaman terakhir telah berakhir.'])
+                ->with('error', 'Permintaan sudah kedaluwarsa dan tidak dapat diproses.');
+        }
+
+        if (
+            in_array($data['status'], ['approved', 'rejected'], true)
+            && ! in_array($booking->status, ['waiting', 'pending', 'requested'], true)
+        ) {
+            return back()
+                ->withErrors(['status' => 'Hanya booking yang masih menunggu yang dapat disetujui atau ditolak.'])
+                ->with('error', 'Status booking sudah final dan tidak dapat diproses kembali.');
+        }
 
         if ($data['status'] === 'cancelled' && $booking->status !== 'approved') {
             return back()

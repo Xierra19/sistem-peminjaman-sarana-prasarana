@@ -155,6 +155,9 @@ const submitApproval = (status) => {
               <p v-else-if="normalizedStatus === 'cancelled'" class="text-gray-500 dark:text-slate-400">
                 Booking telah dibatalkan. Surat peminjaman tidak tersedia.
               </p>
+              <p v-else-if="normalizedStatus === 'expired'" class="text-orange-600 dark:text-orange-400">
+                Permintaan kedaluwarsa karena hari peminjaman terakhir telah berakhir.
+              </p>
               <p v-else class="text-gray-400 dark:text-slate-500">Surat peminjaman tersedia setelah booking disetujui.</p>
             </div>
           </section>
@@ -208,7 +211,9 @@ const submitApproval = (status) => {
                 </button>
               </div>
               <p v-if="actionsLocked" class="text-xs text-gray-400 dark:text-slate-500">
-                Status booking sudah final. Tidak dapat melakukan tindakan lanjutan.
+                {{ normalizedStatus === 'expired'
+                  ? 'Permintaan sudah kedaluwarsa dan tidak dapat diproses.'
+                  : 'Status booking sudah final. Tidak dapat melakukan tindakan lanjutan.' }}
               </p>
             </div>
           </section>

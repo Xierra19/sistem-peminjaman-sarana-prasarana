@@ -40,6 +40,7 @@ class BookingStatusUpdatedNotification extends Notification
             'approved' => 'Disetujui',
             'rejected' => 'Ditolak',
             'cancelled' => 'Dibatalkan',
+            'expired' => 'Kedaluwarsa',
             default => $status
         };
 

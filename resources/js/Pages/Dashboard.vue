@@ -34,6 +34,7 @@ const props = defineProps({
       waiting: 0,
       rejected: 0,
       cancelled: 0,
+      expired: 0,
     }),
   },
 })
@@ -78,6 +79,7 @@ const bookingSummaryData = computed(() => ({
   waiting: props.bookingSummary?.waiting ?? 0,
   rejected: props.bookingSummary?.rejected ?? 0,
   cancelled: props.bookingSummary?.cancelled ?? 0,
+  expired: props.bookingSummary?.expired ?? 0,
 }))
 
 const rooms = computed(() => props.rooms ?? [])
@@ -397,7 +399,7 @@ const {
           </div>
         </section>
 
-        <section class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <section class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           <article class="rounded-2xl border border-blue-100 bg-blue-50 p-4 text-blue-900 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-100">
             <p class="text-xs font-semibold uppercase tracking-wide text-blue-500 dark:text-blue-300">Total Pengajuan</p>
             <p class="mt-2 text-3xl font-semibold">{{ bookingSummaryData.total }}</p>
@@ -417,6 +419,10 @@ const {
           <article class="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-slate-800 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-200">
             <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Dibatalkan</p>
             <p class="mt-2 text-3xl font-semibold">{{ bookingSummaryData.cancelled }}</p>
+          </article>
+          <article class="rounded-2xl border border-orange-100 bg-orange-50 p-4 text-orange-800 dark:border-orange-800 dark:bg-orange-900/30 dark:text-orange-100">
+            <p class="text-xs font-semibold uppercase tracking-wide text-orange-500 dark:text-orange-300">Kedaluwarsa</p>
+            <p class="mt-2 text-3xl font-semibold">{{ bookingSummaryData.expired }}</p>
           </article>
         </section>
 

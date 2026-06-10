@@ -184,6 +184,7 @@ const summary = computed(() => ({
   waiting: props.statusSummary?.waiting ?? 0,
   rejected: props.statusSummary?.rejected ?? 0,
   cancelled: props.statusSummary?.cancelled ?? 0,
+  expired: props.statusSummary?.expired ?? 0,
 }))
 
 const formatDateTime = (value) => {
@@ -353,10 +354,11 @@ const statusChartData = computed(() => {
     waiting: 0,
     rejected: 0,
     cancelled: 0,
+    expired: 0,
   }
    
   chartBookings.value.forEach(b => {
-    const s = b.status === 'pending' ? 'waiting' : (b.status || '')
+    const s = ['pending', 'requested'].includes(b.status) ? 'waiting' : (b.status || '')
     if (counts[s] !== undefined) {
       counts[s]++
     }
@@ -374,14 +376,16 @@ const statusChartData = computed(() => {
       toPercentageLabel('Menunggu', counts.waiting),
       toPercentageLabel('Ditolak', counts.rejected),
       toPercentageLabel('Dibatalkan', counts.cancelled),
+      toPercentageLabel('Kedaluwarsa', counts.expired),
     ],
     datasets: [{
-      data: [counts.approved, counts.waiting, counts.rejected, counts.cancelled],
+      data: [counts.approved, counts.waiting, counts.rejected, counts.cancelled, counts.expired],
       backgroundColor: [
         '#10b981', // emerald-500
         '#f59e0b', // amber-500
         '#f43f5e', // rose-500
         '#8b5cf6', // violet-500
+        '#f97316', // orange-500
       ],
       borderWidth: 1,
     }],
@@ -557,12 +561,12 @@ const chartOptions = computed(() => ({
           <p class="mt-2 text-xs leading-relaxed text-emerald-500 dark:text-emerald-400">Booking aktif</p>
         </div>
         <div class="rounded-2xl border border-rose-200 bg-white p-4 shadow-sm dark:border-rose-800 dark:bg-slate-800">
-          <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-rose-500 dark:text-rose-400">Ditolak / Batal</p>
+          <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-rose-500 dark:text-rose-400">Status Final Lain</p>
           <div class="mt-3 flex items-end justify-between gap-3">
-            <p class="text-3xl font-semibold text-rose-600 dark:text-rose-400">{{ summary.rejected + summary.cancelled }}</p>
+            <p class="text-3xl font-semibold text-rose-600 dark:text-rose-400">{{ summary.rejected + summary.cancelled + summary.expired }}</p>
             <span class="rounded-full bg-rose-50 px-2.5 py-1 text-[11px] font-medium text-rose-600 dark:bg-rose-900/20 dark:text-rose-300">Selesai</span>
           </div>
-          <p class="mt-2 text-xs leading-relaxed text-rose-500 dark:text-rose-400">Termasuk pembatalan admin</p>
+          <p class="mt-2 text-xs leading-relaxed text-rose-500 dark:text-rose-400">Ditolak, dibatalkan, atau kedaluwarsa</p>
         </div>
       </div>
 
