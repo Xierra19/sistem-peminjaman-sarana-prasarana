@@ -35,12 +35,11 @@ onBeforeUnmount(() => {
   if (timer) clearTimeout(timer)
 })
 
-const perPageOptions = [5, 10, 25, 50]
 const searchQuery = ref(props.filters.search || '')
 const statusFilter = ref(props.filters.status || '')
 const sortColumn = ref(props.filters.sort || 'created_at')
 const sortDirection = ref(props.filters.direction || 'desc')
-const rowsPerPage = ref(props.filters.per_page || 10)
+const rowsPerPage = 10
 const isLoading = ref(false)
 
 // Prevent race conditions with plain variable (not ref)
@@ -102,7 +101,7 @@ const applyFilters = () => {
     status: statusFilter.value || undefined,
     sort: sortColumn.value,
     direction: sortDirection.value,
-    per_page: rowsPerPage.value,
+    per_page: rowsPerPage,
   })
 }
 
@@ -111,7 +110,7 @@ const debouncedSearch = debounce(applyFilters, 300)
 
 // Watchers
 watch(searchQuery, () => { debouncedSearch() })
-watch([statusFilter, rowsPerPage], () => { applyFilters() })
+watch(statusFilter, () => { applyFilters() })
 
 // Toggle sort (server-side only)
 const toggleBookingSort = (column) => {
@@ -144,8 +143,8 @@ const pageMeta = computed(() => ({
 const currentPage = computed(() => props.bookings.current_page || 1)
 const totalPages = computed(() => props.bookings.last_page || 1)
 
-// Skeleton rows (max 5 even if rowsPerPage is larger)
-const skeletonRows = computed(() => Math.min(rowsPerPage.value, 5))
+// Keep the loading state compact.
+const skeletonRows = computed(() => Math.min(rowsPerPage, 5))
 const canGoToPreviousPage = computed(() => currentPage.value > 1 && pageMeta.value.of > 0)
 const canGoToNextPage = computed(() => currentPage.value < totalPages.value && pageMeta.value.of > 0)
 
@@ -200,7 +199,7 @@ const changePage = (page) => {
     status: statusFilter.value || undefined,
     sort: sortColumn.value,
     direction: sortDirection.value,
-    per_page: rowsPerPage.value,
+    per_page: rowsPerPage,
   })
 }
 </script>
@@ -225,7 +224,7 @@ const changePage = (page) => {
         </Link>
       </div>
 
-      <div class="grid gap-3 sm:grid-cols-3">
+      <div class="grid gap-3 sm:grid-cols-2">
         <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
           <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Total</p>
           <p class="mt-2 text-3xl font-semibold text-slate-900 dark:text-slate-100">{{ isLoading ? '...' : pageMeta.of }}</p>
@@ -235,11 +234,6 @@ const changePage = (page) => {
           <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-blue-600 dark:text-blue-300">Status Filter</p>
           <p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{{ statusFilter || 'Semua status' }}</p>
           <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Gunakan filter untuk fokus ke status tertentu.</p>
-        </div>
-        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-          <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Per Halaman</p>
-          <p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{{ rowsPerPage }} baris</p>
-          <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Atur kepadatan daftar sesuai kebutuhan.</p>
         </div>
       </div>
 
@@ -296,20 +290,6 @@ const changePage = (page) => {
               <span class="inline-flex h-8 w-12 items-center justify-center rounded-xl bg-white text-sm font-semibold text-slate-900 shadow-sm dark:bg-slate-600 dark:text-slate-100">
                 {{ isLoading ? '...' : pageMeta.of }}
               </span>
-            </div>
-          </div>
-          <div class="flex flex-col gap-2 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-end dark:text-slate-400">
-            <label class="font-medium text-slate-700 dark:text-slate-300" for="user-bookings-rows">Rows per page</label>
-            <div class="relative">
-              <select
-                id="user-bookings-rows"
-                v-model.number="rowsPerPage"
-                class="w-24 rounded-xl border border-slate-200 bg-white px-3 py-1.5 pr-9 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
-              >
-                <option v-for="option in perPageOptions" :key="`bookings-rows-${option}`" :value="option">
-                  {{ option }}
-                </option>
-              </select>
             </div>
           </div>
         </div>

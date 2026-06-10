@@ -19,7 +19,6 @@ const props = defineProps({
   },
 })
 
-const perPageOptions = [5, 10, 25, 50]
 const searchQuery = ref('')
 const statusFilter = ref('')
 
@@ -123,7 +122,6 @@ const {
 
 const {
   paginatedItems,
-  rowsPerPage,
   currentPage,
   pageMeta,
   pages,
@@ -177,6 +175,19 @@ const cancelBorrowing = (borrowing) => {
         </Link>
       </div>
 
+      <div class="grid gap-3 sm:grid-cols-2">
+        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Total</p>
+          <p class="mt-2 text-3xl font-semibold text-slate-900 dark:text-slate-100">{{ filteredBorrowings.length }}</p>
+          <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Permintaan sesuai filter aktif.</p>
+        </div>
+        <div class="rounded-2xl border border-blue-200 bg-white p-4 shadow-sm dark:border-blue-900 dark:bg-slate-800">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-blue-600 dark:text-blue-300">Status Filter</p>
+          <p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{{ statusFilter || 'Semua status' }}</p>
+          <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Gunakan filter untuk fokus ke status tertentu.</p>
+        </div>
+      </div>
+
       <div class="card-surface overflow-hidden">
         <div class="space-y-4 border-b border-slate-100 px-5 py-4 dark:border-slate-700">
           <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -213,18 +224,6 @@ const cancelBorrowing = (borrowing) => {
                 {{ filteredBorrowings.length }}
               </span>
             </div>
-          </div>
-          <div class="flex flex-col gap-2 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-end dark:text-slate-400">
-            <label class="font-medium text-slate-700 dark:text-slate-300" for="item-borrowings-rows">Rows per page</label>
-              <select
-                id="item-borrowings-rows"
-                v-model.number="rowsPerPage"
-                class="w-24 rounded-xl border border-slate-200 bg-white px-3 py-1.5 pr-9 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
-              >
-                <option v-for="option in perPageOptions" :key="`item-borrowings-rows-${option}`" :value="option">
-                  {{ option }}
-                </option>
-              </select>
           </div>
         </div>
 
