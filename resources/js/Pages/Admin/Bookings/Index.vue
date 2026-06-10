@@ -13,8 +13,8 @@ import {
 import { useDateRangePickers } from '@/Composables/useDateRangePickers'
 import { usePagination } from '@/Composables/usePagination'
 import { useTableSort } from '@/Composables/useTableSort'
-import { Head, Link } from '@inertiajs/vue3'
-import { computed } from 'vue'
+import { Head, Link, router } from '@inertiajs/vue3'
+import { computed, onMounted } from 'vue'
 import { formatDateTimeToDDMMYY } from '@/Composables/useDateFormatter'
 
 const props = defineProps({
@@ -113,6 +113,38 @@ const {
 } = usePagination(sortedBookings)
 
 const perPageOptions = [5, 10, 25, 50]
+
+const jakartaDateKey = () => {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Jakarta',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date())
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]))
+
+  return `${values.year}-${values.month}-${values.day}`
+}
+
+onMounted(() => {
+  const today = jakartaDateKey()
+  const hasStaleWaitingBooking = (props.bookings ?? []).some((booking) => {
+    if (normalizeBookingStatus(booking.status) !== 'waiting') {
+      return false
+    }
+
+    const finalDate = String(booking.schedule_end_date || booking.end_time || '').slice(0, 10)
+
+    return finalDate !== '' && finalDate < today
+  })
+
+  if (hasStaleWaitingBooking) {
+    router.reload({
+      only: ['bookings'],
+      preserveScroll: true,
+    })
+  }
+})
 </script>
 
 <template>

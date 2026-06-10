@@ -23,8 +23,10 @@ class BookingApprovalController extends Controller
     /**
      * Display a listing of the bookings that require approval.
      */
-    public function index()
+    public function index(ExpirePendingBookings $expirePendingBookings)
     {
+        $expirePendingBookings->handle();
+
         $bookings = Booking::with(['user', 'room.building.campus'])
             ->orderByRaw("
                 CASE
@@ -47,8 +49,10 @@ class BookingApprovalController extends Controller
     /**
      * Display the specified booking with its audit trail.
      */
-    public function show(Booking $booking)
+    public function show(Booking $booking, ExpirePendingBookings $expirePendingBookings)
     {
+        $expirePendingBookings->expireIfPastDue($booking);
+
         $booking->load([
             'user',
             'room.building.campus',

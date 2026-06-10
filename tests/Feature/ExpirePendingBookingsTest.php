@@ -102,6 +102,28 @@ class ExpirePendingBookingsTest extends TestCase
         $this->assertNull($booking->fresh()->letter_number);
     }
 
+    public function test_admin_booking_index_expires_stale_waiting_booking_before_rendering(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-06-10 09:00:00', ExpirePendingBookings::TIMEZONE));
+
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN_BAP,
+        ]);
+        $booking = $this->createBooking([
+            'end_time' => '2026-06-08 21:00:00',
+            'schedule_end_date' => '2026-06-08',
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('admin.bookings.index'));
+
+        $response->assertOk();
+        $this->assertSame('expired', $booking->fresh()->status);
+        $this->assertDatabaseHas('log_histories', [
+            'booking_id' => $booking->id,
+            'action' => 'expired',
+        ]);
+    }
+
     private function createBooking(array $overrides = []): Booking
     {
         $user = User::factory()->create();
