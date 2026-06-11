@@ -148,13 +148,48 @@ watch(
 )
 
 const bookings = computed(() => props.bookings ?? [])
+const selectedChartDate = ref(null)
+const selectedChartStatus = ref(null)
+const chartDateBasis = ref('application')
+const chartStatusKeys = ['approved', 'waiting', 'rejected', 'cancelled', 'expired']
+
+const normalizeChartStatus = (status) => (
+  ['pending', 'requested', 'waiting'].includes(status) ? 'waiting' : (status || '')
+)
+
+const bookingMatchesDate = (booking, dateKey, basis = chartDateBasis.value) => {
+  if (!dateKey) return true
+
+  const selectedDate = parseDateKey(dateKey)
+  if (!selectedDate) return false
+
+  if (basis === 'booking') {
+    const scheduleStart = parseDateKey(booking.schedule_start_date || booking.start_time)
+    const scheduleEnd = parseDateKey(booking.schedule_end_date || booking.end_time)
+
+    return Boolean(scheduleStart && scheduleEnd && scheduleStart <= selectedDate && scheduleEnd >= selectedDate)
+  }
+
+  const createdAt = parseDateKey(booking.created_at)
+  return Boolean(createdAt && toDateKey(createdAt) === dateKey)
+}
+
+const tableBookings = computed(() => {
+  return bookings.value.filter((booking) => {
+    const matchesDate = bookingMatchesDate(booking, selectedChartDate.value)
+    const matchesStatus = !selectedChartStatus.value
+      || normalizeChartStatus(booking.status) === selectedChartStatus.value
+
+    return matchesDate && matchesStatus
+  })
+})
 
 const {
   sortedItems: sortedBookings,
   toggleSort: toggleReportSort,
   sortDirection: reportSortDirection,
   ariaSortValue: reportAriaSortValue,
-} = useTableSort(bookings, {
+} = useTableSort(tableBookings, {
   accessors: {
     id: (booking) => booking.id ?? 0,
     created_at: (booking) => (booking.created_at ? new Date(booking.created_at) : null),
@@ -215,6 +250,8 @@ const buildQuery = () => {
 }
 
 const applyFilters = () => {
+  selectedChartDate.value = null
+  selectedChartStatus.value = null
   changePage(1)
   router.get(route('admin.reports.index'), buildQuery(), {
     preserveState: true,
@@ -245,6 +282,12 @@ const exportPdf = () => {
   window.open(url, '_blank')
 }
 
+const openBookingApproval = (booking) => {
+  if (!booking?.id) return
+
+  router.visit(route('admin.bookings.show', booking.id))
+}
+
 const toDateKey = (date) => {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -272,7 +315,11 @@ const hasApplicationDateFilter = computed(
 const hasBookingDateFilter = computed(
   () => Boolean(props.filters?.booking_start_date || props.filters?.booking_end_date),
 )
-const chartDateBasis = ref('application')
+
+watch(chartDateBasis, () => {
+  selectedChartDate.value = null
+  changePage(1)
+})
 
 const chartRange = computed(() => {
   const today = new Date()
@@ -358,13 +405,14 @@ const statusChartData = computed(() => {
   }
    
   chartBookings.value.forEach(b => {
-    const s = ['pending', 'requested'].includes(b.status) ? 'waiting' : (b.status || '')
+    const s = normalizeChartStatus(b.status)
     if (counts[s] !== undefined) {
       counts[s]++
     }
   })
 
   const total = Object.values(counts).reduce((sum, count) => sum + count, 0)
+  const colors = ['#10b981', '#f59e0b', '#f43f5e', '#8b5cf6', '#f97316']
   const toPercentageLabel = (label, count) => {
     const percentage = total > 0 ? ((count / total) * 100).toFixed(1) : '0.0'
     return `${label} (${percentage}%)`
@@ -380,14 +428,20 @@ const statusChartData = computed(() => {
     ],
     datasets: [{
       data: [counts.approved, counts.waiting, counts.rejected, counts.cancelled, counts.expired],
-      backgroundColor: [
-        '#10b981', // emerald-500
-        '#f59e0b', // amber-500
-        '#f43f5e', // rose-500
-        '#8b5cf6', // violet-500
-        '#f97316', // orange-500
-      ],
-      borderWidth: 1,
+      backgroundColor: colors.map((color, index) => (
+        !selectedChartStatus.value || chartStatusKeys[index] === selectedChartStatus.value
+          ? color
+          : `${color}55`
+      )),
+      borderColor: chartStatusKeys.map((status) => (
+        status === selectedChartStatus.value ? '#0f172a' : '#ffffff'
+      )),
+      borderWidth: chartStatusKeys.map((status) => (
+        status === selectedChartStatus.value ? 3 : 1
+      )),
+      offset: chartStatusKeys.map((status) => (
+        status === selectedChartStatus.value ? 10 : 0
+      )),
     }],
   }
 })
@@ -451,18 +505,113 @@ const weeklyChartData = computed(() => {
   })
 
   const data = dates.map((dateString) => dayCounts[dateString])
+  const selectedDateIndex = dates.indexOf(selectedChartDate.value)
 
   return {
     labels,
     datasets: [{
       label: chartDateBasis.value === 'booking' ? 'Jadwal Aktif' : 'Jumlah Pengajuan',
       data,
-      backgroundColor: '#3b82f6', // blue-500
-      borderColor: '#2563eb', // blue-600
-      borderWidth: 1,
+      backgroundColor: dates.map((_, index) => (
+        index === selectedDateIndex ? '#1d4ed8' : '#60a5fa'
+      )),
+      borderColor: dates.map((_, index) => (
+        index === selectedDateIndex ? '#1e3a8a' : '#2563eb'
+      )),
+      borderWidth: dates.map((_, index) => (index === selectedDateIndex ? 2 : 1)),
     }],
   }
 })
+
+const chartDateKeys = computed(() => {
+  const dates = []
+  const { start, end } = chartRange.value
+
+  for (const date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
+    dates.push(toDateKey(date))
+  }
+
+  return dates
+})
+
+const selectedDateBookings = computed(() => {
+  if (!selectedChartDate.value) return []
+
+  return chartBookings.value.filter((booking) => (
+    bookingMatchesDate(booking, selectedChartDate.value)
+  ))
+})
+
+const selectedDateLabel = computed(() => {
+  const date = parseDateKey(selectedChartDate.value)
+  if (!date) return ''
+
+  return date.toLocaleDateString('id-ID', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  })
+})
+
+const extractClock = (value, fallback = '-') => {
+  if (!value) return fallback
+
+  const match = String(value).match(/(?:T|\s)(\d{2}:\d{2})/)
+  return match?.[1] ?? String(value).slice(0, 5)
+}
+
+const formatTimeForSelectedDate = (booking) => {
+  if (chartDateBasis.value === 'application') {
+    return booking.schedule_summary ?? '-'
+  }
+
+  if (booking.schedule_mode === 'same_hours_daily') {
+    return `${extractClock(booking.schedule_start_clock)} - ${extractClock(booking.schedule_end_clock)} WIB`
+  }
+
+  const selectedDate = selectedChartDate.value
+  const startDate = toDateKey(parseDateKey(booking.schedule_start_date || booking.start_time))
+  const endDate = toDateKey(parseDateKey(booking.schedule_end_date || booking.end_time))
+  const startClock = extractClock(booking.start_time)
+  const endClock = extractClock(booking.end_time)
+
+  if (startDate === endDate) return `${startClock} - ${endClock} WIB`
+  if (selectedDate === startDate) return `${startClock} - 23:59 WIB`
+  if (selectedDate === endDate) return `00:00 - ${endClock} WIB`
+
+  return '00:00 - 23:59 WIB (jadwal berlanjut)'
+}
+
+const clearSelectedChartDate = () => {
+  selectedChartDate.value = null
+  changePage(1)
+}
+
+const selectChartDate = (dateKey) => {
+  if (!dateKey) return
+
+  selectedChartDate.value = selectedChartDate.value === dateKey ? null : dateKey
+  changePage(1)
+}
+
+const selectedChartStatusLabel = computed(() => (
+  selectedChartStatus.value
+    ? getBookingStatusLabel(selectedChartStatus.value)
+    : ''
+))
+
+const clearSelectedChartStatus = () => {
+  selectedChartStatus.value = null
+  changePage(1)
+}
+
+const selectChartStatus = (status) => {
+  if (!status) return
+
+  selectedChartStatus.value = selectedChartStatus.value === status ? null : status
+  changePage(1)
+}
 
 const chartOptions = computed(() => ({
   responsive: true,
@@ -479,6 +628,49 @@ const chartOptions = computed(() => ({
         },
       },
     },
+  },
+}))
+
+const statusChartOptions = computed(() => ({
+  ...chartOptions.value,
+  plugins: {
+    ...chartOptions.value.plugins,
+    legend: {
+      ...chartOptions.value.plugins.legend,
+      onClick: (_event, legendItem) => {
+        selectChartStatus(chartStatusKeys[legendItem.index])
+      },
+    },
+  },
+  onClick: (_event, elements) => {
+    const selectedElement = elements?.[0]
+    if (!selectedElement) return
+
+    selectChartStatus(chartStatusKeys[selectedElement.index])
+  },
+  onHover: (event, elements) => {
+    if (event?.native?.target) {
+      event.native.target.style.cursor = elements?.length ? 'pointer' : 'default'
+    }
+  },
+}))
+
+const trendChartOptions = computed(() => ({
+  ...chartOptions.value,
+  interaction: {
+    mode: 'index',
+    intersect: false,
+  },
+  onClick: (_event, elements) => {
+    const selectedElement = elements?.[0]
+    if (!selectedElement) return
+
+    selectChartDate(chartDateKeys.value[selectedElement.index])
+  },
+  onHover: (event, elements) => {
+    if (event?.native?.target) {
+      event.native.target.style.cursor = elements?.length ? 'pointer' : 'default'
+    }
   },
 }))
 
@@ -613,8 +805,11 @@ const chartOptions = computed(() => ({
             <span class="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500 dark:bg-slate-700 dark:text-slate-300">Pie</span>
           </div>
           <div class="h-48 sm:h-56">
-            <Pie :data="statusChartData" :options="chartOptions" />
+            <Pie :data="statusChartData" :options="statusChartOptions" />
           </div>
+          <p class="mt-3 text-center text-xs text-slate-500 dark:text-slate-400">
+            Klik bagian pie atau label status untuk menyaring tabel.
+          </p>
         </div>
         <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:p-5">
           <div class="mb-4 flex items-start justify-between gap-3">
@@ -625,8 +820,78 @@ const chartOptions = computed(() => ({
             <span class="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500 dark:bg-slate-700 dark:text-slate-300">Bar</span>
           </div>
           <div class="h-48 sm:h-56">
-            <Bar :data="weeklyChartData" :options="chartOptions" />
+            <Bar :data="weeklyChartData" :options="trendChartOptions" />
           </div>
+          <p class="mt-3 text-center text-xs text-slate-500 dark:text-slate-400">
+            Klik batang pada tanggal untuk melihat detail dan menyaring tabel.
+          </p>
+        </div>
+      </div>
+
+      <div
+        v-if="selectedChartDate"
+        class="overflow-hidden rounded-2xl border border-blue-200 bg-blue-50/60 shadow-sm dark:border-blue-900 dark:bg-blue-950/20"
+      >
+        <div class="flex flex-col gap-3 border-b border-blue-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5 dark:border-blue-900">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600 dark:text-blue-400">
+              {{ chartDateBasis === 'booking' ? 'Jadwal pada tanggal terpilih' : 'Pengajuan pada tanggal terpilih' }}
+            </p>
+            <h3 class="mt-1 text-lg font-semibold capitalize text-slate-900 dark:text-slate-100">
+              {{ selectedDateLabel }}
+            </h3>
+            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              {{ selectedDateBookings.length }} data ditemukan. Tabel hasil report otomatis disaring.
+            </p>
+          </div>
+          <button
+            type="button"
+            class="inline-flex items-center justify-center rounded-lg border border-blue-200 bg-white px-3 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-100 dark:border-blue-800 dark:bg-slate-800 dark:text-blue-300 dark:hover:bg-slate-700"
+            @click="clearSelectedChartDate"
+          >
+            Tampilkan Semua
+          </button>
+        </div>
+
+        <div v-if="selectedDateBookings.length" class="grid gap-3 p-4 lg:grid-cols-2 sm:p-5">
+          <article
+            v-for="booking in selectedDateBookings"
+            :key="`preview-${booking.id}`"
+            class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800"
+          >
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="font-semibold text-slate-900 dark:text-slate-100">{{ booking.title ?? '-' }}</p>
+                <p class="mt-1 text-xs capitalize text-slate-500 dark:text-slate-400">{{ selectedDateLabel }}</p>
+              </div>
+              <span
+                class="inline-flex shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                :class="getBookingStatusClasses(booking.status)"
+              >
+                {{ getBookingStatusLabel(booking.status) }}
+              </span>
+            </div>
+            <dl class="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+              <div>
+                <dt class="text-xs font-medium uppercase tracking-wide text-slate-400">Waktu</dt>
+                <dd class="mt-1 font-medium text-slate-700 dark:text-slate-200">
+                  {{ formatTimeForSelectedDate(booking) }}
+                </dd>
+              </div>
+              <div>
+                <dt class="text-xs font-medium uppercase tracking-wide text-slate-400">Ruangan</dt>
+                <dd class="mt-1 font-medium text-slate-700 dark:text-slate-200">
+                  {{ booking.room?.name ?? '-' }}
+                </dd>
+                <dd class="text-xs text-slate-500 dark:text-slate-400">
+                  {{ booking.room?.building?.name ?? '-' }} - {{ booking.room?.building?.campus?.name ?? '-' }}
+                </dd>
+              </div>
+            </dl>
+          </article>
+        </div>
+        <div v-else class="px-5 py-8 text-center text-sm text-slate-500 dark:text-slate-400">
+          Tidak ada data pada tanggal ini.
         </div>
       </div>
 
@@ -706,7 +971,27 @@ const chartOptions = computed(() => ({
 
       <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
         <div class="flex flex-col gap-3 border-b border-gray-100 px-5 py-4 md:flex-row md:items-center md:justify-between dark:border-slate-700">
-          <div class="text-sm font-semibold text-gray-700 dark:text-gray-300">Hasil Report</div>
+          <div>
+            <div class="text-sm font-semibold text-gray-700 dark:text-gray-300">Hasil Report</div>
+            <p v-if="selectedChartDate" class="mt-1 text-xs capitalize text-blue-600 dark:text-blue-400">
+              Difilter berdasarkan {{ selectedDateLabel }}
+            </p>
+            <div v-if="selectedChartStatus" class="mt-2 flex flex-wrap items-center gap-2">
+              <span class="inline-flex rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                Status: {{ selectedChartStatusLabel }}
+              </span>
+              <button
+                type="button"
+                class="text-xs font-semibold text-slate-500 underline-offset-2 hover:text-blue-700 hover:underline dark:text-slate-400 dark:hover:text-blue-300"
+                @click="clearSelectedChartStatus"
+              >
+                Hapus filter status
+              </button>
+            </div>
+            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              Klik dua kali pada baris atau gunakan tombol Buka Persetujuan.
+            </p>
+          </div>
           <RowsPerPageSelect
             v-model="rowsPerPage"
             input-id="report-rows"
@@ -747,7 +1032,13 @@ const chartOptions = computed(() => ({
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100 text-gray-700 dark:divide-slate-700 dark:text-slate-300">
-              <tr v-for="booking in paginatedBookings" :key="booking.id" class="transition hover:bg-gray-50 dark:hover:bg-slate-700/50">
+              <tr
+                v-for="booking in paginatedBookings"
+                :key="booking.id"
+                class="cursor-pointer transition hover:bg-blue-50/70 dark:hover:bg-slate-700/70"
+                title="Klik dua kali untuk membuka halaman persetujuan"
+                @dblclick="openBookingApproval(booking)"
+              >
                 <td class="mobile-report-muted px-5 py-4 font-semibold text-gray-900 dark:text-slate-100" data-title="ID">#{{ booking.id }}</td>
                 <td class="mobile-report-muted px-5 py-4" data-title="Tanggal Pengajuan">{{ formatDateTime(booking.created_at) }}</td>
                 <td class="mobile-report-applicant mobile-report-span-2 px-5 py-4" data-title="Pemohon">
@@ -786,6 +1077,13 @@ const chartOptions = computed(() => ({
                   <div class="text-xs text-gray-500 dark:text-slate-400">
                     {{ booking.description ?? 'Tidak ada keterangan tambahan' }}
                   </div>
+                  <button
+                    type="button"
+                    class="mt-3 inline-flex items-center rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:border-blue-300 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50 dark:focus:ring-offset-slate-800"
+                    @click.stop="openBookingApproval(booking)"
+                  >
+                    Buka Persetujuan
+                  </button>
                 </td>
               </tr>
               <tr v-if="!paginatedBookings.length">
