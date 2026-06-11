@@ -16,6 +16,10 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  minimumBorrowDate: {
+    type: String,
+    required: true,
+  },
 })
 
 const form = useForm({
@@ -30,20 +34,52 @@ const availabilities = ref({})
 const availabilityMessages = ref({})
 const isAvailabilityLoading = ref({})
 
-const formatDateForInput = (date) => {
-  if (!date) return ''
-  const d = new Date(date)
-  const year = d.getFullYear()
-  const month = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
+const generateTimeSlots = (startHour = 7, endHour = 21, stepMinutes = 30) => {
+  const slots = []
+
+  for (let hour = startHour; hour <= endHour; hour++) {
+    for (let minute = 0; minute < 60; minute += stepMinutes) {
+      if (hour === endHour && minute > 0) break
+
+      slots.push(`${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`)
+    }
+  }
+
+  return slots
+}
+
+const timeSlots = generateTimeSlots()
+
+const borrowTimeSlots = (row) => {
+  if (!row.borrow_time || timeSlots.includes(row.borrow_time)) return timeSlots
+  return [...timeSlots, row.borrow_time].sort()
+}
+
+const availableReturnTimeSlots = (row) => {
+  const slots = !row.return_time || timeSlots.includes(row.return_time)
+    ? timeSlots
+    : [...timeSlots, row.return_time].sort()
+
+  if (!row.borrow_date || !row.return_date || !row.borrow_time) return slots
+  if (row.return_date > row.borrow_date) return slots
+
+  return slots.filter((slot) => slot > row.borrow_time)
+}
+
+const onBorrowTimeChange = (index) => {
+  const row = form.items[index]
+
+  if (
+    row.return_date === row.borrow_date &&
+    row.return_time &&
+    row.return_time <= row.borrow_time
+  ) {
+    row.return_time = ''
+  }
 }
 
 const minBorrowDate = computed(() => {
-  const date = new Date()
-  date.setHours(0, 0, 0, 0)
-  date.setDate(date.getDate() + 3)
-  return formatDateForInput(date)
+  return props.minimumBorrowDate
 })
 
 const addItemRow = () => {
@@ -51,7 +87,9 @@ const addItemRow = () => {
     item_id: '',
     quantity: 1,
     borrow_date: '',
+    borrow_time: '',
     return_date: '',
+    return_time: '',
   })
   itemRows.value += 1
 }
@@ -73,14 +111,14 @@ const requestedQuantityExceeded = (index) => {
   if (!row) return false
   const requested = Number(row.quantity || 0)
   const remaining = Number(availabilities.value[index]?.remaining_quantity || 0)
-  return requested > 0 && row.item_id && row.borrow_date && row.return_date && requested > remaining
+  return requested > 0 && row.item_id && row.borrow_date && row.borrow_time && row.return_date && row.return_time && requested > remaining
 }
 
 const loadAvailability = async (index) => {
   const row = form.items[index]
   const item = getSelectedItem(index)
   
-  if (!item || !row?.borrow_date || !row?.return_date) {
+  if (!item || !row?.borrow_date || !row?.borrow_time || !row?.return_date || !row?.return_time) {
     resetAvailability(index)
     return
   }
@@ -93,7 +131,9 @@ const loadAvailability = async (index) => {
       route('items.availability', {
         item: item.id,
         borrow_date: row.borrow_date,
+        borrow_time: row.borrow_time,
         return_date: row.return_date,
+        return_time: row.return_time,
       }),
       { headers: { Accept: 'application/json' } }
     )
@@ -145,7 +185,7 @@ const submit = () => {
 // Watchers for each row
 watch(() => form.items, (newItems) => {
   newItems.forEach((_, index) => {
-    if (newItems[index]?.item_id && newItems[index]?.borrow_date && newItems[index]?.return_date) {
+    if (newItems[index]?.item_id && newItems[index]?.borrow_date && newItems[index]?.borrow_time && newItems[index]?.return_date && newItems[index]?.return_time) {
       loadAvailability(index)
     }
   })
@@ -257,7 +297,7 @@ watch(() => form.items, (newItems) => {
                 </div>
               </div>
 
-              <div class="grid gap-6 md:grid-cols-2">
+              <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
                 <div class="space-y-2">
                   <label class="block text-sm font-medium text-slate-700">Tanggal Pinjam <span class="text-rose-500">*</span></label>
                   <input
@@ -266,7 +306,22 @@ watch(() => form.items, (newItems) => {
                     :min="minBorrowDate"
                     class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
-                  <p class="text-xs text-slate-500">Minimal H+3</p>
+                  <p class="text-xs text-slate-500">Minimal H-7 berdasarkan tanggal kalender</p>
+                  <div v-if="form.errors[`items.${index}.borrow_date`]" class="text-xs text-rose-500">{{ form.errors[`items.${index}.borrow_date`] }}</div>
+                </div>
+                <div class="space-y-2">
+                  <label class="block text-sm font-medium text-slate-700">Jam Pinjam <span class="text-rose-500">*</span></label>
+                  <select
+                    v-model="row.borrow_time"
+                    @change="onBorrowTimeChange(index)"
+                    class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  >
+                    <option value="">Pilih jam pinjam</option>
+                    <option v-for="slot in borrowTimeSlots(row)" :key="`edit-borrow-${index}-${slot}`" :value="slot">
+                      {{ slot }}
+                    </option>
+                  </select>
+                  <div v-if="form.errors[`items.${index}.borrow_time`]" class="text-xs text-rose-500">{{ form.errors[`items.${index}.borrow_time`] }}</div>
                 </div>
                 <div class="space-y-2">
                   <label class="block text-sm font-medium text-slate-700">Tanggal Kembali <span class="text-rose-500">*</span></label>
@@ -275,6 +330,24 @@ watch(() => form.items, (newItems) => {
                     type="date"
                     class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
+                  <div v-if="form.errors[`items.${index}.return_date`]" class="text-xs text-rose-500">{{ form.errors[`items.${index}.return_date`] }}</div>
+                </div>
+                <div class="space-y-2">
+                  <label class="block text-sm font-medium text-slate-700">Jam Kembali <span class="text-rose-500">*</span></label>
+                  <select
+                    v-model="row.return_time"
+                    class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  >
+                    <option value="">Pilih jam kembali</option>
+                    <option
+                      v-for="slot in availableReturnTimeSlots(row)"
+                      :key="`edit-return-${index}-${slot}`"
+                      :value="slot"
+                    >
+                      {{ slot }}
+                    </option>
+                  </select>
+                  <div v-if="form.errors[`items.${index}.return_time`]" class="text-xs text-rose-500">{{ form.errors[`items.${index}.return_time`] }}</div>
                 </div>
               </div>
 
@@ -288,20 +361,20 @@ watch(() => form.items, (newItems) => {
                 <div class="grid gap-3 sm:grid-cols-3">
                   <div class="rounded-xl bg-white p-3 shadow-sm">
                     <div class="text-xs font-semibold uppercase tracking-wide text-slate-400">Stok Total</div>
-                    <div class="mt-1 text-2xl font-semibold text-slate-900">{{ availabilities.value[index]?.total_quantity ?? getSelectedItem(index).quantity }}</div>
+                    <div class="mt-1 text-2xl font-semibold text-slate-900">{{ availabilities[index]?.total_quantity ?? getSelectedItem(index).quantity }}</div>
                   </div>
                   <div class="rounded-xl bg-white p-3 shadow-sm">
                     <div class="text-xs font-semibold uppercase tracking-wide text-slate-400">Dipakai</div>
-                    <div class="mt-1 text-2xl font-semibold text-slate-900">{{ availabilities.value[index]?.reserved_quantity ?? 0 }}</div>
+                    <div class="mt-1 text-2xl font-semibold text-slate-900">{{ availabilities[index]?.reserved_quantity ?? 0 }}</div>
                   </div>
                   <div class="rounded-xl bg-white p-3 shadow-sm">
                     <div class="text-xs font-semibold uppercase tracking-wide text-slate-400">Tersisa</div>
-                    <div class="mt-1 text-2xl font-semibold text-slate-900">{{ availabilities.value[index]?.remaining_quantity ?? getSelectedItem(index).quantity }}</div>
+                    <div class="mt-1 text-2xl font-semibold text-slate-900">{{ availabilities[index]?.remaining_quantity ?? getSelectedItem(index).quantity }}</div>
                   </div>
                 </div>
 
-                <p v-if="availabilityMessages.value[index]" class="text-sm text-slate-600">
-                  {{ availabilityMessages.value[index] }}
+                <p v-if="availabilityMessages[index]" class="text-sm text-slate-600">
+                  {{ availabilityMessages[index] }}
                 </p>
               </div>
             </div>

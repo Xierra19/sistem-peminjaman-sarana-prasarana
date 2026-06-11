@@ -20,6 +20,41 @@ class ItemBorrowingReportFilters
                     return;
                 }
 
+                if ($status === 'completed') {
+                    $statusQuery
+                        ->where('status', 'returned')
+                        ->orWhere(function (Builder $completedQuery): void {
+                            $completedQuery
+                                ->where('status', 'approved')
+                                ->where(function (Builder $periodQuery): void {
+                                    $periodQuery
+                                        ->whereHas('items')
+                                        ->whereDoesntHave('items', fn (Builder $itemQuery) => $itemQuery->where('return_date', '>', now()))
+                                        ->orWhere(function (Builder $legacyQuery): void {
+                                            $legacyQuery
+                                                ->whereDoesntHave('items')
+                                                ->where('return_date', '<=', now());
+                                        });
+                                });
+                        });
+                    return;
+                }
+
+                if ($status === 'approved') {
+                    $statusQuery
+                        ->where('status', 'approved')
+                        ->where(function (Builder $periodQuery): void {
+                            $periodQuery
+                                ->whereHas('items', fn (Builder $itemQuery) => $itemQuery->where('return_date', '>', now()))
+                                ->orWhere(function (Builder $legacyQuery): void {
+                                    $legacyQuery
+                                        ->whereDoesntHave('items')
+                                        ->where('return_date', '>', now());
+                                });
+                        });
+                    return;
+                }
+
                 $statusQuery->where('status', $status);
             });
         }

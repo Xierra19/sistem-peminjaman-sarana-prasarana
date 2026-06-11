@@ -64,7 +64,7 @@ class ItemBorrowingStatusUpdatedNotification extends Notification implements Sho
         $endDate = $items->map->return_date->filter()->sortDesc()->first() ?? $borrowing->return_date;
 
         if ($startDate && $endDate) {
-            $mail->line('Periode: '.$startDate->format('d M Y').' - '.$endDate->format('d M Y'));
+            $mail->line('Periode: '.$startDate->timezone(config('app.business_timezone'))->format('d M Y H:i').' - '.$endDate->timezone(config('app.business_timezone'))->format('d M Y H:i').' WIB');
         }
 
         if ($this->moderatorName) {

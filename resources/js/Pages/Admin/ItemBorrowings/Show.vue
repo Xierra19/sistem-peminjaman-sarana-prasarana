@@ -22,7 +22,7 @@ const approvalForm = useForm({
   signed_letter: null,
 })
 
-const normalizedStatus = computed(() => normalizeItemBorrowingStatus(props.itemBorrowing.status))
+const normalizedStatus = computed(() => normalizeItemBorrowingStatus(props.itemBorrowing.effective_status ?? props.itemBorrowing.status))
 const borrowingItems = computed(() => {
   if (props.itemBorrowing.items?.length) {
     return [...props.itemBorrowing.items].sort((left, right) =>
@@ -44,8 +44,7 @@ const borrowingItems = computed(() => {
 })
 const isWaiting = computed(() => normalizedStatus.value === 'waiting')
 const canCancel = computed(() => normalizedStatus.value === 'approved')
-const canMarkReturned = computed(() => normalizedStatus.value === 'approved')
-const actionsLocked = computed(() => !isWaiting.value && !canCancel.value && !canMarkReturned.value)
+const actionsLocked = computed(() => !isWaiting.value && !canCancel.value)
 const approvalFileLabel = computed(() => approvalForm.signed_letter?.name ?? 'Upload surat bertandatangan')
 const earliestBorrowDate = computed(() => borrowingItems.value[0]?.borrow_date ?? null)
 const latestReturnDate = computed(() => borrowingItems.value[borrowingItems.value.length - 1]?.return_date ?? null)
@@ -156,15 +155,15 @@ const onSignedLetterChange = (event) => {
                       <div class="font-semibold text-gray-900 dark:text-white">{{ borrowingItem.item?.name ?? '-' }}</div>
                       <div class="mt-1 text-xs text-gray-600 dark:text-slate-300">
                         Jumlah {{ borrowingItem.quantity }} •
-                        {{ formatDate(borrowingItem.borrow_date) }} s/d {{ formatDate(borrowingItem.return_date) }}
+                        {{ formatDateTime(borrowingItem.borrow_date) }} s/d {{ formatDateTime(borrowingItem.return_date) }}
                       </div>
                     </li>
                   </ul>
                 </div>
                 <div>
                   <div class="text-xs font-semibold uppercase text-gray-500 dark:text-slate-400">Periode</div>
-                  <p class="text-sm text-gray-700 dark:text-slate-300">Pinjam: <span class="font-semibold text-gray-900 dark:text-white">{{ formatDate(earliestBorrowDate) }}</span></p>
-                  <p class="text-sm text-gray-700 dark:text-slate-300">Kembali: <span class="font-semibold text-gray-900 dark:text-white">{{ formatDate(latestReturnDate) }}</span></p>
+                  <p class="text-sm text-gray-700 dark:text-slate-300">Pinjam: <span class="font-semibold text-gray-900 dark:text-white">{{ formatDateTime(earliestBorrowDate) }}</span></p>
+                  <p class="text-sm text-gray-700 dark:text-slate-300">Kembali: <span class="font-semibold text-gray-900 dark:text-white">{{ formatDateTime(latestReturnDate) }}</span></p>
                   <p class="text-sm text-gray-700 dark:text-slate-300">Jenis barang: <span class="font-semibold text-gray-900 dark:text-white">{{ borrowingItems.length }}</span></p>
                 </div>
               </div>
@@ -219,7 +218,7 @@ const onSignedLetterChange = (event) => {
           <section class="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
             <header class="border-b border-gray-100 px-5 py-4 dark:border-slate-700 sm:px-6">
               <h2 class="text-lg font-semibold text-gray-800 dark:text-white">Tindakan Persetujuan</h2>
-              <p class="text-sm text-gray-500 dark:text-slate-400">Setujui, tolak, batalkan, atau tandai telah kembali.</p>
+              <p class="text-sm text-gray-500 dark:text-slate-400">Setujui, tolak, atau batalkan peminjaman.</p>
             </header>
             <div class="space-y-4 px-5 py-5 sm:px-6">
               <textarea
@@ -293,15 +292,6 @@ const onSignedLetterChange = (event) => {
                   @click="submitApproval('cancelled')"
                 >
                   Batalkan Peminjaman
-                </button>
-                <button
-                  v-if="canMarkReturned"
-                  type="button"
-                  class="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-                  :disabled="approvalForm.processing"
-                  @click="submitApproval('returned')"
-                >
-                  Tandai Sudah Kembali
                 </button>
               </div>
               <p v-if="actionsLocked" class="text-xs text-gray-400">

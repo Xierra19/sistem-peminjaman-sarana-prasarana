@@ -16,7 +16,7 @@ class UpdateItemBorrowingStatusRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => ['required', Rule::in(['approved', 'rejected', 'cancelled', 'returned'])],
+            'status' => ['required', Rule::in(['approved', 'rejected', 'cancelled'])],
             'notes' => ['nullable', 'string', 'max:500'],
             'signed_letter' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:2048'],
         ];
@@ -33,7 +33,7 @@ class UpdateItemBorrowingStatusRequest extends FormRequest
         });
 
         $validator->sometimes('signed_letter', ['prohibited'], function ($input) {
-            return in_array($input->status, ['cancelled', 'returned'], true);
+            return $input->status === 'cancelled';
         });
     }
 

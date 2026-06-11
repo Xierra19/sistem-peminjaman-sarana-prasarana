@@ -147,9 +147,16 @@ const {
     id: (row) => row.id ?? 0,
     created_at: (row) => (row.created_at ? new Date(row.created_at) : null),
     applicant: (row) => row.user?.name ?? '',
-    status: (row) => normalizeItemBorrowingStatus(row.status),
-    borrow_date: (row) => (row.borrow_date ? new Date(row.borrow_date) : null),
-    return_date: (row) => (row.return_date ? new Date(row.return_date) : null),
+    status: (row) => normalizeItemBorrowingStatus(row.effective_status ?? row.status),
+    borrow_date: (row) => {
+      const value = row.items?.map(item => item.borrow_date).filter(Boolean).sort()[0] ?? row.borrow_date
+      return value ? new Date(value) : null
+    },
+    return_date: (row) => {
+      const dates = row.items?.map(item => item.return_date).filter(Boolean).sort() ?? []
+      const value = dates[dates.length - 1] ?? row.return_date
+      return value ? new Date(value) : null
+    },
     item: (row) => row.item?.name ?? '',
     title: (row) => row.title ?? '',
   },
@@ -172,7 +179,7 @@ const summary = computed(() => ({
   waiting: props.statusSummary?.waiting ?? 0,
   rejected: props.statusSummary?.rejected ?? 0,
   cancelled: props.statusSummary?.cancelled ?? 0,
-  returned: props.statusSummary?.returned ?? 0,
+  completed: props.statusSummary?.completed ?? 0,
 }))
 
 const formatDate = (value) => formatToDDMMYY(value)
@@ -230,24 +237,24 @@ const statusChartData = computed(() => {
     approved: 0,
     rejected: 0,
     cancelled: 0,
-    returned: 0,
+    completed: 0,
   }
   
   borrowings.forEach(b => {
-    const normalizedStatus = normalizeItemBorrowingStatus(b.status)
+    const normalizedStatus = normalizeItemBorrowingStatus(b.effective_status ?? b.status)
     if (counts[normalizedStatus] !== undefined) {
       counts[normalizedStatus]++
     }
   })
 
   return {
-    labels: ['Menunggu', 'Disetujui', 'Dikembalikan', 'Ditolak', 'Dibatalkan'],
+    labels: ['Menunggu', 'Disetujui', 'Selesai', 'Ditolak', 'Dibatalkan'],
     datasets: [{
-      data: [counts.waiting, counts.approved, counts.returned, counts.rejected, counts.cancelled],
+      data: [counts.waiting, counts.approved, counts.completed, counts.rejected, counts.cancelled],
       backgroundColor: [
         '#f59e0b', // amber-500 (Menunggu)
         '#10b981', // emerald-500 (Disetujui)
-        '#3b82f6', // blue-500 (Dikembalikan)
+        '#3b82f6', // blue-500 (Selesai)
         '#f43f5e', // rose-500 (Ditolak)
         '#8b5cf6', // violet-500 (Dibatalkan)
       ],
@@ -383,9 +390,9 @@ const chartOptions = computed(() => ({
           <p class="text-xs text-emerald-500 dark:text-emerald-400">Booking aktif</p>
         </div>
         <div class="rounded-2xl border border-blue-200 bg-white p-4 shadow-sm dark:border-blue-800 dark:bg-slate-800">
-          <p class="text-xs font-medium uppercase tracking-wide text-blue-500 dark:text-blue-400">Dikembalikan</p>
-          <p class="mt-2 text-2xl font-semibold text-blue-600 dark:text-blue-400">{{ summary.returned }}</p>
-          <p class="text-xs text-blue-500 dark:text-blue-400">Barang yang sudah dikembalikan</p>
+          <p class="text-xs font-medium uppercase tracking-wide text-blue-500 dark:text-blue-400">Selesai</p>
+          <p class="mt-2 text-2xl font-semibold text-blue-600 dark:text-blue-400">{{ summary.completed }}</p>
+          <p class="text-xs text-blue-500 dark:text-blue-400">Waktu peminjaman telah berakhir</p>
         </div>
         <div class="col-span-2 rounded-2xl border border-rose-200 bg-white p-4 shadow-sm dark:border-rose-800 dark:bg-slate-800 sm:col-span-1">
           <p class="text-xs font-medium uppercase tracking-wide text-rose-500 dark:text-rose-400">Ditolak / Batal</p>
@@ -523,15 +530,15 @@ const chartOptions = computed(() => ({
                   <div class="text-xs text-gray-500 dark:text-slate-400">{{ borrowing.item?.code ?? '-' }} • {{ borrowing.item?.category ?? '-' }}</div>
                 </td>
                 <td class="mobile-report-span-2 px-5 py-4" data-title="Periode">
-                  <div>Pinjam: <span class="font-medium text-gray-900 dark:text-slate-100">{{ formatDate(borrowing.borrow_date) }}</span></div>
-                  <div>Kembali: <span class="font-medium text-gray-900 dark:text-slate-100">{{ formatDate(borrowing.return_date) }}</span></div>
+                  <div>Pinjam: <span class="font-medium text-gray-900 dark:text-slate-100">{{ formatDateTime(borrowing.items?.map(item => item.borrow_date).filter(Boolean).sort()[0] ?? borrowing.borrow_date) }}</span></div>
+                  <div>Kembali: <span class="font-medium text-gray-900 dark:text-slate-100">{{ formatDateTime(borrowing.items?.map(item => item.return_date).filter(Boolean).sort().slice(-1)[0] ?? borrowing.return_date) }}</span></div>
                 </td>
                 <td class="mobile-report-status mobile-report-span-2 px-5 py-4" data-title="Status">
                   <span
                     class="inline-flex rounded-full px-3 py-1 text-xs font-semibold"
-                    :class="getItemBorrowingStatusClasses(borrowing.status)"
+                    :class="getItemBorrowingStatusClasses(borrowing.effective_status ?? borrowing.status)"
                   >
-                    {{ getItemBorrowingStatusLabel(borrowing.status) }}
+                    {{ getItemBorrowingStatusLabel(borrowing.effective_status ?? borrowing.status) }}
                   </span>
                 </td>
               </tr>

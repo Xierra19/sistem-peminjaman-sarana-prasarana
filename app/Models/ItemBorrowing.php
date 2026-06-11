@@ -13,6 +13,10 @@ class ItemBorrowing extends Model
 {
     use HasFactory;
 
+    protected $appends = [
+        'effective_status',
+    ];
+
     protected $fillable = [
         'title',
         'description',
@@ -33,6 +37,8 @@ class ItemBorrowing extends Model
     ];
 
     protected $casts = [
+        'borrow_date' => 'datetime',
+        'return_date' => 'datetime',
         'signed_letter_uploaded_at' => 'datetime',
         'approved_at' => 'datetime',
         'returned_at' => 'datetime',
@@ -91,11 +97,32 @@ class ItemBorrowing extends Model
      */
     public function scopeOverlappingPeriod(Builder $query, int $itemId, Carbon $start, Carbon $end): Builder
     {
-        return $query->whereHas('items', function ($q) use ($itemId, $start, $end) {
-            $q->where('item_id', $itemId)
-              ->where('borrow_date', '<=', $end->copy()->endOfDay())
-              ->where('return_date', '>=', $start->copy()->startOfDay());
-        })->whereNotIn('status', ['rejected', 'cancelled', 'returned']);
+        return $query
+            ->where('item_id', $itemId)
+            ->where('borrow_date', '<', $end)
+            ->where('return_date', '>', $start)
+            ->whereNotIn('status', ['rejected', 'cancelled', 'returned']);
+    }
+
+    public function getEffectiveStatusAttribute(): string
+    {
+        if ($this->status === 'returned') {
+            return 'completed';
+        }
+
+        if ($this->status !== 'approved') {
+            return $this->status === 'requested' ? 'waiting' : $this->status;
+        }
+
+        $latestReturn = $this->relationLoaded('items')
+            ? $this->items->max('return_date')
+            : $this->items()->max('return_date');
+
+        $latestReturn ??= $this->return_date;
+
+        return $latestReturn && Carbon::parse($latestReturn)->lte(now())
+            ? 'completed'
+            : 'approved';
     }
 
 }

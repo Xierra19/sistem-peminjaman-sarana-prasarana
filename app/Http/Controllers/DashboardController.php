@@ -44,14 +44,14 @@ class DashboardController extends Controller
             }
 
             if ($user->canManageItemModule()) {
-                $itemBorrowings = ItemBorrowing::query()->get();
+                $itemBorrowings = ItemBorrowing::query()->with('items')->get();
                 $itemSummary = [
                     'total' => $itemBorrowings->count(),
-                    'approved' => $itemBorrowings->where('status', 'approved')->count(),
-                    'waiting' => $itemBorrowings->where('status', 'waiting')->count(),
-                    'rejected' => $itemBorrowings->where('status', 'rejected')->count(),
-                    'cancelled' => $itemBorrowings->where('status', 'cancelled')->count(),
-                    'returned' => $itemBorrowings->where('status', 'returned')->count(),
+                    'approved' => $itemBorrowings->where('effective_status', 'approved')->count(),
+                    'waiting' => $itemBorrowings->where('effective_status', 'waiting')->count(),
+                    'rejected' => $itemBorrowings->where('effective_status', 'rejected')->count(),
+                    'cancelled' => $itemBorrowings->where('effective_status', 'cancelled')->count(),
+                    'completed' => $itemBorrowings->where('effective_status', 'completed')->count(),
                 ];
             }
 

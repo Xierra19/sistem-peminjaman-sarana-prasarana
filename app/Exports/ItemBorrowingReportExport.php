@@ -42,8 +42,8 @@ class ItemBorrowingReportExport implements FromCollection, WithHeadings, WithMap
             'No. Telepon',
             'Keperluan',
             'Deskripsi',
-            'Tanggal Pinjam',
-            'Tanggal Kembali',
+            'Waktu Pinjam',
+            'Waktu Kembali',
             'Jumlah',
             'Kode Barang',
             'Nama Barang',
@@ -76,14 +76,14 @@ class ItemBorrowingReportExport implements FromCollection, WithHeadings, WithMap
         return [
             $itemBorrowing->id,
             $this->formatDateTime($itemBorrowing->created_at),
-            strtoupper((string) $itemBorrowing->status),
+            strtoupper((string) $itemBorrowing->effective_status),
             $itemBorrowing->user?->name,
             $itemBorrowing->user?->email,
             $itemBorrowing->user?->phone,
             $itemBorrowing->title,
             $itemBorrowing->description,
-            $this->formatDate($borrowDate),
-            $this->formatDate($returnDate),
+            $this->formatDateTime($borrowDate),
+            $this->formatDateTime($returnDate),
             $totalQuantity,
             $itemCodes,
             $itemNames,
@@ -98,22 +98,10 @@ class ItemBorrowingReportExport implements FromCollection, WithHeadings, WithMap
         }
 
         try {
-            return Carbon::parse($value)->format('Y-m-d H:i');
+            return Carbon::parse($value)->timezone(config('app.business_timezone'))->format('Y-m-d H:i');
         } catch (\Throwable) {
             return is_string($value) ? $value : null;
         }
     }
 
-    private function formatDate(mixed $value): ?string
-    {
-        if (empty($value)) {
-            return null;
-        }
-
-        try {
-            return Carbon::parse($value)->format('Y-m-d');
-        } catch (\Throwable) {
-            return is_string($value) ? $value : null;
-        }
-    }
 }

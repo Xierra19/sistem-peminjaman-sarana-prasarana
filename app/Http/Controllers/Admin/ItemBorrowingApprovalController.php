@@ -55,6 +55,7 @@ class ItemBorrowingApprovalController extends Controller
     public function updateStatus(UpdateItemBorrowingStatusRequest $request, ItemBorrowing $itemBorrowing)
     {
         $data = $request->validated();
+        $itemBorrowing->loadMissing('items');
         $currentStatus = $itemBorrowing->status === 'requested' ? 'waiting' : $itemBorrowing->status;
         $targetStatus = $data['status'];
 
@@ -70,9 +71,15 @@ class ItemBorrowingApprovalController extends Controller
                 ->with('error', 'Aksi tidak valid untuk status saat ini.');
         }
 
-        if (in_array($targetStatus, ['cancelled', 'returned'], true) && $currentStatus !== 'approved') {
+        if ($targetStatus === 'cancelled' && $currentStatus !== 'approved') {
             return back()
                 ->withErrors(['status' => 'Hanya peminjaman yang sudah disetujui yang dapat dibatalkan atau ditandai kembali.'])
+                ->with('error', 'Aksi tidak valid untuk status saat ini.');
+        }
+
+        if ($targetStatus === 'cancelled' && $itemBorrowing->effective_status === 'completed') {
+            return back()
+                ->withErrors(['status' => 'Peminjaman yang waktunya sudah selesai tidak dapat dibatalkan.'])
                 ->with('error', 'Aksi tidak valid untuk status saat ini.');
         }
 
@@ -95,18 +102,12 @@ class ItemBorrowingApprovalController extends Controller
                 $updatePayload['approved_by'] = Auth::id();
             }
 
-            if ($targetStatus === 'returned') {
-                $updatePayload['returned_at'] = now();
-                $updatePayload['returned_by'] = Auth::id();
-            }
-
             $itemBorrowing->update($updatePayload);
 
             $description = match ($targetStatus) {
                 'approved' => 'Peminjaman barang disetujui',
                 'rejected' => 'Peminjaman barang ditolak',
                 'cancelled' => 'Peminjaman barang dibatalkan oleh admin',
-                'returned' => 'Barang telah dikembalikan dan diverifikasi admin',
                 default => 'Status peminjaman barang diperbarui',
             };
 

@@ -12,6 +12,10 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  minimumBorrowDate: {
+    type: String,
+    required: true,
+  },
 })
 
 const form = useForm({
@@ -26,20 +30,54 @@ const isLoadingAvailability = ref({})
 const formErrors = ref({})
 const datePickers = ref({}) // Menyimpan instance flatpickr
 
-const formatDateForInput = (date) => {
-  if (!date) return ''
-  const d = new Date(date)
-  const year = d.getFullYear()
-  const month = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
+const generateTimeSlots = (startHour = 7, endHour = 21, stepMinutes = 30) => {
+  const slots = []
+
+  for (let hour = startHour; hour <= endHour; hour++) {
+    for (let minute = 0; minute < 60; minute += stepMinutes) {
+      if (hour === endHour && minute > 0) break
+
+      slots.push(`${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`)
+    }
+  }
+
+  return slots
+}
+
+const timeSlots = generateTimeSlots()
+
+const borrowTimeSlots = (row) => {
+  if (!row.borrow_time || timeSlots.includes(row.borrow_time)) return timeSlots
+  return [...timeSlots, row.borrow_time].sort()
+}
+
+const availableReturnTimeSlots = (row) => {
+  const slots = !row.return_time || timeSlots.includes(row.return_time)
+    ? timeSlots
+    : [...timeSlots, row.return_time].sort()
+
+  if (!row.borrow_date || !row.return_date || !row.borrow_time) return slots
+  if (row.return_date > row.borrow_date) return slots
+
+  return slots.filter((slot) => slot > row.borrow_time)
+}
+
+const onBorrowTimeChange = (index) => {
+  const row = form.items[index]
+
+  if (
+    row.return_date === row.borrow_date &&
+    row.return_time &&
+    row.return_time <= row.borrow_time
+  ) {
+    row.return_time = ''
+  }
+
+  updateAvailability(index)
 }
 
 const getMinBorrowDate = () => {
-  const date = new Date()
-  date.setHours(0, 0, 0, 0)
-  date.setDate(date.getDate() + 3)
-  return formatDateForInput(date)
+  return props.minimumBorrowDate
 }
 
 const addItem = () => {
@@ -47,7 +85,9 @@ const addItem = () => {
     item_id: '',
     quantity: 1,
     borrow_date: '', // Tidak mengisi otomatis agar user memilih sendiri
+    borrow_time: '',
     return_date: '', // Tidak mengisi otomatis agar user memilih sendiri
+    return_time: '',
   })
   const newIndex = form.items.length - 1
   initFlatpickr(newIndex)
@@ -91,18 +131,16 @@ const updateAvailability = async (index) => {
   
   availabilityTimeouts[index] = setTimeout(async () => {
     const itemRow = form.items[index]
-    if (!itemRow.item_id || !itemRow.borrow_date || !itemRow.return_date) {
+    if (!itemRow.item_id || !itemRow.borrow_date || !itemRow.borrow_time || !itemRow.return_date || !itemRow.return_time) {
       // Reset availability jika tanggal belum lengkap
       delete itemAvailabilities.value[index]
       return
     }
 
     // Basic date format validation
-    const borrowDate = new Date(itemRow.borrow_date)
-    const returnDate = new Date(itemRow.return_date)
-    // Mengizinkan tanggal kembali sama dengan tanggal pinjam (peminjaman hari yang sama)
-    if (isNaN(borrowDate.getTime()) || isNaN(returnDate.getTime()) || returnDate < borrowDate) {
-      // Reset availability jika tanggal tidak valid (tanggal kembali harus sama atau setelah tanggal pinjam)
+    const borrowDate = new Date(`${itemRow.borrow_date}T${itemRow.borrow_time}`)
+    const returnDate = new Date(`${itemRow.return_date}T${itemRow.return_time}`)
+    if (isNaN(borrowDate.getTime()) || isNaN(returnDate.getTime()) || returnDate <= borrowDate) {
       delete itemAvailabilities.value[index]
       return
     }
@@ -116,7 +154,9 @@ const updateAvailability = async (index) => {
       const response = await fetch(route('items.availability', {
         item: itemRow.item_id,
         borrow_date: itemRow.borrow_date,
+        borrow_time: itemRow.borrow_time,
         return_date: itemRow.return_date,
+        return_time: itemRow.return_time,
       }), {
         headers: { Accept: 'application/json' },
       })
@@ -144,7 +184,7 @@ const updateAvailability = async (index) => {
 const isRowValid = (index) => {
   const row = form.items[index]
   const avail = itemAvailabilities.value[index] || {}
-  return row.item_id && row.quantity > 0 && row.borrow_date && row.return_date && row.quantity <= (avail.remaining_quantity || 0)
+  return row.item_id && row.quantity > 0 && row.borrow_date && row.borrow_time && row.return_date && row.return_time && row.quantity <= (avail.remaining_quantity || 0)
 }
 
 const hasAnyRowError = computed(() => form.items.some((_, index) => !isRowValid(index)))
@@ -257,7 +297,7 @@ onBeforeUnmount(() => {
             <span class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">1</span>
             <div>
               <p class="font-semibold text-slate-800 dark:text-slate-200">Tambah Barang</p>
-              <p>Pilih barang & tentukan jumlah + tanggal.</p>
+              <p>Pilih barang, jumlah, tanggal, dan jam.</p>
             </div>
           </div>
           <div class="flex items-start gap-3">
@@ -345,6 +385,21 @@ onBeforeUnmount(() => {
                     />
                   </div>
 
+                  <div class="space-y-2">
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Jam Mulai</label>
+                    <select
+                      v-model="itemRow.borrow_time"
+                      @change="onBorrowTimeChange(index)"
+                      class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+                    >
+                      <option value="">Pilih jam mulai</option>
+                      <option v-for="slot in borrowTimeSlots(itemRow)" :key="`borrow-${index}-${slot}`" :value="slot">
+                        {{ slot }}
+                      </option>
+                    </select>
+                    <div v-if="form.errors[`items.${index}.borrow_time`]" class="text-xs text-rose-500">{{ form.errors[`items.${index}.borrow_time`] }}</div>
+                  </div>
+
                   <!-- Return Date -->
                   <div class="space-y-2">
                     <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Tanggal Selesai</label>
@@ -356,7 +411,29 @@ onBeforeUnmount(() => {
                       readonly
                     />
                   </div>
+
+                  <div class="space-y-2">
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Jam Selesai</label>
+                    <select
+                      v-model="itemRow.return_time"
+                      @change="updateAvailability(index)"
+                      class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+                    >
+                      <option value="">Pilih jam selesai</option>
+                      <option
+                        v-for="slot in availableReturnTimeSlots(itemRow)"
+                        :key="`return-${index}-${slot}`"
+                        :value="slot"
+                      >
+                        {{ slot }}
+                      </option>
+                    </select>
+                    <div v-if="form.errors[`items.${index}.return_time`]" class="text-xs text-rose-500">{{ form.errors[`items.${index}.return_time`] }}</div>
+                  </div>
                 </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Pengajuan paling lambat dilakukan pada H-7 berdasarkan tanggal kalender.</p>
+                <div v-if="form.errors[`items.${index}.borrow_date`]" class="text-xs text-rose-500">{{ form.errors[`items.${index}.borrow_date`] }}</div>
+                <div v-if="form.errors[`items.${index}.return_date`]" class="text-xs text-rose-500">{{ form.errors[`items.${index}.return_date`] }}</div>
 
                 <!-- Availability Card (same style) -->
                 <div v-if="itemRow.item_id" class="rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-700/50">
@@ -426,5 +503,3 @@ onBeforeUnmount(() => {
     </div>
   </AuthenticatedLayout>
 </template>
-
-

@@ -15,7 +15,7 @@ import {
 } from '@/Composables/useItemBorrowingStatus'
 import { usePagination } from '@/Composables/usePagination'
 import { useTableSort } from '@/Composables/useTableSort'
-import { formatToDDMMYY } from '@/Composables/useDateFormatter'
+import { formatDateTimeToDDMMYY, formatToDDMMYY } from '@/Composables/useDateFormatter'
 
 const props = defineProps({
   itemBorrowings: {
@@ -24,7 +24,7 @@ const props = defineProps({
   },
 })
 
-const statusOptions = ['waiting', 'approved', 'returned', 'rejected', 'cancelled']
+const statusOptions = ['waiting', 'approved', 'completed', 'rejected', 'cancelled']
 
 const {
   filterForm,
@@ -101,7 +101,7 @@ const borrowingsList = computed(() => {
   }
 
   if (appliedFilters.status) {
-    list = list.filter((b) => normalizeItemBorrowingStatus(b.status) === appliedFilters.status)
+    list = list.filter((b) => normalizeItemBorrowingStatus(b.effective_status ?? b.status) === appliedFilters.status)
   }
 
   if (appliedFilters.start_date || appliedFilters.end_date) {
@@ -122,8 +122,8 @@ const summary = computed(() => {
   return {
     total: filtered.length,
     waiting:   count(filtered, (b) => ['waiting', 'requested'].includes(b.status)),
-    approved:  count(filtered, (b) => b.status === 'approved'),
-    returned:  count(filtered, (b) => b.status === 'returned'),
+    approved:  count(filtered, (b) => b.effective_status === 'approved'),
+    completed: count(filtered, (b) => b.effective_status === 'completed'),
     rejected:  count(filtered, (b) => b.status === 'rejected'),
     cancelled: count(filtered, (b) => b.status === 'cancelled'),
   }
@@ -148,7 +148,7 @@ const {
       return d ? new Date(d) : null
     },
     created_at: (b) => (b.created_at ? new Date(b.created_at) : null),
-    status: (b) => normalizeItemBorrowingStatus(b.status),
+    status: (b) => normalizeItemBorrowingStatus(b.effective_status ?? b.status),
   },
 })
 
@@ -164,6 +164,7 @@ const {
 const perPageOptions = [5, 10, 25, 50]
 
 const formatDate = (value) => formatToDDMMYY(value)
+const formatSchedule = (value) => formatDateTimeToDDMMYY(value)
 
 const formatTimeHHMM = (value) => {
   if (!value) return '-'
@@ -207,9 +208,9 @@ const formatTimeHHMM = (value) => {
           <p class="mt-2 text-xs text-emerald-500 dark:text-emerald-400">Sudah mendapat persetujuan</p>
         </div>
         <div class="rounded-2xl border border-blue-200 bg-white p-4 shadow-sm dark:border-blue-800 dark:bg-blue-900/30">
-          <p class="text-xs font-medium uppercase tracking-wide text-blue-500 dark:text-blue-300">Dikembalikan</p>
-          <p class="mt-3 text-3xl font-semibold text-blue-600 dark:text-blue-400">{{ summary.returned }}</p>
-          <p class="mt-2 text-xs text-blue-500 dark:text-blue-400">Sudah selesai diproses</p>
+          <p class="text-xs font-medium uppercase tracking-wide text-blue-500 dark:text-blue-300">Selesai</p>
+          <p class="mt-3 text-3xl font-semibold text-blue-600 dark:text-blue-400">{{ summary.completed }}</p>
+          <p class="mt-2 text-xs text-blue-500 dark:text-blue-400">Waktu peminjaman telah berakhir</p>
         </div>
         <div class="rounded-2xl border border-rose-200 bg-white p-4 shadow-sm dark:border-rose-800 dark:bg-rose-900/30">
           <p class="text-xs font-medium uppercase tracking-wide text-rose-500 dark:text-rose-300">Ditolak / Batal</p>
@@ -386,8 +387,8 @@ const formatTimeHHMM = (value) => {
               </td>
               <td class="px-5 py-4 text-sm" data-title="Qty">{{ getTotalQuantity(borrowing) }}</td>
               <td class="mobile-span-2 px-5 py-4 text-sm" data-title="Periode">
-                <div>Pinjam: <span class="font-medium text-slate-800 dark:text-slate-200">{{ formatDate(getBorrowDates(borrowing)) }}</span></div>
-                <div>Kembali: <span class="font-medium text-slate-800 dark:text-slate-200">{{ formatDate(getReturnDates(borrowing)) }}</span></div>
+                <div>Pinjam: <span class="font-medium text-slate-800 dark:text-slate-200">{{ formatSchedule(getBorrowDates(borrowing)) }}</span></div>
+                <div>Kembali: <span class="font-medium text-slate-800 dark:text-slate-200">{{ formatSchedule(getReturnDates(borrowing)) }}</span></div>
               </td>
               <td class="px-5 py-4 text-sm mobile-compact-meta" data-title="Dibuat">
                 <div>
@@ -406,9 +407,9 @@ const formatTimeHHMM = (value) => {
               <td class="mobile-status-cell px-5 py-4 text-center" data-title="Status">
                 <span
                   class="inline-flex rounded-full px-3 py-1 text-xs font-semibold"
-                  :class="getItemBorrowingStatusClasses(borrowing.status)"
+                  :class="getItemBorrowingStatusClasses(borrowing.effective_status ?? borrowing.status)"
                 >
-                  {{ getItemBorrowingStatusLabel(borrowing.status) }}
+                  {{ getItemBorrowingStatusLabel(borrowing.effective_status ?? borrowing.status) }}
                 </span>
               </td>
               <td class="mobile-action-cell px-5 py-4 text-right" data-title="Aksi">

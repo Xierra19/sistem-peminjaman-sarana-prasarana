@@ -10,7 +10,7 @@ import {
 } from '@/Composables/useItemBorrowingStatus'
 import { usePagination } from '@/Composables/usePagination'
 import { useTableSort } from '@/Composables/useTableSort'
-import { formatToDDMMYY } from '@/Composables/useDateFormatter'
+import { formatDateTimeToDDMMYY } from '@/Composables/useDateFormatter'
 
 const props = defineProps({
   itemBorrowings: {
@@ -35,7 +35,7 @@ const getItemNames = (borrowing) => {
       .join(', ')
   }
   // Fallback ke legacy singleItem
-  return borrowing.item?.name ?? '-'
+  return borrowing.single_item?.name ?? '-'
 }
 
 /**
@@ -95,7 +95,7 @@ const filteredBorrowings = computed(() => {
       .toLowerCase()
 
     const matchesSearch = !q || searchable.includes(q)
-    const normalizedStatus = normalizeItemBorrowingStatus(borrowing.status)
+    const normalizedStatus = normalizeItemBorrowingStatus(borrowing.effective_status ?? borrowing.status)
 
     const matchesStatus = !status || normalizedStatus === status
 
@@ -112,11 +112,17 @@ const {
   accessors: {
     number: (borrowing) => borrowing.id ?? 0,
     title: (borrowing) => borrowing.title ?? '',
-    item: (borrowing) => borrowing.item?.name ?? '',
-    quantity: (borrowing) => borrowing.quantity ?? 0,
-    borrow_date: (borrowing) => (borrowing.borrow_date ? new Date(borrowing.borrow_date) : null),
-    return_date: (borrowing) => (borrowing.return_date ? new Date(borrowing.return_date) : null),
-    status: (borrowing) => normalizeItemBorrowingStatus(borrowing.status),
+    item: (borrowing) => getItemNames(borrowing),
+    quantity: (borrowing) => getTotalQuantity(borrowing),
+    borrow_date: (borrowing) => {
+      const value = getBorrowDates(borrowing)
+      return value ? new Date(value) : null
+    },
+    return_date: (borrowing) => {
+      const value = getReturnDates(borrowing)
+      return value ? new Date(value) : null
+    },
+    status: (borrowing) => normalizeItemBorrowingStatus(borrowing.effective_status ?? borrowing.status),
   },
 })
 
@@ -128,7 +134,7 @@ const {
   changePage,
 } = usePagination(sortedBorrowings)
 
-const formatDate = (value) => formatToDDMMYY(value)
+const formatDate = (value) => formatDateTimeToDDMMYY(value)
 
 const cancelForm = useForm({})
 const cancellingId = ref(null)
@@ -214,7 +220,7 @@ const cancelBorrowing = (borrowing) => {
                   <option value="approved">Disetujui</option>
                   <option value="rejected">Ditolak</option>
                   <option value="cancelled">Dibatalkan</option>
-                  <option value="returned">Dikembalikan</option>
+                  <option value="completed">Selesai</option>
                 </select>
               </div>
             </div>
@@ -312,9 +318,9 @@ const cancelBorrowing = (borrowing) => {
                 <td class="mobile-status-cell px-4 py-3" data-title="Status">
                   <span
                     class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold"
-                    :class="getItemBorrowingStatusClasses(borrowing.status)"
+                    :class="getItemBorrowingStatusClasses(borrowing.effective_status ?? borrowing.status)"
                   >
-                    {{ getItemBorrowingStatusLabel(borrowing.status) }}
+                    {{ getItemBorrowingStatusLabel(borrowing.effective_status ?? borrowing.status) }}
                   </span>
                 </td>
                 <td class="mobile-action-cell px-4 py-3" data-title="Aksi">

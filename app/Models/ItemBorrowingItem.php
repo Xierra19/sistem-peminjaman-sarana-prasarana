@@ -20,8 +20,8 @@ class ItemBorrowingItem extends Model
 
     protected $casts = [
         'quantity' => 'integer',
-        'borrow_date' => 'date',
-        'return_date' => 'date',
+        'borrow_date' => 'datetime',
+        'return_date' => 'datetime',
     ];
 
     public function borrowing(): BelongsTo
@@ -34,4 +34,3 @@ class ItemBorrowingItem extends Model
         return $this->belongsTo(Item::class);
     }
 }
-

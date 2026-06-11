@@ -45,8 +45,8 @@ class ItemAvailabilityService
                     'title' => $record->borrowing?->title ?? $record->title ?? 'Unknown',
                     'status' => $record->borrowing?->status ?? $record->status ?? 'unknown',
                     'quantity' => $record->quantity,
-                    'borrow_date' => $borrowDate ? $borrowDate->format('Y-m-d') : null,
-                    'return_date' => $returnDate ? $returnDate->format('Y-m-d') : null,
+                    'borrow_date' => $borrowDate?->toIso8601String(),
+                    'return_date' => $returnDate?->toIso8601String(),
                 ];
             })->values()->all(),
         ];
@@ -71,9 +71,8 @@ class ItemAvailabilityService
         $legacyQuery = ItemBorrowing::overlappingPeriod($item->id, $borrowDate, $returnDate);
         
         $pivotQuery = ItemBorrowingItem::where('item_id', $item->id)
-            // Bandingkan hanya bagian tanggal (tanpa waktu) untuk menghindari masalah timezone
-            ->whereDate('borrow_date', '<=', $returnDate->toDateString())
-            ->whereDate('return_date', '>=', $borrowDate->toDateString())
+            ->where('borrow_date', '<', $returnDate)
+            ->where('return_date', '>', $borrowDate)
             ->whereExists(function ($q) {
                 $q->select(DB::raw(1))
                   ->from('item_borrowings')

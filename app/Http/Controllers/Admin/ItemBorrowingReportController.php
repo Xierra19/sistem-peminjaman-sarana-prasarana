@@ -14,7 +14,7 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class ItemBorrowingReportController extends Controller
 {
-    private const STATUS_OPTIONS = ['waiting', 'approved', 'rejected', 'cancelled', 'returned'];
+    private const STATUS_OPTIONS = ['waiting', 'approved', 'completed', 'rejected', 'cancelled'];
 
     public function index(Request $request)
     {
@@ -34,11 +34,11 @@ class ItemBorrowingReportController extends Controller
 
         $statusSummary = [
             'total' => $itemBorrowings->count(),
-            'approved' => $itemBorrowings->where('status', 'approved')->count(),
-            'waiting' => $itemBorrowings->where('status', 'waiting')->count(),
-            'rejected' => $itemBorrowings->where('status', 'rejected')->count(),
-            'cancelled' => $itemBorrowings->where('status', 'cancelled')->count(),
-            'returned' => $itemBorrowings->where('status', 'returned')->count(),
+            'approved' => $itemBorrowings->where('effective_status', 'approved')->count(),
+            'waiting' => $itemBorrowings->where('effective_status', 'waiting')->count(),
+            'rejected' => $itemBorrowings->where('effective_status', 'rejected')->count(),
+            'cancelled' => $itemBorrowings->where('effective_status', 'cancelled')->count(),
+            'completed' => $itemBorrowings->where('effective_status', 'completed')->count(),
         ];
 
         return Inertia::render('Admin/ItemBorrowingReports/Index', [

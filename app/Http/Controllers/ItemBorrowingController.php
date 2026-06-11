@@ -50,6 +50,7 @@ class ItemBorrowingController extends Controller
 
         return Inertia::render('ItemBorrowings/Create', [
             'items' => $items,
+            'minimumBorrowDate' => Carbon::now(config('app.business_timezone'))->addDays(7)->toDateString(),
         ]);
     }
 
@@ -69,16 +70,20 @@ class ItemBorrowingController extends Controller
             'id' => $pivot->id,
             'item_id' => $pivot->item_id,
             'quantity' => $pivot->quantity,
-            'borrow_date' => $pivot->borrow_date->format('Y-m-d'),
-            'return_date' => $pivot->return_date->format('Y-m-d'),
+            'borrow_date' => $pivot->borrow_date->timezone(config('app.business_timezone'))->format('Y-m-d'),
+            'borrow_time' => $pivot->borrow_date->timezone(config('app.business_timezone'))->format('H:i'),
+            'return_date' => $pivot->return_date->timezone(config('app.business_timezone'))->format('Y-m-d'),
+            'return_time' => $pivot->return_date->timezone(config('app.business_timezone'))->format('H:i'),
         ]);
 
         if ($itemBorrowing->singleItem && $formItems->isEmpty()) {
             $formItems->push([
                 'item_id' => $itemBorrowing->singleItem->id,
                 'quantity' => $itemBorrowing->quantity,
-                'borrow_date' => $itemBorrowing->borrow_date->format('Y-m-d'),
-                'return_date' => $itemBorrowing->return_date->format('Y-m-d'),
+                'borrow_date' => $itemBorrowing->borrow_date->timezone(config('app.business_timezone'))->format('Y-m-d'),
+                'borrow_time' => $itemBorrowing->borrow_date->timezone(config('app.business_timezone'))->format('H:i'),
+                'return_date' => $itemBorrowing->return_date->timezone(config('app.business_timezone'))->format('Y-m-d'),
+                'return_time' => $itemBorrowing->return_date->timezone(config('app.business_timezone'))->format('H:i'),
             ]);
         }
 
@@ -86,6 +91,7 @@ class ItemBorrowingController extends Controller
             'itemBorrowing' => $itemBorrowing,
             'items' => $items,
             'formItems' => $formItems,
+            'minimumBorrowDate' => Carbon::now(config('app.business_timezone'))->addDays(7)->toDateString(),
         ]);
     }
 
@@ -105,8 +111,7 @@ class ItemBorrowingController extends Controller
                 continue;
             }
 
-            $borrowDate = Carbon::parse($itemData['borrow_date'])->startOfDay();
-            $returnDate = Carbon::parse($itemData['return_date'])->endOfDay();
+            [$borrowDate, $returnDate] = $this->parseItemPeriod($itemData);
             
             if ($availabilityService->hasEnoughStock($item, $borrowDate, $returnDate, (int) $itemData['quantity'])) {
                 continue;
@@ -151,8 +156,8 @@ class ItemBorrowingController extends Controller
                     'item_borrowing_id' => $borrowing->id,
                     'item_id'           => $itemData['item_id'],
                     'quantity'          => $itemData['quantity'],
-                    'borrow_date'       => Carbon::parse($itemData['borrow_date']),
-                    'return_date'       => Carbon::parse($itemData['return_date']),
+                    'borrow_date'       => $this->parseItemPeriod($itemData)[0],
+                    'return_date'       => $this->parseItemPeriod($itemData)[1],
                 ]);
             }
 
@@ -213,8 +218,7 @@ class ItemBorrowingController extends Controller
         $errors = [];
         foreach ($validated['items'] as $index => $itemData) {
             $item = Item::findOrFail($itemData['item_id']);
-            $borrowDate = Carbon::parse($itemData['borrow_date'])->startOfDay();
-            $returnDate = Carbon::parse($itemData['return_date'])->endOfDay();
+            [$borrowDate, $returnDate] = $this->parseItemPeriod($itemData);
 
             $exclude = isset($itemData['id']) ? ItemBorrowingItem::find($itemData['id']) : null;
             
@@ -262,8 +266,8 @@ class ItemBorrowingController extends Controller
                 $pivotData = [
                     'item_id' => $itemData['item_id'],
                     'quantity' => $itemData['quantity'],
-                    'borrow_date' => Carbon::parse($itemData['borrow_date']),
-                    'return_date' => Carbon::parse($itemData['return_date']),
+                    'borrow_date' => $this->parseItemPeriod($itemData)[0],
+                    'return_date' => $this->parseItemPeriod($itemData)[1],
                 ];
 
                 if (isset($itemData['id'])) {
@@ -322,31 +326,42 @@ class ItemBorrowingController extends Controller
         }
 
         $request->validate([
-            'borrow_date' => 'required|date',
-            'return_date' => 'required|date|after_or_equal:borrow_date',
+            'borrow_date' => 'required|date_format:Y-m-d',
+            'borrow_time' => 'required|date_format:H:i',
+            'return_date' => 'required|date_format:Y-m-d',
+            'return_time' => 'required|date_format:H:i',
         ]);
 
-        $borrowDate = $request->query('borrow_date');
-        $returnDate = $request->query('return_date');
-
         try {
-            $start = Carbon::parse($borrowDate)->startOfDay();
-            $end = Carbon::parse($returnDate)->endOfDay();
+            [$start, $end] = $this->parseItemPeriod([
+                'borrow_date' => $request->query('borrow_date'),
+                'borrow_time' => $request->query('borrow_time'),
+                'return_date' => $request->query('return_date'),
+                'return_time' => $request->query('return_time'),
+            ]);
         } catch (\Throwable $exception) {
             return response()->json([
-                'message' => 'Rentang tanggal tidak valid.',
+                'message' => 'Rentang tanggal dan waktu tidak valid.',
             ], 422);
         }
 
         if ($end->lt($start)) {
             return response()->json([
-                'message' => 'Tanggal kembali harus sama atau setelah tanggal pinjam.',
+                'message' => 'Waktu kembali harus setelah waktu mulai.',
             ], 422);
         }
 
         return response()->json(
             $availabilityService->getAvailability($item, $start, $end)
         , 200);
+    }
+
+    private function parseItemPeriod(array $itemData): array
+    {
+        return [
+            Carbon::createFromFormat('Y-m-d H:i', $itemData['borrow_date'].' '.$itemData['borrow_time'], config('app.business_timezone'))->utc(),
+            Carbon::createFromFormat('Y-m-d H:i', $itemData['return_date'].' '.$itemData['return_time'], config('app.business_timezone'))->utc(),
+        ];
     }
 
     public function downloadAttachment(ItemBorrowing $itemBorrowing)

@@ -25,7 +25,7 @@ const formatDate = (value) => formatToDDMMYY(value)
 
 const formatDateTime = (value) => formatDateTimeToDDMMYY(value)
 
-const normalizedStatus = computed(() => normalizeItemBorrowingStatus(props.itemBorrowing.status))
+const normalizedStatus = computed(() => normalizeItemBorrowingStatus(props.itemBorrowing.effective_status ?? props.itemBorrowing.status))
 const borrowingItems = computed(() => {
   if (props.itemBorrowing.items?.length) {
     return [...props.itemBorrowing.items].sort((left, right) =>
@@ -137,7 +137,7 @@ const cancelBorrowing = () => {
                       <div class="font-semibold text-gray-900 dark:text-white">{{ borrowingItem.item?.name ?? '-' }}</div>
                       <div class="mt-1 text-xs text-gray-600 dark:text-slate-300">
                         Jumlah {{ borrowingItem.quantity }} •
-                        {{ formatDate(borrowingItem.borrow_date) }} s/d {{ formatDate(borrowingItem.return_date) }}
+                        {{ formatDateTime(borrowingItem.borrow_date) }} s/d {{ formatDateTime(borrowingItem.return_date) }}
                       </div>
                     </li>
                   </ul>
@@ -153,10 +153,10 @@ const cancelBorrowing = () => {
                 <div>
                   <div class="text-xs font-semibold uppercase text-gray-500 dark:text-slate-400">Periode</div>
                   <p class="text-sm text-gray-700 dark:text-slate-300">
-                    Pinjam: <span class="font-semibold text-gray-900 dark:text-white">{{ formatDate(earliestBorrowDate) }}</span>
+                    Pinjam: <span class="font-semibold text-gray-900 dark:text-white">{{ formatDateTime(earliestBorrowDate) }}</span>
                   </p>
                   <p class="text-sm text-gray-700 dark:text-slate-300">
-                    Kembali: <span class="font-semibold text-gray-900 dark:text-white">{{ formatDate(latestReturnDate) }}</span>
+                    Kembali: <span class="font-semibold text-gray-900 dark:text-white">{{ formatDateTime(latestReturnDate) }}</span>
                   </p>
                 </div>
                 <div>

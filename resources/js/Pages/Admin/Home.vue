@@ -125,8 +125,8 @@ const dynamicSubtitle = computed(() => {
                 <div class="mt-1 text-2xl font-semibold text-emerald-700 dark:text-emerald-100">{{ itemSummary?.approved ?? 0 }}</div>
               </div>
               <div class="rounded-2xl bg-blue-50 p-4 dark:border dark:border-blue-800 dark:bg-blue-900/30">
-                <div class="text-xs uppercase tracking-wide text-blue-500 dark:text-blue-300">Kembali</div>
-                <div class="mt-1 text-2xl font-semibold text-blue-700 dark:text-blue-100">{{ itemSummary?.returned ?? 0 }}</div>
+                <div class="text-xs uppercase tracking-wide text-blue-500 dark:text-blue-300">Selesai</div>
+                <div class="mt-1 text-2xl font-semibold text-blue-700 dark:text-blue-100">{{ itemSummary?.completed ?? 0 }}</div>
               </div>
               <div class="rounded-2xl bg-rose-50 p-4 dark:border dark:border-rose-800 dark:bg-rose-900/30">
                 <div class="text-xs uppercase tracking-wide text-rose-500 dark:text-rose-300">Ditolak/Batal</div>

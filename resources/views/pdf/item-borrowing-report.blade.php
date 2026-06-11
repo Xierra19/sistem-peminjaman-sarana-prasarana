@@ -56,6 +56,7 @@
         'waiting' => 'Menunggu',
         'requested' => 'Menunggu',
         'approved' => 'Disetujui',
+        'completed' => 'Selesai',
         'rejected' => 'Ditolak',
         'cancelled' => 'Dibatalkan',
         'returned' => 'Dikembalikan',
@@ -75,8 +76,8 @@
                 <th>Kode</th>
                 <th>Kategori</th>
                 <th>Qty</th>
-                <th>Tgl Pinjam</th>
-                <th>Tgl Kembali</th>
+                <th>Waktu Pinjam</th>
+                <th>Waktu Kembali</th>
                 <th>Status</th>
             </tr>
         </thead>
@@ -101,7 +102,7 @@
                     $borrowDate = $borrowing->borrow_date;
                     $returnDate = $borrowing->return_date;
                 }
-                $status = $borrowing->status === 'requested' ? 'waiting' : $borrowing->status;
+                $status = $borrowing->effective_status;
             @endphp
             <tr>
                 <td>{{ $borrowing->id }}</td>
@@ -112,8 +113,8 @@
                 <td>{{ $itemCodes ?: '-' }}</td>
                 <td>{{ $itemCategories ?: '-' }}</td>
                 <td>{{ $totalQuantity }}</td>
-                <td>{{ $borrowDate ? Carbon::parse($borrowDate)->locale('id')->translatedFormat('d F Y') : '-' }}</td>
-                <td>{{ $returnDate ? Carbon::parse($returnDate)->locale('id')->translatedFormat('d F Y') : '-' }}</td>
+                <td>{{ $borrowDate ? Carbon::parse($borrowDate)->timezone(config('app.business_timezone'))->locale('id')->translatedFormat('d F Y H:i') . ' WIB' : '-' }}</td>
+                <td>{{ $returnDate ? Carbon::parse($returnDate)->timezone(config('app.business_timezone'))->locale('id')->translatedFormat('d F Y H:i') . ' WIB' : '-' }}</td>
                 <td>{{ $statusLabels[$status] ?? ucfirst($status ?? '-') }}</td>
             </tr>
         @empty
