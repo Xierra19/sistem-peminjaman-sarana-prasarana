@@ -31,6 +31,164 @@ const formatDateTime = (value) => {
   })
 }
 
+const serializedScheduleTimeZone = 'UTC'
+
+const datePartsFormatter = new Intl.DateTimeFormat('en-CA', {
+  timeZone: serializedScheduleTimeZone,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+})
+
+const timeFormatter = new Intl.DateTimeFormat('id-ID', {
+  timeZone: serializedScheduleTimeZone,
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+})
+
+const fullDateFormatter = new Intl.DateTimeFormat('id-ID', {
+  timeZone: 'UTC',
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+})
+
+const monthYearFormatter = new Intl.DateTimeFormat('id-ID', {
+  timeZone: 'UTC',
+  month: 'long',
+  year: 'numeric',
+})
+
+const monthFormatter = new Intl.DateTimeFormat('id-ID', {
+  timeZone: 'UTC',
+  month: 'long',
+})
+
+const toDateKey = (value) => {
+  const parts = datePartsFormatter.formatToParts(new Date(value))
+  const part = (type) => parts.find((entry) => entry.type === type)?.value
+
+  return `${part('year')}-${part('month')}-${part('day')}`
+}
+
+const dateFromKey = (dateKey) => new Date(`${dateKey}T00:00:00Z`)
+
+const addDaysToKey = (dateKey, days) => {
+  const date = dateFromKey(dateKey)
+  date.setUTCDate(date.getUTCDate() + days)
+  return date.toISOString().slice(0, 10)
+}
+
+const formatDateRange = (startKey, endKey) => {
+  const start = dateFromKey(startKey)
+  const end = dateFromKey(endKey)
+
+  if (startKey === endKey) return fullDateFormatter.format(start)
+
+  const sameYear = start.getUTCFullYear() === end.getUTCFullYear()
+  const sameMonth = sameYear && start.getUTCMonth() === end.getUTCMonth()
+
+  if (sameMonth) {
+    return `${start.getUTCDate()}-${end.getUTCDate()} ${monthYearFormatter.format(end)}`
+  }
+
+  if (sameYear) {
+    return `${start.getUTCDate()} ${monthFormatter.format(start)}-${fullDateFormatter.format(end)}`
+  }
+
+  return `${fullDateFormatter.format(start)}-${fullDateFormatter.format(end)}`
+}
+
+const summarizeDateKeys = (dateKeys) => {
+  const dates = [...new Set(dateKeys)].sort()
+  const ranges = []
+
+  for (const dateKey of dates) {
+    const latestRange = ranges[ranges.length - 1]
+
+    if (latestRange && addDaysToKey(latestRange.end, 1) === dateKey) {
+      latestRange.end = dateKey
+    } else {
+      ranges.push({ start: dateKey, end: dateKey })
+    }
+  }
+
+  return ranges.map((range) => formatDateRange(range.start, range.end)).join(', ')
+}
+
+const groupedRoomSchedules = computed(() => {
+  const rooms = new Map()
+
+  for (const schedule of props.booking.room_schedules ?? []) {
+    const roomKey = String(schedule.room_id ?? schedule.room?.id ?? `schedule-${schedule.id}`)
+    const startDate = toDateKey(schedule.start_time)
+    const endDate = toDateKey(schedule.end_time)
+    const startClock = timeFormatter.format(new Date(schedule.start_time))
+    const endClock = timeFormatter.format(new Date(schedule.end_time))
+    const dayOffset = Math.round(
+      (dateFromKey(endDate).getTime() - dateFromKey(startDate).getTime()) / 86400000,
+    )
+    const timeKey = `${startClock}|${endClock}|${dayOffset}`
+
+    if (!rooms.has(roomKey)) {
+      rooms.set(roomKey, {
+        id: roomKey,
+        name: schedule.room?.name ?? '-',
+        location: [
+          schedule.room?.building?.name,
+          schedule.room?.building?.campus?.name,
+        ].filter(Boolean).join(' · ') || '-',
+        scheduleCount: 0,
+        timeGroups: new Map(),
+      })
+    }
+
+    const room = rooms.get(roomKey)
+    room.scheduleCount += 1
+
+    if (!room.timeGroups.has(timeKey)) {
+      room.timeGroups.set(timeKey, {
+        key: timeKey,
+        startClock,
+        endClock,
+        dayOffset,
+        dates: [],
+      })
+    }
+
+    room.timeGroups.get(timeKey).dates.push(startDate)
+  }
+
+  return [...rooms.values()].map((room) => ({
+    ...room,
+    timeGroups: [...room.timeGroups.values()]
+      .map((timeGroup) => {
+        const dates = [...new Set(timeGroup.dates)].sort()
+
+        return {
+          ...timeGroup,
+          dates,
+          dateSummary: summarizeDateKeys(dates),
+        }
+      })
+      .sort((first, second) => {
+        const dateComparison = first.dates[0].localeCompare(second.dates[0])
+        return dateComparison || first.startClock.localeCompare(second.startClock)
+      }),
+  }))
+})
+
+const scheduleOverview = computed(() => {
+  const schedules = props.booking.room_schedules ?? []
+
+  return {
+    roomCount: groupedRoomSchedules.value.length,
+    scheduleCount: schedules.length,
+    dateSummary: summarizeDateKeys(schedules.map((schedule) => toDateKey(schedule.start_time))),
+  }
+})
+
 const normalizedStatus = computed(() => normalizeBookingStatus(props.booking.status))
 const isWaiting = computed(() => normalizedStatus.value === 'waiting')
 const canCancel = computed(() => normalizedStatus.value === 'approved')
@@ -95,25 +253,65 @@ const submitApproval = (status) => {
               </div>
               <div class="space-y-3 sm:col-span-2">
                 <div class="text-xs font-semibold uppercase text-gray-500 dark:text-slate-400">Ruangan dan Jadwal</div>
-                <div class="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700">
-                  <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-700">
-                    <thead class="bg-slate-50 dark:bg-slate-900/40">
-                      <tr>
-                        <th class="px-3 py-2 text-left font-semibold text-slate-600 dark:text-slate-300">Ruangan</th>
-                        <th class="px-3 py-2 text-left font-semibold text-slate-600 dark:text-slate-300">Lokasi</th>
-                        <th class="px-3 py-2 text-left font-semibold text-slate-600 dark:text-slate-300">Jadwal</th>
-                      </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
-                      <tr v-for="schedule in booking.room_schedules ?? []" :key="schedule.id">
-                        <td class="px-3 py-2 font-semibold text-slate-900 dark:text-white">{{ schedule.room?.name ?? '-' }}</td>
-                        <td class="px-3 py-2 text-slate-600 dark:text-slate-300">
-                          {{ schedule.room?.building?.name ?? '-' }} · {{ schedule.room?.building?.campus?.name ?? '-' }}
-                        </td>
-                        <td class="px-3 py-2 text-slate-600 dark:text-slate-300">{{ schedule.schedule_summary }}</td>
-                      </tr>
-                    </tbody>
-                  </table>
+                <div
+                  v-if="scheduleOverview.scheduleCount"
+                  class="flex flex-wrap gap-x-5 gap-y-2 rounded-xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-sm dark:border-blue-900/60 dark:bg-blue-950/30"
+                >
+                  <span class="font-semibold text-blue-900 dark:text-blue-200">
+                    {{ scheduleOverview.roomCount }} ruangan
+                  </span>
+                  <span class="text-blue-700 dark:text-blue-300">
+                    {{ scheduleOverview.scheduleCount }} jadwal
+                  </span>
+                  <span class="text-blue-700 dark:text-blue-300">
+                    {{ scheduleOverview.dateSummary }}
+                  </span>
+                </div>
+
+                <div v-if="groupedRoomSchedules.length" class="grid gap-4">
+                  <article
+                    v-for="room in groupedRoomSchedules"
+                    :key="room.id"
+                    class="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"
+                  >
+                    <header class="flex flex-col gap-1 border-b border-slate-100 bg-slate-50/80 px-4 py-3 dark:border-slate-700 dark:bg-slate-900/30 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <h3 class="font-semibold text-slate-900 dark:text-white">{{ room.name }}</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">{{ room.location }}</p>
+                      </div>
+                      <span class="text-xs font-medium text-slate-500 dark:text-slate-400">
+                        {{ room.scheduleCount }} jadwal
+                      </span>
+                    </header>
+
+                    <div class="divide-y divide-slate-100 dark:divide-slate-700">
+                      <div
+                        v-for="timeGroup in room.timeGroups"
+                        :key="timeGroup.key"
+                        class="grid gap-1 px-4 py-3 sm:grid-cols-[10rem_1fr] sm:gap-4"
+                      >
+                        <div class="font-semibold text-slate-800 dark:text-slate-200">
+                          {{ timeGroup.startClock }}-{{ timeGroup.endClock }} WIB
+                          <span v-if="timeGroup.dayOffset > 0" class="block text-xs font-normal text-slate-500 dark:text-slate-400">
+                            Selesai {{ timeGroup.dayOffset === 1 ? 'hari berikutnya' : `${timeGroup.dayOffset} hari kemudian` }}
+                          </span>
+                        </div>
+                        <div>
+                          <p class="text-sm text-slate-700 dark:text-slate-300">{{ timeGroup.dateSummary }}</p>
+                          <p class="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
+                            {{ timeGroup.dates.length }} tanggal penggunaan
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </article>
+                </div>
+
+                <div
+                  v-else
+                  class="rounded-xl border border-dashed border-slate-300 px-4 py-6 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400"
+                >
+                  Belum ada jadwal ruangan.
                 </div>
               </div>
             </div>

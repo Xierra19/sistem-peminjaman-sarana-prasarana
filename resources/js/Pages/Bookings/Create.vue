@@ -1,7 +1,10 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import { Head, Link, useForm } from '@inertiajs/vue3'
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, ref } from 'vue'
+import flatpickr from 'flatpickr'
+import 'flatpickr/dist/flatpickr.css'
+import { Indonesian } from 'flatpickr/dist/l10n/id'
 
 const props = defineProps({
   campuses: {
@@ -17,7 +20,7 @@ const createSchedule = () => ({
   campus_id: '',
   building_id: '',
   room_id: '',
-  date: '',
+  dates: [],
   start_time: '',
   end_time: '',
 })
@@ -30,6 +33,8 @@ const form = useForm({
 })
 
 const availabilityByKey = ref({})
+const datePickers = new Map()
+const availabilityRequestIds = new Map()
 
 const formatDateForInput = (date) => {
   const value = new Date(date)
@@ -82,6 +87,7 @@ const availabilityFor = (schedule) =>
   }
 
 const resetAvailability = (schedule) => {
+  availabilityRequestIds.set(schedule._key, (availabilityRequestIds.get(schedule._key) ?? 0) + 1)
   availabilityByKey.value[schedule._key] = {
     loading: false,
     loaded: false,
@@ -89,6 +95,59 @@ const resetAvailability = (schedule) => {
     bookings: [],
     message: '',
   }
+}
+
+const scheduleDates = (schedule) => [...schedule.dates].sort()
+
+const datePickerRef = (element, schedule) => {
+  const existing = datePickers.get(schedule._key)
+
+  if (!element) {
+    existing?.destroy()
+    datePickers.delete(schedule._key)
+    return
+  }
+
+  if (existing) return
+
+  const instance = flatpickr(element, {
+    mode: 'multiple',
+    dateFormat: 'Y-m-d',
+    altInput: true,
+    altFormat: 'j F Y',
+    conjunction: ', ',
+    locale: Indonesian,
+    minDate: minimumBookingDate.value,
+    defaultDate: schedule.dates,
+    disableMobile: true,
+    onChange: (_selectedDates, dateString) => {
+      schedule.dates = dateString ? dateString.split(', ').sort() : []
+      onScheduleTargetChange(schedule)
+    },
+  })
+
+  instance.altInput?.classList.add(
+    'min-h-12',
+    'w-full',
+    'rounded-xl',
+    'border',
+    'border-slate-200',
+    'bg-slate-50',
+    'px-3',
+    'text-sm',
+    'text-slate-900',
+    'transition',
+    'focus:border-blue-500',
+    'focus:bg-white',
+    'focus:ring-4',
+    'focus:ring-blue-500/10',
+    'dark:border-slate-600',
+    'dark:bg-slate-900/40',
+    'dark:text-white',
+    'dark:focus:bg-slate-900',
+  )
+
+  datePickers.set(schedule._key, instance)
 }
 
 const onCampusChange = (schedule) => {
@@ -113,8 +172,18 @@ const onScheduleTargetChange = (schedule) => {
 }
 
 const loadAvailability = async (schedule) => {
-  if (!schedule.room_id || !schedule.date) {
-    resetAvailability(schedule)
+  const dates = scheduleDates(schedule)
+  const requestId = (availabilityRequestIds.get(schedule._key) ?? 0) + 1
+  availabilityRequestIds.set(schedule._key, requestId)
+
+  if (!schedule.room_id || !dates.length) {
+    availabilityByKey.value[schedule._key] = {
+      loading: false,
+      loaded: false,
+      available: true,
+      bookings: [],
+      message: '',
+    }
     return
   }
 
@@ -130,9 +199,7 @@ const loadAvailability = async (schedule) => {
     const response = await fetch(
       route('rooms.availability', {
         room: schedule.room_id,
-        date: schedule.date,
-        start_date: schedule.date,
-        end_date: schedule.date,
+        dates,
       }),
       {
         headers: {
@@ -141,16 +208,24 @@ const loadAvailability = async (schedule) => {
       },
     )
 
+    if (!response.ok) throw new Error('Availability request failed')
+
     const data = await response.json()
+
+    if (availabilityRequestIds.get(schedule._key) !== requestId) return
 
     availabilityByKey.value[schedule._key] = {
       loading: false,
       loaded: true,
       available: data.available !== false,
-      bookings: data.bookings ?? [],
+      bookings: (data.daily_bookings ?? []).flatMap((entry) =>
+        (entry.bookings ?? []).map((booking) => ({ ...booking, date: entry.date })),
+      ),
       message: data.message ?? '',
     }
   } catch {
+    if (availabilityRequestIds.get(schedule._key) !== requestId) return
+
     availabilityByKey.value[schedule._key] = {
       loading: false,
       loaded: true,
@@ -193,24 +268,29 @@ const removeSchedule = (index) => {
   if (form.schedules.length === 1) return
 
   const [removed] = form.schedules.splice(index, 1)
+  datePickers.get(removed._key)?.destroy()
+  datePickers.delete(removed._key)
+  availabilityRequestIds.delete(removed._key)
   delete availabilityByKey.value[removed._key]
 }
 
 const scheduleError = (index, field) => form.errors[`schedules.${index}.${field}`]
+const scheduleDatesError = (index) =>
+  scheduleError(index, 'dates') ?? scheduleError(index, 'dates.0') ?? scheduleError(index, 'date')
 
 const fileName = computed(() => form.attachment?.name ?? '')
 const completedScheduleCount = computed(() =>
   form.schedules.filter(
     (schedule) =>
       schedule.room_id &&
-      schedule.date &&
+      schedule.dates.length &&
       schedule.start_time &&
       schedule.end_time,
   ).length,
 )
 
 const isScheduleComplete = (schedule) =>
-  Boolean(schedule.room_id && schedule.date && schedule.start_time && schedule.end_time)
+  Boolean(schedule.room_id && schedule.dates.length && schedule.start_time && schedule.end_time)
 
 const selectedCampus = (schedule) => findById(props.campuses, schedule.campus_id)
 const selectedBuilding = (schedule) => findById(buildingsFor(schedule), schedule.building_id)
@@ -224,6 +304,30 @@ const formatScheduleDate = (value) => {
     month: 'short',
     year: 'numeric',
   }).format(new Date(`${value}T00:00:00`))
+}
+
+const formatScheduleDates = (schedule) => {
+  const dates = scheduleDates(schedule)
+
+  if (!dates.length) return 'Tanggal belum dipilih'
+  if (dates.length === 1) return formatScheduleDate(dates[0])
+
+  return `${dates.length} tanggal: ${dates.map((date) => formatScheduleDate(date)).join(', ')}`
+}
+
+const groupedAvailability = (schedule) => {
+  const grouped = new Map()
+
+  for (const booking of availabilityFor(schedule).bookings) {
+    if (!grouped.has(booking.date)) grouped.set(booking.date, [])
+    grouped.get(booking.date).push(`${booking.start}-${booking.end}`)
+  }
+
+  return [...grouped.entries()].map(([date, intervals]) => ({
+    date,
+    label: formatScheduleDate(date),
+    intervals: intervals.join(', '),
+  }))
 }
 
 const scheduleLocationSummary = (schedule) =>
@@ -246,6 +350,11 @@ const submit = () => {
     preserveScroll: true,
   })
 }
+
+onBeforeUnmount(() => {
+  datePickers.forEach((picker) => picker.destroy())
+  datePickers.clear()
+})
 </script>
 
 <template>
@@ -332,7 +441,7 @@ const submit = () => {
               <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-base font-bold text-white shadow-lg shadow-blue-600/20">2</span>
               <div>
                 <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Ruangan dan Jadwal</h2>
-                <p class="text-sm text-slate-500 dark:text-slate-400">Tambahkan satu kartu untuk setiap penggunaan ruangan.</p>
+                <p class="text-sm text-slate-500 dark:text-slate-400">Satu kartu dapat memakai ruangan dan jam yang sama pada beberapa tanggal.</p>
               </div>
             </div>
             <button
@@ -438,21 +547,20 @@ const submit = () => {
               <label class="space-y-2">
                 <span class="text-sm font-semibold text-slate-700 dark:text-slate-200">Tanggal Penggunaan</span>
                 <input
-                  v-model="schedule.date"
-                  type="date"
-                  :min="minimumBookingDate"
-                  class="min-h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-900/40 dark:text-white dark:focus:bg-slate-900"
-                  @change="onScheduleTargetChange(schedule)"
+                  :ref="(element) => datePickerRef(element, schedule)"
+                  type="text"
+                  class="w-full"
+                  placeholder="Pilih satu atau beberapa tanggal"
                 />
-                <span v-if="scheduleError(index, 'date')" class="text-sm font-medium text-rose-600 dark:text-rose-400">{{ scheduleError(index, 'date') }}</span>
-                <span class="text-xs text-slate-500 dark:text-slate-400">Pengajuan minimal H+3: {{ minimumBookingDate }}</span>
+                <span v-if="scheduleDatesError(index)" class="text-sm font-medium text-rose-600 dark:text-rose-400">{{ scheduleDatesError(index) }}</span>
+                <span class="text-xs text-slate-500 dark:text-slate-400">Pilih beberapa tanggal bila ruangan dan jamnya sama. Minimal H+3: {{ minimumBookingDate }}</span>
               </label>
 
               <label class="space-y-2">
                 <span class="text-sm font-semibold text-slate-700 dark:text-slate-200">Jam Mulai</span>
                 <select
                   v-model="schedule.start_time"
-                  :disabled="!schedule.room_id || !schedule.date || availabilityFor(schedule).loading"
+                  :disabled="!schedule.room_id || !schedule.dates.length || availabilityFor(schedule).loading"
                   class="min-h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 disabled:cursor-not-allowed disabled:opacity-45 dark:border-slate-600 dark:bg-slate-900/40 dark:text-white dark:focus:bg-slate-900"
                   @change="onStartTimeChange(schedule)"
                 >
@@ -483,7 +591,7 @@ const submit = () => {
             <div class="border-t border-slate-100 bg-slate-50/60 px-5 py-4 dark:border-slate-700 dark:bg-slate-900/20 sm:px-7">
               <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <div class="grid min-w-0 gap-1 text-sm">
-                  <p class="font-semibold text-slate-800 dark:text-slate-200">{{ formatScheduleDate(schedule.date) }}</p>
+                  <p class="font-semibold text-slate-800 dark:text-slate-200">{{ formatScheduleDates(schedule) }}</p>
                   <p class="text-slate-500 dark:text-slate-400">{{ scheduleTimeSummary(schedule) }}</p>
                 </div>
                 <div v-if="availabilityFor(schedule).loading" class="inline-flex items-center gap-2 text-sm font-medium text-blue-600 dark:text-blue-300">
@@ -494,8 +602,10 @@ const submit = () => {
                   {{ availabilityFor(schedule).message }}
                 </div>
                 <div v-else-if="availabilityFor(schedule).bookings.length" class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/50 dark:text-amber-300">
-                  <span class="font-semibold">Terpakai:</span>
-                  {{ availabilityFor(schedule).bookings.map((booking) => `${booking.start}-${booking.end}`).join(', ') }}
+                  <p class="font-semibold">Jadwal terpakai:</p>
+                  <p v-for="entry in groupedAvailability(schedule)" :key="entry.date">
+                    {{ entry.label }}: {{ entry.intervals }}
+                  </p>
                 </div>
                 <div v-else-if="availabilityFor(schedule).loaded && selectedRoom(schedule)" class="inline-flex items-center gap-2 rounded-xl bg-emerald-100 px-3 py-2 text-sm font-semibold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
                   <span class="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-600 text-xs text-white">✓</span>

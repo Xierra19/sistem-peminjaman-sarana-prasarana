@@ -150,29 +150,67 @@ class BookingController extends Controller
     {
         $minimumStartDate = now()->addDays(3)->startOfDay();
         $minStartDateLabel = $minimumStartDate->format('d/m/Y');
+        $normalizedSchedules = collect($request->input('schedules', []))
+            ->map(function ($schedule): array {
+                $schedule = is_array($schedule) ? $schedule : [];
+                $dates = $schedule['dates'] ?? [];
+
+                if (! is_array($dates)) {
+                    $dates = [$dates];
+                }
+
+                if (empty($dates) && ! empty($schedule['date'])) {
+                    $dates = [$schedule['date']];
+                }
+
+                $schedule['dates'] = collect($dates)
+                    ->filter(fn ($date) => is_string($date) && $date !== '')
+                    ->unique()
+                    ->sort()
+                    ->values()
+                    ->all();
+
+                unset($schedule['date']);
+
+                return $schedule;
+            })
+            ->values()
+            ->all();
+
+        $request->merge(['schedules' => $normalizedSchedules]);
 
         $validated = $request->validate([
             'title'       => 'required|string|max:255',
             'description' => 'nullable|string',
             'schedules' => 'required|array|min:1|max:20',
             'schedules.*.room_id' => 'required|exists:rooms,id',
-            'schedules.*.date' => 'required|date|after_or_equal:'.$minimumStartDate->toDateString(),
+            'schedules.*.dates' => 'required|array|min:1|max:20',
+            'schedules.*.dates.*' => 'required|date|after_or_equal:'.$minimumStartDate->toDateString(),
             'schedules.*.start_time' => 'required|date_format:H:i',
             'schedules.*.end_time' => 'required|date_format:H:i|after:schedules.*.start_time',
             'attachment'  => 'nullable|file|mimes:pdf,jpg,png|max:2048',
         ], [
             'schedules.required' => 'Tambahkan minimal satu jadwal ruangan.',
-            'schedules.*.date.after_or_equal' => 'Tanggal penggunaan minimal '.$minStartDateLabel.' (H+3 dari hari ini).',
+            'schedules.*.dates.required' => 'Pilih minimal satu tanggal penggunaan.',
+            'schedules.*.dates.min' => 'Pilih minimal satu tanggal penggunaan.',
+            'schedules.*.dates.*.after_or_equal' => 'Tanggal penggunaan minimal '.$minStartDateLabel.' (H+3 dari hari ini).',
         ]);
 
         $schedules = collect($validated['schedules'])
-            ->map(fn (array $schedule, int $index) => [
-                'input_index' => $index,
-                'room_id' => (int) $schedule['room_id'],
-                'start_time' => Carbon::parse($schedule['date'].' '.$schedule['start_time'])->toDateTimeString(),
-                'end_time' => Carbon::parse($schedule['date'].' '.$schedule['end_time'])->toDateTimeString(),
-            ])
+            ->flatMap(fn (array $schedule, int $index) => collect($schedule['dates'])
+                ->map(fn (string $date) => [
+                    'input_index' => $index,
+                    'room_id' => (int) $schedule['room_id'],
+                    'start_time' => Carbon::parse($date.' '.$schedule['start_time'])->toDateTimeString(),
+                    'end_time' => Carbon::parse($date.' '.$schedule['end_time'])->toDateTimeString(),
+                ]))
             ->values();
+
+        if ($schedules->count() > 20) {
+            throw ValidationException::withMessages([
+                'schedules' => 'Maksimal 20 jadwal penggunaan dalam satu pengajuan.',
+            ]);
+        }
 
         foreach ($schedules->groupBy('room_id') as $roomSchedules) {
             $orderedSchedules = $roomSchedules->sortBy('start_time')->values();
@@ -289,8 +327,13 @@ class BookingController extends Controller
         $date = $request->query('date');
         $startDate = $request->query('start_date');
         $endDate = $request->query('end_date');
+        $dates = $request->query('dates', []);
 
-        if (! $date && ! $startDate && ! $endDate) {
+        if (! is_array($dates)) {
+            $dates = [$dates];
+        }
+
+        if (! $date && ! $startDate && ! $endDate && empty($dates)) {
             return response()->json([
                 'available' => true,
                 'bookings' => [],
@@ -300,6 +343,12 @@ class BookingController extends Controller
 
         try {
             $day = $date ? Carbon::parse($date) : null;
+            $selectedDates = collect($dates)
+                ->filter(fn ($selectedDate) => is_string($selectedDate) && $selectedDate !== '')
+                ->map(fn (string $selectedDate) => Carbon::parse($selectedDate)->startOfDay())
+                ->unique(fn (Carbon $selectedDate) => $selectedDate->toDateString())
+                ->sortBy(fn (Carbon $selectedDate) => $selectedDate->toDateString())
+                ->values();
             $rangeStart = $startDate ? Carbon::parse($startDate)->startOfDay() : null;
             $rangeEnd = $endDate ? Carbon::parse($endDate)->endOfDay() : null;
         } catch (\Throwable $exception) {
@@ -310,12 +359,25 @@ class BookingController extends Controller
             ], 422);
         }
 
+        if ($selectedDates->count() > 20) {
+            return response()->json([
+                'available' => true,
+                'bookings' => [],
+                'daily_bookings' => [],
+                'message' => 'Maksimal 20 tanggal dapat diperiksa sekaligus.',
+            ], 422);
+        }
+
         if ($rangeStart && $rangeEnd && $rangeStart->gt($rangeEnd)) {
             [$rangeStart, $rangeEnd] = [$rangeEnd->copy()->startOfDay(), $rangeStart->copy()->endOfDay()];
         }
 
-        $queryStart = $rangeStart ?? $day?->copy()->startOfDay();
-        $queryEnd = $rangeEnd ?? $day?->copy()->endOfDay();
+        $queryStart = $rangeStart
+            ?? $selectedDates->first()?->copy()->startOfDay()
+            ?? $day?->copy()->startOfDay();
+        $queryEnd = $rangeEnd
+            ?? $selectedDates->last()?->copy()->endOfDay()
+            ?? $day?->copy()->endOfDay();
 
         if (! $queryStart || ! $queryEnd) {
             return response()->json([
@@ -339,12 +401,22 @@ class BookingController extends Controller
             ->whereNotIn('status', ['rejected', 'cancelled', 'expired'])
             ->get();
 
-        $dailyBookings = $this->buildDailyBookings(
-            $schedules,
-            $legacyBookings,
-            $queryStart,
-            $queryEnd,
-        );
+        $dailyBookings = $selectedDates->isNotEmpty()
+            ? $selectedDates
+                ->flatMap(fn (Carbon $selectedDate) => $this->buildDailyBookings(
+                    $schedules,
+                    $legacyBookings,
+                    $selectedDate->copy()->startOfDay(),
+                    $selectedDate->copy()->endOfDay(),
+                ))
+                ->values()
+                ->all()
+            : $this->buildDailyBookings(
+                $schedules,
+                $legacyBookings,
+                $queryStart,
+                $queryEnd,
+            );
         $selectedDateEntry = $day
             ? collect($dailyBookings)->firstWhere('date', $day->toDateString())
             : null;

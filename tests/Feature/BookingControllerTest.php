@@ -41,6 +41,37 @@ class BookingControllerTest extends TestCase
         $response->assertJsonPath('daily_bookings.0.date', $date);
     }
 
+    public function test_availability_returns_only_selected_multiple_dates(): void
+    {
+        [$user, $rooms] = $this->createLocation(1);
+        $selectedDates = [
+            now()->addDays(5)->toDateString(),
+            now()->addDays(7)->toDateString(),
+        ];
+        $unselectedDate = now()->addDays(6)->toDateString();
+        $booking = $this->createBooking($user, $rooms[0]);
+
+        foreach ([...$selectedDates, $unselectedDate] as $date) {
+            $booking->roomSchedules()->create([
+                'room_id' => $rooms[0]->id,
+                'start_time' => "{$date} 09:00:00",
+                'end_time' => "{$date} 11:00:00",
+            ]);
+        }
+
+        $response = $this->actingAs($user)->getJson(route('rooms.availability', [
+            'room' => $rooms[0]->id,
+            'dates' => $selectedDates,
+        ]));
+
+        $response->assertOk();
+        $response->assertJsonCount(2, 'daily_bookings');
+        $this->assertEquals(
+            $selectedDates,
+            collect($response->json('daily_bookings'))->pluck('date')->all(),
+        );
+    }
+
     public function test_store_allows_different_rooms_at_the_same_time_in_one_booking(): void
     {
         [$user, $rooms] = $this->createLocation(2);
@@ -80,6 +111,71 @@ class BookingControllerTest extends TestCase
         $response->assertRedirect(route('bookings.index'));
         $this->assertDatabaseCount('bookings', 1);
         $this->assertDatabaseCount('booking_room_schedules', 2);
+    }
+
+    public function test_store_expands_multiple_dates_from_one_schedule_card(): void
+    {
+        [$user, $rooms] = $this->createLocation(1);
+        $dates = [
+            now()->addDays(5)->toDateString(),
+            now()->addDays(7)->toDateString(),
+            now()->addDays(9)->toDateString(),
+        ];
+
+        $response = $this->actingAs($user)->post(route('bookings.store'), [
+            'title' => 'Kelas pada Beberapa Tanggal',
+            'schedules' => [[
+                'room_id' => $rooms[0]->id,
+                'dates' => $dates,
+                'start_time' => '09:00',
+                'end_time' => '11:00',
+            ]],
+        ]);
+
+        $response->assertRedirect(route('bookings.index'));
+        $this->assertDatabaseCount('bookings', 1);
+        $this->assertDatabaseCount('booking_room_schedules', 3);
+        $this->assertEquals(
+            $dates,
+            BookingRoomSchedule::query()
+                ->orderBy('start_time')
+                ->get()
+                ->map(fn (BookingRoomSchedule $schedule) => $schedule->start_time->toDateString())
+                ->all(),
+        );
+    }
+
+    public function test_store_rejects_more_than_twenty_expanded_schedules(): void
+    {
+        [$user, $rooms] = $this->createLocation(1);
+        $dates = collect(range(5, 15))
+            ->map(fn (int $days) => now()->addDays($days)->toDateString())
+            ->all();
+
+        $response = $this->actingAs($user)
+            ->from(route('bookings.create'))
+            ->post(route('bookings.store'), [
+                'title' => 'Terlalu Banyak Jadwal',
+                'schedules' => [
+                    [
+                        'room_id' => $rooms[0]->id,
+                        'dates' => $dates,
+                        'start_time' => '09:00',
+                        'end_time' => '11:00',
+                    ],
+                    [
+                        'room_id' => $rooms[0]->id,
+                        'dates' => $dates,
+                        'start_time' => '13:00',
+                        'end_time' => '15:00',
+                    ],
+                ],
+            ]);
+
+        $response->assertRedirect(route('bookings.create'));
+        $response->assertSessionHasErrors('schedules');
+        $this->assertDatabaseCount('bookings', 0);
+        $this->assertDatabaseCount('booking_room_schedules', 0);
     }
 
     public function test_store_rejects_overlapping_rows_for_the_same_room(): void
