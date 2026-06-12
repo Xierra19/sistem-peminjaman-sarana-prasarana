@@ -37,26 +37,28 @@ class BookingReportFilters
             $query->whereDate('created_at', '<=', $endDate);
         }
 
-        if ($bookingStartDate) {
-            $query->where(function (Builder $dateQuery) use ($bookingStartDate): void {
+        if ($bookingStartDate || $bookingEndDate) {
+            $query->where(function (Builder $dateQuery) use ($bookingStartDate, $bookingEndDate): void {
                 $dateQuery
-                    ->whereDate('schedule_end_date', '>=', $bookingStartDate)
-                    ->orWhere(function (Builder $legacyQuery) use ($bookingStartDate): void {
-                        $legacyQuery
-                            ->whereNull('schedule_end_date')
-                            ->whereDate('end_time', '>=', $bookingStartDate);
-                    });
-            });
-        }
+                    ->whereHas('roomSchedules', function (Builder $scheduleQuery) use ($bookingStartDate, $bookingEndDate): void {
+                        if ($bookingStartDate) {
+                            $scheduleQuery->whereDate('end_time', '>=', $bookingStartDate);
+                        }
 
-        if ($bookingEndDate) {
-            $query->where(function (Builder $dateQuery) use ($bookingEndDate): void {
-                $dateQuery
-                    ->whereDate('schedule_start_date', '<=', $bookingEndDate)
-                    ->orWhere(function (Builder $legacyQuery) use ($bookingEndDate): void {
-                        $legacyQuery
-                            ->whereNull('schedule_start_date')
-                            ->whereDate('start_time', '<=', $bookingEndDate);
+                        if ($bookingEndDate) {
+                            $scheduleQuery->whereDate('start_time', '<=', $bookingEndDate);
+                        }
+                    })
+                    ->orWhere(function (Builder $legacyQuery) use ($bookingStartDate, $bookingEndDate): void {
+                        $legacyQuery->whereDoesntHave('roomSchedules');
+
+                        if ($bookingStartDate) {
+                            $legacyQuery->whereDate('end_time', '>=', $bookingStartDate);
+                        }
+
+                        if ($bookingEndDate) {
+                            $legacyQuery->whereDate('start_time', '<=', $bookingEndDate);
+                        }
                     });
             });
         }
@@ -76,6 +78,17 @@ class BookingReportFilters
                             ->orWhere('phone', 'like', $pattern);
                     })
                     ->orWhereHas('room', function (Builder $roomQuery) use ($pattern): void {
+                        $roomQuery
+                            ->where('name', 'like', $pattern)
+                            ->orWhereHas('building', function (Builder $buildingQuery) use ($pattern): void {
+                                $buildingQuery
+                                    ->where('name', 'like', $pattern)
+                                    ->orWhereHas('campus', function (Builder $campusQuery) use ($pattern): void {
+                                        $campusQuery->where('name', 'like', $pattern);
+                                    });
+                            });
+                    })
+                    ->orWhereHas('roomSchedules.room', function (Builder $roomQuery) use ($pattern): void {
                         $roomQuery
                             ->where('name', 'like', $pattern)
                             ->orWhereHas('building', function (Builder $buildingQuery) use ($pattern): void {

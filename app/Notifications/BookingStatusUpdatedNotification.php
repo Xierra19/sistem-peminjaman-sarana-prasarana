@@ -18,7 +18,7 @@ class BookingStatusUpdatedNotification extends Notification
         protected ?string $notes = null,
         protected ?string $moderatorName = null,
     ) {
-        $this->booking->loadMissing(['room.building.campus', 'user']);
+        $this->booking->loadMissing(['roomSchedules.room.building.campus', 'user']);
     }
 
     public function via(object $notifiable): array
@@ -30,10 +30,6 @@ class BookingStatusUpdatedNotification extends Notification
     {
         $booking = $this->booking;
         $status = Str::headline($this->status);
-
-        $room = $booking->room;
-        $building = $room?->building;
-        $campus = $building?->campus;
 
         // Ubah status ke bahasa Indonesia
         $statusIndo = match($this->status) {
@@ -54,22 +50,14 @@ class BookingStatusUpdatedNotification extends Notification
             $mail->line('Pengajuan booking ruangan Anda telah '.$statusIndo.'.');
         }
 
-        if ($room?->name) {
-            $location = $room->name;
+        foreach ($booking->roomSchedules as $schedule) {
+            $location = collect([
+                $schedule->room?->name,
+                $schedule->room?->building?->name,
+                $schedule->room?->building?->campus?->name,
+            ])->filter()->join(' · ');
 
-            if ($building?->name) {
-                $location .= ' · '.$building->name;
-            }
-
-            if ($campus?->name) {
-                $location .= ' · '.$campus->name;
-            }
-
-            $mail->line('Ruangan: '.$location);
-        }
-
-        if ($booking->schedule_summary) {
-            $mail->line('Jadwal: '.$booking->schedule_summary);
+            $mail->line('Ruangan: '.$location.' | '.$schedule->schedule_summary);
         }
 
         if ($this->moderatorName) {

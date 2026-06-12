@@ -129,11 +129,12 @@ const filteredBookings = computed(() => {
     }
 
     if (roomQuery) {
-      const roomSearchable = [
-        booking.room?.name,
-        booking.room?.building?.name,
-        booking.room?.building?.campus?.name,
-      ]
+      const roomSearchable = (booking.room_schedules ?? [])
+        .flatMap((schedule) => [
+          schedule.room?.name,
+          schedule.room?.building?.name,
+          schedule.room?.building?.campus?.name,
+        ])
         .filter(Boolean)
         .join(' ')
         .toLowerCase()
@@ -144,7 +145,11 @@ const filteredBookings = computed(() => {
     }
 
     if (campusQuery) {
-      const campusName = booking.room?.building?.campus?.name?.toLowerCase() ?? ''
+      const campusName = (booking.room_schedules ?? [])
+        .map((schedule) => schedule.room?.building?.campus?.name)
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
 
       if (!campusName.includes(campusQuery)) {
         return false
@@ -166,7 +171,7 @@ const {
   accessors: {
     title: (booking) => booking.title ?? '',
     applicant: (booking) => booking.user?.name ?? '',
-    room: (booking) => booking.room?.name ?? '',
+    room: (booking) => booking.room_summary ?? '',
     start_time: (booking) => (booking.start_time ? new Date(booking.start_time) : null),
     end_time: (booking) => (booking.end_time ? new Date(booking.end_time) : null),
     status: (booking) => booking.normalizedStatus ?? '',
@@ -551,13 +556,13 @@ onBeforeUnmount(() => {
                     <div class="text-xs text-gray-500 dark:text-slate-400">{{ booking.user?.email ?? '-' }}</div>
                   </td>
                   <td class="px-5 py-4" data-title="Ruangan">
-                    <div class="font-medium text-gray-900 dark:text-white">{{ booking.room?.name ?? '-' }}</div>
+                    <div class="font-medium text-gray-900 dark:text-white">{{ booking.room_summary ?? '-' }}</div>
                     <div class="text-xs text-gray-500 dark:text-slate-400">
-                      {{ booking.room?.building?.name ?? '-' }} - {{ booking.room?.building?.campus?.name ?? '-' }}
+                      {{ booking.room_schedules?.length ?? 0 }} jadwal ruangan
                     </div>
                   </td>
                   <td class="px-5 py-4 text-gray-700" data-title="Mulai">
-                    <div class="font-medium text-gray-900 dark:text-white">{{ booking.schedule_mode_label ?? 'Jadwal' }}</div>
+                    <div class="font-medium text-gray-900 dark:text-white">Jadwal penggunaan</div>
                     <div class="text-xs text-gray-500 dark:text-slate-400">{{ booking.schedule_short_summary ?? formatDateTime(booking.start_time) }}</div>
                   </td>
                   <td class="px-5 py-4 text-gray-700" data-title="Selesai">{{ booking.schedule_summary ?? formatDateTime(booking.end_time) }}</td>

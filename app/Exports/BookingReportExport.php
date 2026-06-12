@@ -25,9 +25,7 @@ class BookingReportExport implements FromCollection, WithHeadings, WithMapping, 
         $query = Booking::query()
             ->with([
                 'user:id,name,email,phone',
-                'room:id,name,building_id',
-                'room.building:id,name,campus_id',
-                'room.building.campus:id,name',
+                'roomSchedules.room.building.campus',
             ]);
 
         BookingReportFilters::apply($query, $this->filters);
@@ -48,12 +46,8 @@ class BookingReportExport implements FromCollection, WithHeadings, WithMapping, 
             'No. Telepon',
             'Judul Kegiatan',
             'Deskripsi',
-            'Mode Jadwal',
-            'Jadwal',
+            'Ruangan dan Jadwal',
             'No. Surat',
-            'Kampus',
-            'Gedung',
-            'Ruangan',
         ];
     }
 
@@ -71,12 +65,16 @@ class BookingReportExport implements FromCollection, WithHeadings, WithMapping, 
             $booking->user?->phone,
             $booking->title,
             $booking->description,
-            $booking->schedule_mode_label,
-            $booking->schedule_summary,
+            $booking->roomSchedules->map(function ($schedule): string {
+                $location = collect([
+                    $schedule->room?->building?->campus?->name,
+                    $schedule->room?->building?->name,
+                    $schedule->room?->name,
+                ])->filter()->join(' / ');
+
+                return $location.' - '.$schedule->schedule_summary;
+            })->join('; '),
             $booking->letter_number,
-            $booking->room?->building?->campus?->name,
-            $booking->room?->building?->name,
-            $booking->room?->name,
         ];
     }
 

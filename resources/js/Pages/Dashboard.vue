@@ -352,7 +352,7 @@ const {
 } = useTableSort(recentBookingsList, {
   accessors: {
     title: (booking) => booking.title ?? '',
-    room: (booking) => booking.room?.name ?? '',
+    room: (booking) => booking.room_summary ?? '',
     start_time: (booking) => (booking.start_time ? new Date(booking.start_time) : null),
     status: (booking) => booking.normalizedStatus ?? '',
   },
@@ -772,13 +772,13 @@ const {
                     <div class="text-xs text-slate-500 dark:text-slate-400">{{ booking.description || 'Tidak ada deskripsi.' }}</div>
                   </td>
                   <td class="px-4 py-3" data-title="Ruangan">
-                    <div class="font-medium text-slate-900 dark:text-slate-200">{{ booking.room?.name ?? '-' }}</div>
+                    <div class="font-medium text-slate-900 dark:text-slate-200">{{ booking.room_summary ?? '-' }}</div>
                     <div class="text-xs text-slate-500 dark:text-slate-400">
-                      {{ booking.room?.building?.name ?? '-' }} - {{ booking.room?.building?.campus?.name ?? '-' }}
+                      {{ booking.room_schedules?.length ?? 0 }} jadwal ruangan
                     </div>
                   </td>
                   <td class="px-4 py-3 text-slate-700 dark:text-slate-300" data-title="Mulai">
-                    <div class="font-medium">{{ booking.schedule_mode_label ?? 'Jadwal' }}</div>
+                    <div class="font-medium">Jadwal penggunaan</div>
                     <div class="text-xs text-slate-500 dark:text-slate-400">{{ booking.schedule_short_summary ?? formatDateTime(booking.start_time) }}</div>
                   </td>
                   <td class="px-4 py-3" data-title="Status">

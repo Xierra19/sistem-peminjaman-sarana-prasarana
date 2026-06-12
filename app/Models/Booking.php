@@ -75,6 +75,7 @@ class Booking extends Model
         'schedule_mode_label',
         'schedule_summary',
         'schedule_short_summary',
+        'room_summary',
     ];
 
     /**
@@ -99,6 +100,11 @@ class Booking extends Model
     public function logs(): HasMany
     {
         return $this->hasMany(LogHistory::class);
+    }
+
+    public function roomSchedules(): HasMany
+    {
+        return $this->hasMany(BookingRoomSchedule::class)->orderBy('start_time')->orderBy('id');
     }
 
     public function isContinuousSchedule(): bool
@@ -148,6 +154,17 @@ class Booking extends Model
 
     public function getExpirationDateValue(): Carbon
     {
+        $latestEnd = $this->relationLoaded('roomSchedules')
+            ? $this->roomSchedules->max('end_time')
+            : $this->roomSchedules()->max('end_time');
+
+        if ($latestEnd) {
+            return Carbon::parse($latestEnd)
+                ->setTimezone(\App\Services\ExpirePendingBookings::TIMEZONE)
+                ->startOfDay()
+                ->addDay();
+        }
+
         return $this->getScheduleEndDateValue()
             ->setTimezone(\App\Services\ExpirePendingBookings::TIMEZONE)
             ->startOfDay()
@@ -165,6 +182,26 @@ class Booking extends Model
 
     public function getScheduleSummaryAttribute(): string
     {
+        $schedules = $this->relationLoaded('roomSchedules')
+            ? $this->roomSchedules
+            : $this->roomSchedules()->get();
+
+        if ($schedules->isNotEmpty()) {
+            if ($schedules->count() === 1) {
+                return $schedules->first()->schedule_summary;
+            }
+
+            $first = Carbon::parse($schedules->min('start_time'))->locale('id');
+            $last = Carbon::parse($schedules->max('end_time'))->locale('id');
+
+            return sprintf(
+                '%d jadwal, %s s.d. %s',
+                $schedules->count(),
+                $first->translatedFormat('d F Y H:i'),
+                $last->translatedFormat('d F Y H:i'),
+            );
+        }
+
         $startDate = $this->getScheduleStartDateValue()->locale('id');
         $endDate = $this->getScheduleEndDateValue()->locale('id');
 
@@ -190,6 +227,22 @@ class Booking extends Model
 
     public function getScheduleShortSummaryAttribute(): string
     {
+        $schedules = $this->relationLoaded('roomSchedules')
+            ? $this->roomSchedules
+            : $this->roomSchedules()->get();
+
+        if ($schedules->isNotEmpty()) {
+            if ($schedules->count() === 1) {
+                return $schedules->first()->schedule_short_summary;
+            }
+
+            return sprintf(
+                '%d jadwal · %d ruangan',
+                $schedules->count(),
+                $schedules->pluck('room_id')->unique()->count(),
+            );
+        }
+
         $startDate = $this->getScheduleStartDateValue()->locale('id');
         $endDate = $this->getScheduleEndDateValue()->locale('id');
 
@@ -211,6 +264,25 @@ class Booking extends Model
             $startDateTime->translatedFormat('d M Y H:i'),
             $endDateTime->translatedFormat('d M Y H:i'),
         );
+    }
+
+    public function getRoomSummaryAttribute(): string
+    {
+        $schedules = $this->relationLoaded('roomSchedules')
+            ? $this->roomSchedules
+            : $this->roomSchedules()->with('room:id,name')->get();
+
+        $roomNames = $schedules
+            ->pluck('room.name')
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($roomNames->isNotEmpty()) {
+            return $roomNames->join(', ');
+        }
+
+        return $this->room?->name ?? '-';
     }
 
     /**

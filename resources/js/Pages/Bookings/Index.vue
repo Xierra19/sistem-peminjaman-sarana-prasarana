@@ -370,13 +370,13 @@ const changePage = (page) => {
                     <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ booking.description || 'Tidak ada deskripsi tambahan.' }}</div>
                   </td>
                 <td class="mobile-compact-meta px-4 py-3" data-title="Ruangan">
-                  <div class="font-medium text-slate-900 dark:text-slate-100">{{ booking.room_name ?? '-' }}</div>
+                  <div class="font-medium text-slate-900 dark:text-slate-100">{{ booking.room_summary ?? '-' }}</div>
                   <div class="text-xs text-slate-500 dark:text-slate-400">
-                    {{ booking.building_name ?? '-' }} - {{ booking.campus_name ?? '-' }}
+                    {{ booking.room_schedules?.length ?? 0 }} jadwal ruangan
                   </div>
                 </td>
                   <td class="mobile-span-2 px-4 py-3 text-slate-700 dark:text-slate-300" data-title="Mulai">
-                    <div class="font-medium">{{ booking.schedule_mode_label ?? 'Jadwal' }}</div>
+                    <div class="font-medium">Jadwal penggunaan</div>
                     <div class="text-xs text-slate-500 dark:text-slate-400">{{ booking.schedule_short_summary ?? formatDateTime(booking.start_time) }}</div>
                   </td>
                   <td class="px-4 py-3 text-slate-700 dark:text-slate-300 mobile-compact-meta" data-title="Selesai">

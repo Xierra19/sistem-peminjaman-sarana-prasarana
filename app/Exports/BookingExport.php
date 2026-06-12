@@ -12,7 +12,7 @@ class BookingExport implements FromCollection, WithHeadings, WithMapping, Should
 {
     public function collection()
     {
-        return Booking::with(['user', 'room.building.campus'])
+        return Booking::with(['user', 'roomSchedules.room.building.campus'])
             ->orderBy('start_time')
             ->get();
     }
@@ -23,13 +23,9 @@ class BookingExport implements FromCollection, WithHeadings, WithMapping, Should
             'ID',
             'Pemohon',
             'Email',
-            'Kampus',
-            'Gedung',
-            'Ruang',
+            'Ruangan dan Jadwal',
             'Judul',
             'Deskripsi',
-            'Mode Jadwal',
-            'Jadwal',
             'Status',
         ];
     }
@@ -50,13 +46,17 @@ class BookingExport implements FromCollection, WithHeadings, WithMapping, Should
             $booking->id,
             optional($booking->user)->name,
             optional($booking->user)->email,
-            optional(optional(optional($booking->room)->building)->campus)->name,
-            optional(optional($booking->room)->building)->name,
-            optional($booking->room)->name,
+            $booking->roomSchedules->map(function ($schedule): string {
+                $location = collect([
+                    $schedule->room?->building?->campus?->name,
+                    $schedule->room?->building?->name,
+                    $schedule->room?->name,
+                ])->filter()->join(' / ');
+
+                return $location.' - '.$schedule->schedule_summary;
+            })->join('; '),
             $booking->title,
             $booking->description,
-            $booking->schedule_mode_label,
-            $booking->schedule_summary,
             $statusLabels[$booking->status] ?? $booking->status,
         ];
     }

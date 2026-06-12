@@ -27,6 +27,7 @@ class ReportController extends Controller
                 'room:id,name,building_id',
                 'room.building:id,name,campus_id',
                 'room.building.campus:id,name',
+                'roomSchedules.room.building.campus',
             ]);
 
         BookingReportFilters::apply($query, $filters);
@@ -76,6 +77,7 @@ class ReportController extends Controller
                 'room:id,name,building_id',
                 'room.building:id,name,campus_id',
                 'room.building.campus:id,name',
+                'roomSchedules.room.building.campus',
             ]);
 
         BookingReportFilters::apply($query, $filters);

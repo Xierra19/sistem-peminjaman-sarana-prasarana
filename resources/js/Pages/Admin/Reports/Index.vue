@@ -157,6 +157,25 @@ const normalizeChartStatus = (status) => (
   ['pending', 'requested', 'waiting'].includes(status) ? 'waiting' : (status || '')
 )
 
+const bookingScheduleDateKeys = (booking) => {
+  const keys = new Set()
+  const schedules = booking.room_schedules?.length
+    ? booking.room_schedules
+    : [{ start_time: booking.start_time, end_time: booking.end_time }]
+
+  schedules.forEach((schedule) => {
+    const start = parseDateKey(schedule.start_time)
+    const end = parseDateKey(schedule.end_time)
+    if (!start || !end) return
+
+    for (const date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
+      keys.add(toDateKey(date))
+    }
+  })
+
+  return [...keys]
+}
+
 const bookingMatchesDate = (booking, dateKey, basis = chartDateBasis.value) => {
   if (!dateKey) return true
 
@@ -164,10 +183,7 @@ const bookingMatchesDate = (booking, dateKey, basis = chartDateBasis.value) => {
   if (!selectedDate) return false
 
   if (basis === 'booking') {
-    const scheduleStart = parseDateKey(booking.schedule_start_date || booking.start_time)
-    const scheduleEnd = parseDateKey(booking.schedule_end_date || booking.end_time)
-
-    return Boolean(scheduleStart && scheduleEnd && scheduleStart <= selectedDate && scheduleEnd >= selectedDate)
+    return bookingScheduleDateKeys(booking).includes(toDateKey(selectedDate))
   }
 
   const createdAt = parseDateKey(booking.created_at)
@@ -197,7 +213,7 @@ const {
     status: (booking) => booking.status ?? '',
     letter_number: (booking) => booking.letter_number ?? '',
     schedule: (booking) => (booking.start_time ? new Date(booking.start_time) : null),
-    location: (booking) => booking.room?.name ?? '',
+    location: (booking) => booking.room_summary ?? '',
     details: (booking) => booking.title ?? '',
   },
 })
@@ -332,10 +348,10 @@ const chartRange = computed(() => {
 
   if (chartDateBasis.value === 'booking' && hasBookingDateFilter.value) {
     const scheduleStarts = bookings.value
-      .map((booking) => parseDateKey(booking.schedule_start_date || booking.start_time))
+      .flatMap((booking) => (booking.room_schedules ?? []).map((schedule) => parseDateKey(schedule.start_time)))
       .filter(Boolean)
     const scheduleEnds = bookings.value
-      .map((booking) => parseDateKey(booking.schedule_end_date || booking.end_time))
+      .flatMap((booking) => (booking.room_schedules ?? []).map((schedule) => parseDateKey(schedule.end_time)))
       .filter(Boolean)
 
     start = parseDateKey(props.filters?.booking_start_date)
@@ -367,10 +383,10 @@ const chartBookings = computed(() => {
 
   return bookings.value.filter((booking) => {
     if (chartDateBasis.value === 'booking') {
-      const scheduleStart = parseDateKey(booking.schedule_start_date || booking.start_time)
-      const scheduleEnd = parseDateKey(booking.schedule_end_date || booking.end_time)
-
-      return Boolean(scheduleStart && scheduleEnd && scheduleStart <= end && scheduleEnd >= start)
+      return bookingScheduleDateKeys(booking).some((dateKey) => {
+        const date = parseDateKey(dateKey)
+        return date && date >= start && date <= end
+      })
     }
 
     const createdAt = parseDateKey(booking.created_at)
@@ -466,23 +482,11 @@ const weeklyChartData = computed(() => {
 
   chartBookings.value.forEach((booking) => {
     if (chartDateBasis.value === 'booking') {
-      const scheduleStart = parseDateKey(booking.schedule_start_date || booking.start_time)
-      const scheduleEnd = parseDateKey(booking.schedule_end_date || booking.end_time)
-      if (!scheduleStart || !scheduleEnd) return
-
-      const bookingRangeStart = scheduleStart < rangeStart ? rangeStart : scheduleStart
-      const bookingRangeEnd = scheduleEnd > rangeEnd ? rangeEnd : scheduleEnd
-
-      for (
-        const date = new Date(bookingRangeStart);
-        date <= bookingRangeEnd;
-        date.setDate(date.getDate() + 1)
-      ) {
-        const key = toDateKey(date)
+      bookingScheduleDateKeys(booking).forEach((key) => {
         if (dayCounts[key] !== undefined) {
           dayCounts[key] += 1
         }
-      }
+      })
 
       return
     }
@@ -566,21 +570,16 @@ const formatTimeForSelectedDate = (booking) => {
     return booking.schedule_summary ?? '-'
   }
 
-  if (booking.schedule_mode === 'same_hours_daily') {
-    return `${extractClock(booking.schedule_start_clock)} - ${extractClock(booking.schedule_end_clock)} WIB`
-  }
-
   const selectedDate = selectedChartDate.value
-  const startDate = toDateKey(parseDateKey(booking.schedule_start_date || booking.start_time))
-  const endDate = toDateKey(parseDateKey(booking.schedule_end_date || booking.end_time))
-  const startClock = extractClock(booking.start_time)
-  const endClock = extractClock(booking.end_time)
+  const matchingSchedules = (booking.room_schedules ?? []).filter((schedule) => (
+    toDateKey(parseDateKey(schedule.start_time)) === selectedDate
+  ))
 
-  if (startDate === endDate) return `${startClock} - ${endClock} WIB`
-  if (selectedDate === startDate) return `${startClock} - 23:59 WIB`
-  if (selectedDate === endDate) return `00:00 - ${endClock} WIB`
+  if (!matchingSchedules.length) return '-'
 
-  return '00:00 - 23:59 WIB (jadwal berlanjut)'
+  return matchingSchedules
+    .map((schedule) => `${schedule.room?.name ?? 'Ruangan'} ${extractClock(schedule.start_time)} - ${extractClock(schedule.end_time)}`)
+    .join(', ')
 }
 
 const clearSelectedChartDate = () => {
@@ -881,10 +880,10 @@ const trendChartOptions = computed(() => ({
               <div>
                 <dt class="text-xs font-medium uppercase tracking-wide text-slate-400">Ruangan</dt>
                 <dd class="mt-1 font-medium text-slate-700 dark:text-slate-200">
-                  {{ booking.room?.name ?? '-' }}
+                  {{ booking.room_summary ?? '-' }}
                 </dd>
                 <dd class="text-xs text-slate-500 dark:text-slate-400">
-                  {{ booking.room?.building?.name ?? '-' }} - {{ booking.room?.building?.campus?.name ?? '-' }}
+                  {{ booking.room_schedules?.length ?? 0 }} jadwal ruangan
                 </dd>
               </div>
             </dl>
@@ -1063,13 +1062,13 @@ const trendChartOptions = computed(() => ({
                   </div>
                 </td>
                 <td class="mobile-report-span-2 px-5 py-4" data-title="Jadwal">
-                  <div class="font-medium text-gray-900 dark:text-slate-100">{{ booking.schedule_mode_label }}</div>
+                  <div class="font-medium text-gray-900 dark:text-slate-100">Jadwal penggunaan</div>
                   <div class="text-xs text-gray-500 dark:text-slate-400">{{ booking.schedule_summary }}</div>
                 </td>
                 <td class="mobile-report-span-2 px-5 py-4" data-title="Lokasi">
-                  <div class="font-medium text-gray-900 dark:text-slate-100">{{ booking.room?.name ?? '-' }}</div>
+                  <div class="font-medium text-gray-900 dark:text-slate-100">{{ booking.room_summary ?? '-' }}</div>
                   <div class="text-xs text-gray-500 dark:text-slate-400">
-                    {{ booking.room?.building?.name ?? '-' }} - {{ booking.room?.building?.campus?.name ?? '-' }}
+                    {{ booking.room_schedules?.length ?? 0 }} jadwal ruangan
                   </div>
                 </td>
                 <td class="mobile-report-primary mobile-report-span-2 px-5 py-4" data-title="Detail Peminjaman">

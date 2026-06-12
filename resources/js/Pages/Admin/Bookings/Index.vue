@@ -70,7 +70,7 @@ const bookingsList = computed(() => {
         b.title?.toLowerCase().includes(q) ||
         b.user?.name?.toLowerCase().includes(q) ||
         b.user?.email?.toLowerCase().includes(q) ||
-        b.room?.name?.toLowerCase().includes(q),
+        b.room_summary?.toLowerCase().includes(q),
     )
   }
 
@@ -97,7 +97,7 @@ const {
   accessors: {
     title: (booking) => booking.title ?? '',
     applicant: (booking) => booking.user?.name ?? '',
-    room: (booking) => booking.room?.name ?? '',
+    room: (booking) => booking.room_summary ?? '',
     schedule: (booking) => (booking.start_time ? new Date(booking.start_time) : null),
     status: (booking) => booking.normalizedStatus ?? '',
   },
@@ -336,13 +336,13 @@ onMounted(() => {
                 <div class="text-xs text-slate-500 dark:text-slate-400">{{ booking.user?.email ?? '-' }}</div>
               </td>
               <td class="px-5 py-4 mobile-compact-meta" data-title="Ruangan">
-                <div class="font-medium text-slate-800 dark:text-slate-200">{{ booking.room?.name ?? '-' }}</div>
+                <div class="font-medium text-slate-800 dark:text-slate-200">{{ booking.room_summary ?? '-' }}</div>
                 <div class="text-xs text-slate-500 dark:text-slate-400">
-                  {{ booking.room?.building?.name ?? '-' }} - {{ booking.room?.building?.campus?.name ?? '-' }}
+                  {{ booking.room_schedules?.length ?? 0 }} jadwal ruangan
                 </div>
               </td>
               <td class="mobile-span-2 px-5 py-4 text-sm" data-title="Jadwal">
-                <div>Jenis: <span class="font-medium text-slate-800 dark:text-slate-200">{{ booking.schedule_mode_label }}</span></div>
+                <div class="font-medium text-slate-800 dark:text-slate-200">Jadwal penggunaan</div>
                 <div class="text-xs text-slate-500 dark:text-slate-400">{{ booking.schedule_summary }}</div>
               </td>
               <td class="mobile-status-cell px-5 py-4 text-center" data-title="Status">

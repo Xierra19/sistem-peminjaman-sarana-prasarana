@@ -14,7 +14,7 @@ class BookingRequestedNotification extends Notification
 
     public function __construct(protected Booking $booking)
     {
-        $this->booking->loadMissing(['user', 'room.building.campus']);
+        $this->booking->loadMissing(['user', 'roomSchedules.room.building.campus']);
     }
 
     public function via(object $notifiable): array
@@ -25,32 +25,20 @@ class BookingRequestedNotification extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         $booking = $this->booking;
-        $room = $booking->room;
-        $building = $room?->building;
-        $campus = $building?->campus;
-
         $mail = (new MailMessage())
             ->subject('Pengajuan Booking Ruangan Baru: '.$booking->title)
             ->greeting('Halo Admin,')
             ->line('Terdapat pengajuan booking ruangan baru yang memerlukan tinjauan Anda.')
             ->line('Pemohon: '.$booking->user?->name.' ('.$booking->user?->email.')');
 
-        if ($room?->name) {
-            $location = $room->name;
+        foreach ($booking->roomSchedules as $schedule) {
+            $location = collect([
+                $schedule->room?->name,
+                $schedule->room?->building?->name,
+                $schedule->room?->building?->campus?->name,
+            ])->filter()->join(' · ');
 
-            if ($building?->name) {
-                $location .= ' · '.$building->name;
-            }
-
-            if ($campus?->name) {
-                $location .= ' · '.$campus->name;
-            }
-
-            $mail->line('Ruangan: '.$location);
-        }
-
-        if ($booking->schedule_summary) {
-            $mail->line('Jadwal: '.$booking->schedule_summary);
+            $mail->line('Ruangan: '.$location.' | '.$schedule->schedule_summary);
         }
 
         if ($booking->description) {

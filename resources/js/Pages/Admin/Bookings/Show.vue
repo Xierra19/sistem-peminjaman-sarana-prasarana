@@ -93,24 +93,27 @@ const submitApproval = (status) => {
                   <p class="text-sm leading-relaxed text-gray-700 dark:text-slate-300">{{ booking.description || 'Tidak ada deskripsi.' }}</p>
                 </div>
               </div>
-              <div class="space-y-3">
-                <div>
-                  <div class="text-xs font-semibold uppercase text-gray-500 dark:text-slate-400">Jadwal</div>
-                  <p class="text-sm text-gray-700 dark:text-slate-300">
-                    Jenis: <span class="font-semibold text-gray-900 dark:text-white">{{ booking.schedule_mode_label }}</span>
-                  </p>
-                  <p class="text-sm text-gray-700 dark:text-slate-300">
-                    Detail: <span class="font-semibold text-gray-900 dark:text-white">{{ booking.schedule_summary }}</span>
-                  </p>
-                </div>
-                <div>
-                  <div class="text-xs font-semibold uppercase text-gray-500 dark:text-slate-400">Lokasi</div>
-                  <p class="text-sm text-gray-700 dark:text-slate-300">
-                    Ruangan:
-                    <span class="font-semibold text-gray-900 dark:text-white">{{ booking.room?.name ?? '-' }}</span>
-                  </p>
-                  <p class="text-sm text-gray-700 dark:text-slate-300">Gedung: {{ booking.room?.building?.name ?? '-' }}</p>
-                  <p class="text-sm text-gray-700 dark:text-slate-300">Kampus: {{ booking.room?.building?.campus?.name ?? '-' }}</p>
+              <div class="space-y-3 sm:col-span-2">
+                <div class="text-xs font-semibold uppercase text-gray-500 dark:text-slate-400">Ruangan dan Jadwal</div>
+                <div class="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700">
+                  <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-700">
+                    <thead class="bg-slate-50 dark:bg-slate-900/40">
+                      <tr>
+                        <th class="px-3 py-2 text-left font-semibold text-slate-600 dark:text-slate-300">Ruangan</th>
+                        <th class="px-3 py-2 text-left font-semibold text-slate-600 dark:text-slate-300">Lokasi</th>
+                        <th class="px-3 py-2 text-left font-semibold text-slate-600 dark:text-slate-300">Jadwal</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                      <tr v-for="schedule in booking.room_schedules ?? []" :key="schedule.id">
+                        <td class="px-3 py-2 font-semibold text-slate-900 dark:text-white">{{ schedule.room?.name ?? '-' }}</td>
+                        <td class="px-3 py-2 text-slate-600 dark:text-slate-300">
+                          {{ schedule.room?.building?.name ?? '-' }} · {{ schedule.room?.building?.campus?.name ?? '-' }}
+                        </td>
+                        <td class="px-3 py-2 text-slate-600 dark:text-slate-300">{{ schedule.schedule_summary }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>

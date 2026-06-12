@@ -46,6 +46,18 @@
             vertical-align: top;
         }
 
+        .schedule-table th,
+        .schedule-table td {
+            border: 1px solid #d1d5db;
+            padding: 7px;
+            text-align: left;
+        }
+
+        .schedule-table th {
+            background: #f3f4f6;
+            font-weight: 600;
+        }
+
         td.label {
             width: 140px;
             font-weight: 600;
@@ -104,28 +116,28 @@
         </tr>
     </table>
 
-    <div class="section-title">Detail Ruangan</div>
-    <table>
-        <tr>
-            <td class="label">Ruangan</td>
-            <td>: {{ optional($booking->room)->name }}</td>
-        </tr>
-        <tr>
-            <td class="label">Gedung</td>
-            <td>: {{ optional(optional($booking->room)->building)->name }}</td>
-        </tr>
-        <tr>
-            <td class="label">Kampus</td>
-            <td>: {{ optional(optional(optional($booking->room)->building)->campus)->name }}</td>
-        </tr>
-        <tr>
-            <td class="label">Mode Jadwal</td>
-            <td>: {{ $booking->schedule_mode_label }}</td>
-        </tr>
-        <tr>
-            <td class="label">Jadwal Penggunaan</td>
-            <td>: {{ $booking->schedule_summary }}</td>
-        </tr>
+    <div class="section-title">Detail Ruangan dan Jadwal</div>
+    <table class="schedule-table">
+        <thead>
+            <tr>
+                <th style="width: 28px;">No.</th>
+                <th>Kampus</th>
+                <th>Gedung</th>
+                <th>Ruangan</th>
+                <th>Jadwal Penggunaan</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach ($booking->roomSchedules as $schedule)
+                <tr>
+                    <td>{{ $loop->iteration }}</td>
+                    <td>{{ $schedule->room?->building?->campus?->name ?? '-' }}</td>
+                    <td>{{ $schedule->room?->building?->name ?? '-' }}</td>
+                    <td>{{ $schedule->room?->name ?? '-' }}</td>
+                    <td>{{ $schedule->schedule_summary }}</td>
+                </tr>
+            @endforeach
+        </tbody>
     </table>
 
     <p>

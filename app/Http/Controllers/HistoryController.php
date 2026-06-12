@@ -18,7 +18,7 @@ class HistoryController extends Controller
             abort(403);
         }
 
-        $histories = LogHistory::with(['booking.room.building.campus', 'user'])
+        $histories = LogHistory::with(['booking.roomSchedules.room.building.campus', 'user'])
             ->orderByDesc('created_at')
             ->get();
 

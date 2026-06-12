@@ -124,6 +124,29 @@ class ExpirePendingBookingsTest extends TestCase
         ]);
     }
 
+    public function test_expiration_uses_the_latest_room_schedule_date(): void
+    {
+        $booking = $this->createBooking([
+            'end_time' => '2026-06-09 10:00:00',
+            'schedule_end_date' => '2026-06-09',
+        ]);
+        $booking->roomSchedules()->create([
+            'room_id' => $booking->room_id,
+            'start_time' => '2026-06-11 13:00:00',
+            'end_time' => '2026-06-11 15:00:00',
+        ]);
+
+        $service = app(ExpirePendingBookings::class);
+
+        $this->assertSame(0, $service->handle(
+            Carbon::parse('2026-06-11 23:59:59', ExpirePendingBookings::TIMEZONE)
+        ));
+        $this->assertSame(1, $service->handle(
+            Carbon::parse('2026-06-12 00:00:00', ExpirePendingBookings::TIMEZONE)
+        ));
+        $this->assertSame('expired', $booking->fresh()->status);
+    }
+
     private function createBooking(array $overrides = []): Booking
     {
         $user = User::factory()->create();

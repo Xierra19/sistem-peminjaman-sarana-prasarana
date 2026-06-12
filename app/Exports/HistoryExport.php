@@ -18,7 +18,7 @@ class HistoryExport implements FromCollection, WithHeadings, WithMapping, Should
 
     public function collection()
     {
-        $query = LogHistory::with(['booking.room.building.campus', 'user'])
+        $query = LogHistory::with(['booking.roomSchedules.room.building.campus', 'user'])
             ->orderByDesc('created_at');
 
         if (! $this->user->canManageHistory()) {
@@ -35,27 +35,19 @@ class HistoryExport implements FromCollection, WithHeadings, WithMapping, Should
             'User',
             'Aksi',
             'Deskripsi',
-            'Kampus',
-            'Gedung',
-            'Ruang',
+            'Ruangan',
             'Booking ID',
         ];
     }
 
     public function map($log): array
     {
-        $room = optional($log->booking)->room;
-        $building = optional($room)->building;
-        $campus = optional($building)->campus;
-
         return [
             optional($log->created_at)->format('Y-m-d H:i:s'),
             optional($log->user)->name,
             $log->action,
             $log->description,
-            optional($campus)->name,
-            optional($building)->name,
-            optional($room)->name,
+            optional($log->booking)->room_summary,
             optional($log->booking)->id,
         ];
     }

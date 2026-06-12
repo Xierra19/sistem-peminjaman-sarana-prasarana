@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Booking;
+use App\Models\BookingRoomSchedule;
 use App\Models\Campus;
 use App\Models\LogHistory;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -15,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 use Inertia\Inertia;
 use App\Notifications\BookingRequestedNotification;
@@ -34,27 +36,17 @@ class BookingController extends Controller
         $direction = $request->input('direction', 'desc');
         $perPage = $request->input('per_page', 10);
 
-        // Flatten response dengan join, hindari nested relationships
         $query = Booking::query()
+            ->with([
+                'room:id,name,building_id',
+                'room.building:id,name,campus_id',
+                'room.building.campus:id,name',
+                'roomSchedules.room.building.campus',
+            ])
             ->join('rooms', 'bookings.room_id', '=', 'rooms.id')
             ->join('buildings', 'rooms.building_id', '=', 'buildings.id')
             ->join('campuses', 'buildings.campus_id', '=', 'campuses.id')
-            ->select(
-                'bookings.id',
-                'bookings.title',
-                'bookings.description',
-                'bookings.start_time',
-                'bookings.end_time',
-                'bookings.schedule_mode',
-                'bookings.schedule_start_date',
-                'bookings.schedule_end_date',
-                'bookings.schedule_start_clock',
-                'bookings.schedule_end_clock',
-                'bookings.status',
-                'rooms.name as room_name',
-                'buildings.name as building_name',
-                'campuses.name as campus_name'
-            )
+            ->select('bookings.*')
             ->where('bookings.user_id', Auth::id());
 
         // Filter pencarian (server-side)
@@ -64,7 +56,10 @@ class BookingController extends Controller
                     ->orWhere('bookings.description', 'like', "%{$search}%")
                     ->orWhere('rooms.name', 'like', "%{$search}%")
                     ->orWhere('buildings.name', 'like', "%{$search}%")
-                    ->orWhere('campuses.name', 'like', "%{$search}%");
+                    ->orWhere('campuses.name', 'like', "%{$search}%")
+                    ->orWhereHas('roomSchedules.room', function ($roomQuery) use ($search) {
+                        $roomQuery->where('name', 'like', "%{$search}%");
+                    });
             });
         });
 
@@ -108,6 +103,7 @@ class BookingController extends Controller
 
         $booking->load([
             'room.building.campus',
+            'roomSchedules.room.building.campus',
             'logs' => function ($query) {
                 $query->with('user')->orderBy('created_at');
             },
@@ -156,86 +152,109 @@ class BookingController extends Controller
         $minStartDateLabel = $minimumStartDate->format('d/m/Y');
 
         $validated = $request->validate([
-            'room_id'     => 'required|exists:rooms,id',
             'title'       => 'required|string|max:255',
             'description' => 'nullable|string',
-            'schedule_mode' => 'required|in:'.Booking::MODE_CONTINUOUS.','.Booking::MODE_SAME_HOURS_DAILY,
-            'start_date'  => 'required|date|after_or_equal:'.$minimumStartDate->toDateString(),
-            'end_date'    => 'required|date|after_or_equal:start_date',
-            'start_time'  => 'required|date_format:H:i',
-            'end_time'    => 'required|date_format:H:i',
+            'schedules' => 'required|array|min:1|max:20',
+            'schedules.*.room_id' => 'required|exists:rooms,id',
+            'schedules.*.date' => 'required|date|after_or_equal:'.$minimumStartDate->toDateString(),
+            'schedules.*.start_time' => 'required|date_format:H:i',
+            'schedules.*.end_time' => 'required|date_format:H:i|after:schedules.*.start_time',
             'attachment'  => 'nullable|file|mimes:pdf,jpg,png|max:2048',
         ], [
-            'start_date.after_or_equal' => 'Tanggal penggunaan minimal '.$minStartDateLabel.' (H+3 dari hari ini).',
+            'schedules.required' => 'Tambahkan minimal satu jadwal ruangan.',
+            'schedules.*.date.after_or_equal' => 'Tanggal penggunaan minimal '.$minStartDateLabel.' (H+3 dari hari ini).',
         ]);
 
-        $schedulePayload = $this->buildSchedulePayload($validated);
-        $startDateTime = Carbon::parse($schedulePayload['start_time']);
-        $endDateTime = Carbon::parse($schedulePayload['end_time']);
+        $schedules = collect($validated['schedules'])
+            ->map(fn (array $schedule, int $index) => [
+                'input_index' => $index,
+                'room_id' => (int) $schedule['room_id'],
+                'start_time' => Carbon::parse($schedule['date'].' '.$schedule['start_time'])->toDateTimeString(),
+                'end_time' => Carbon::parse($schedule['date'].' '.$schedule['end_time'])->toDateTimeString(),
+            ])
+            ->values();
 
-        if ($validated['schedule_mode'] === Booking::MODE_SAME_HOURS_DAILY && $validated['end_time'] <= $validated['start_time']) {
-            return back()
-                ->withErrors([
-                    'end_time' => 'Jam selesai harus setelah jam mulai untuk mode jam sama pada rentang tanggal.',
-                ])
-                ->withInput();
+        foreach ($schedules->groupBy('room_id') as $roomSchedules) {
+            $orderedSchedules = $roomSchedules->sortBy('start_time')->values();
+
+            for ($index = 1; $index < $orderedSchedules->count(); $index++) {
+                $previous = $orderedSchedules[$index - 1];
+                $current = $orderedSchedules[$index];
+
+                if (Carbon::parse($current['start_time'])->lt(Carbon::parse($previous['end_time']))) {
+                    throw ValidationException::withMessages([
+                        "schedules.{$current['input_index']}.start_time" => 'Jadwal ruangan ini bertumpuk dengan baris lain dalam pengajuan yang sama.',
+                    ]);
+                }
+            }
         }
 
-        if ($validated['schedule_mode'] === Booking::MODE_CONTINUOUS && $endDateTime->lte($startDateTime)) {
-            return back()
-                ->withErrors([
-                    'end_time' => 'Waktu selesai harus setelah waktu mulai untuk mode kontinu antar hari.',
-                ])
-                ->withInput();
-        }
+        $attachment = $request->file('attachment');
 
-        // Upload file kalau ada
-        if ($request->hasFile(key: 'attachment')) {
-            $validated['attachment'] = $request->file('attachment')->store('attachments', 'public');
-        }
+        $booking = DB::transaction(function () use ($validated, $schedules, $attachment): Booking {
+            $rooms = Room::query()
+                ->whereIn('id', $schedules->pluck('room_id')->unique()->sort()->values())
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('id');
 
-        // Tambah user id yang login & status default
-        $validated['user_id'] = Auth::id();
-        $validated['status']  = 'waiting';
-        $validated['start_time'] = $schedulePayload['start_time'];
-        $validated['end_time'] = $schedulePayload['end_time'];
-        $validated['schedule_start_date'] = $schedulePayload['schedule_start_date'];
-        $validated['schedule_end_date'] = $schedulePayload['schedule_end_date'];
-        $validated['schedule_start_clock'] = $schedulePayload['schedule_start_clock'];
-        $validated['schedule_end_clock'] = $schedulePayload['schedule_end_clock'];
+            foreach ($schedules as $schedule) {
+                $room = $rooms->get($schedule['room_id']);
+                $inputIndex = $schedule['input_index'];
 
-        // Simpan booking
-        $room = Room::findOrFail($validated['room_id']);
+                if (! $room?->is_available) {
+                    throw ValidationException::withMessages([
+                        "schedules.{$inputIndex}.room_id" => 'Ruangan sedang ditandai tidak tersedia.',
+                    ]);
+                }
 
-        if (! $room->is_available) {
-            return back()
-                ->withErrors([
-                    'start_date' => 'Ruangan sudah dibooking pada rentang waktu yang dipilih.',
-                ])
-                ->with('error', 'Ruangan sudah dibooking pada rentang waktu yang dipilih.')
-                ->withInput();
-        }
+                if ($this->roomHasScheduleConflict($schedule)) {
+                    throw ValidationException::withMessages([
+                        "schedules.{$inputIndex}.room_id" => 'Ruangan sudah digunakan pada tanggal dan jam yang dipilih.',
+                    ]);
+                }
+            }
 
-        if ($this->roomHasScheduleConflict($room, $schedulePayload)) {
-            return back()
-                ->withErrors([
-                    'room_id' => 'Ruangan sedang tidak tersedia untuk dibooking.',
-                ])
-                ->with('error', 'Ruangan sedang tidak tersedia untuk dibooking.')
-                ->withInput();
-        }
+            $orderedSchedules = $schedules->sortBy('start_time')->values();
+            $firstSchedule = $orderedSchedules->first();
+            $lastEnd = $schedules->max('end_time');
+            $start = Carbon::parse($schedules->min('start_time'));
+            $end = Carbon::parse($lastEnd);
+            $attachmentPath = $attachment?->store('attachments', 'public');
 
-        $booking = Booking::create($validated);
+            $booking = Booking::query()->create([
+                'room_id' => $firstSchedule['room_id'],
+                'user_id' => Auth::id(),
+                'title' => $validated['title'],
+                'description' => $validated['description'] ?? null,
+                'status' => 'waiting',
+                'attachment' => $attachmentPath,
+                'start_time' => $start->toDateTimeString(),
+                'end_time' => $end->toDateTimeString(),
+                'schedule_mode' => Booking::MODE_CONTINUOUS,
+                'schedule_start_date' => $start->toDateString(),
+                'schedule_end_date' => $end->toDateString(),
+                'schedule_start_clock' => $start->format('H:i:s'),
+                'schedule_end_clock' => $end->format('H:i:s'),
+            ]);
 
+            $booking->roomSchedules()->createMany(
+                $orderedSchedules
+                    ->map(fn (array $schedule) => collect($schedule)->except('input_index')->all())
+                    ->all()
+            );
 
-        LogHistory::create([
-            'booking_id'  => $booking->id,
-            'user_id'     => Auth::id(),
-            'action'      => 'requested',
-            'description' => 'Booking diajukan oleh pengguna.',
-        ]);
+            LogHistory::query()->create([
+                'booking_id' => $booking->id,
+                'user_id' => Auth::id(),
+                'action' => 'requested',
+                'description' => 'Booking diajukan oleh pengguna.',
+            ]);
 
-        $booking->load(['user', 'room.building.campus']);
+            return $booking;
+        });
+
+        $booking->load(['user', 'roomSchedules.room.building.campus']);
 
         $admins = User::query()
             ->where('role', User::ROLE_ADMIN_BAP)
@@ -306,11 +325,26 @@ class BookingController extends Controller
             ], 200);
         }
 
-        $bookings = $room->bookings()
+        $schedules = $room->bookingSchedules()
+            ->with('booking:id,title,status')
+            ->whereHas('booking', function ($query): void {
+                $query->whereNotIn('status', ['rejected', 'cancelled', 'expired']);
+            })
+            ->where('start_time', '<', $queryEnd)
+            ->where('end_time', '>', $queryStart)
+            ->get();
+
+        $legacyBookings = $room->bookings()
+            ->whereDoesntHave('roomSchedules')
             ->whereNotIn('status', ['rejected', 'cancelled', 'expired'])
             ->get();
 
-        $dailyBookings = $this->buildDailyBookings($bookings, $queryStart, $queryEnd);
+        $dailyBookings = $this->buildDailyBookings(
+            $schedules,
+            $legacyBookings,
+            $queryStart,
+            $queryEnd,
+        );
         $selectedDateEntry = $day
             ? collect($dailyBookings)->firstWhere('date', $day->toDateString())
             : null;
@@ -328,11 +362,22 @@ class BookingController extends Controller
      *
      * @return array<int, array<string, mixed>>
      */
-    private function buildDailyBookings($bookings, Carbon $rangeStart, Carbon $rangeEnd): array
+    private function buildDailyBookings(
+        $schedules,
+        $legacyBookings,
+        Carbon $rangeStart,
+        Carbon $rangeEnd,
+    ): array
     {
         $grouped = collect();
 
-        foreach ($bookings as $booking) {
+        foreach ($schedules as $schedule) {
+            foreach ($schedule->buildDailyIntervalsWithinRange($rangeStart, $rangeEnd) as $interval) {
+                $grouped->push($interval);
+            }
+        }
+
+        foreach ($legacyBookings as $booking) {
             foreach ($booking->buildDailyIntervalsWithinRange($rangeStart, $rangeEnd) as $interval) {
                 $grouped->push($interval);
             }
@@ -362,102 +407,30 @@ class BookingController extends Controller
     }
 
     /**
-     * @param  array<string, mixed>  $validated
-     * @return array<string, string>
+     * @param  array{room_id: int, start_time: string, end_time: string}  $schedule
      */
-    private function buildSchedulePayload(array $validated): array
+    private function roomHasScheduleConflict(array $schedule): bool
     {
-        $startDate = Carbon::parse($validated['start_date']);
-        $endDate = Carbon::parse($validated['end_date']);
-        $startDateTime = Carbon::parse($validated['start_date'].' '.$validated['start_time']);
-        $endDateTime = Carbon::parse($validated['end_date'].' '.$validated['end_time']);
+        $hasDetailConflict = BookingRoomSchedule::query()
+            ->where('room_id', $schedule['room_id'])
+            ->where('start_time', '<', $schedule['end_time'])
+            ->where('end_time', '>', $schedule['start_time'])
+            ->whereHas('booking', function ($query): void {
+                $query->whereNotIn('status', ['rejected', 'cancelled', 'expired']);
+            })
+            ->exists();
 
-        return [
-            'schedule_mode' => $validated['schedule_mode'],
-            'start_time' => $startDateTime->toDateTimeString(),
-            'end_time' => $endDateTime->toDateTimeString(),
-            'schedule_start_date' => $startDate->toDateString(),
-            'schedule_end_date' => $endDate->toDateString(),
-            'schedule_start_clock' => $startDateTime->format('H:i:s'),
-            'schedule_end_clock' => $endDateTime->format('H:i:s'),
-        ];
-    }
-
-    /**
-     * @param  array<string, string>  $schedulePayload
-     */
-    private function roomHasScheduleConflict(Room $room, array $schedulePayload): bool
-    {
-        $requestedIntervals = $this->buildRequestedDailyIntervals($schedulePayload);
-
-        if ($requestedIntervals === []) {
-            return false;
+        if ($hasDetailConflict) {
+            return true;
         }
 
-        $rangeStart = Carbon::parse($schedulePayload['schedule_start_date'])->startOfDay();
-        $rangeEnd = Carbon::parse($schedulePayload['schedule_end_date'])->endOfDay();
-
-        $existingBookings = $room->bookings()
+        return Booking::query()
+            ->where('room_id', $schedule['room_id'])
+            ->whereDoesntHave('roomSchedules')
             ->whereNotIn('status', ['rejected', 'cancelled', 'expired'])
-            ->get();
-
-        foreach ($existingBookings as $booking) {
-            $existingIntervals = $booking->buildDailyIntervalsWithinRange($rangeStart, $rangeEnd);
-
-            foreach ($requestedIntervals as $requestedInterval) {
-                foreach ($existingIntervals as $existingInterval) {
-                    if (($requestedInterval['date'] ?? null) !== ($existingInterval['date'] ?? null)) {
-                        continue;
-                    }
-
-                    if ($this->intervalsOverlap($requestedInterval, $existingInterval)) {
-                        return true;
-                    }
-                }
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * @param  array<string, string>  $schedulePayload
-     * @return array<int, array<string, string>>
-     */
-    private function buildRequestedDailyIntervals(array $schedulePayload): array
-    {
-        $booking = new Booking([
-            'id' => 0,
-            'title' => 'Requested booking',
-            'status' => 'waiting',
-            'schedule_mode' => $schedulePayload['schedule_mode'],
-            'start_time' => $schedulePayload['start_time'],
-            'end_time' => $schedulePayload['end_time'],
-            'schedule_start_date' => $schedulePayload['schedule_start_date'],
-            'schedule_end_date' => $schedulePayload['schedule_end_date'],
-            'schedule_start_clock' => $schedulePayload['schedule_start_clock'],
-            'schedule_end_clock' => $schedulePayload['schedule_end_clock'],
-        ]);
-
-        return $booking->buildDailyIntervalsWithinRange(
-            Carbon::parse($schedulePayload['schedule_start_date'])->startOfDay(),
-            Carbon::parse($schedulePayload['schedule_end_date'])->endOfDay(),
-        );
-    }
-
-    /**
-     * @param  array<string, string|int>  $left
-     * @param  array<string, string|int>  $right
-     */
-    private function intervalsOverlap(array $left, array $right): bool
-    {
-        $date = (string) $left['date'];
-        $leftStart = Carbon::parse($date.' '.((string) $left['start']));
-        $leftEnd = Carbon::parse($date.' '.((string) $left['end']));
-        $rightStart = Carbon::parse($date.' '.((string) $right['start']));
-        $rightEnd = Carbon::parse($date.' '.((string) $right['end']));
-
-        return $leftStart->lt($rightEnd) && $leftEnd->gt($rightStart);
+            ->where('start_time', '<', $schedule['end_time'])
+            ->where('end_time', '>', $schedule['start_time'])
+            ->exists();
     }
 
     public function downloadAttachment(Booking $booking)
@@ -534,7 +507,7 @@ class BookingController extends Controller
             abort(403, 'Booking belum disetujui.');
         }
 
-        $booking->load(['user', 'room.building.campus']);
+        $booking->load(['user', 'roomSchedules.room.building.campus']);
         $approvedAt = $booking->logs()
             ->where('action', 'approved')
             ->latest('created_at')

@@ -40,6 +40,12 @@ class BookingReportFiltersTest extends TestCase
         $overlapsEnd = $this->createBooking($user, $room, '2026-06-12', '2026-06-14');
         $after = $this->createBooking($user, $room, '2026-06-13', '2026-06-15');
         $legacy = $this->createBooking($user, $room, null, null, '2026-06-11', '2026-06-12');
+        $gap = $this->createBooking($user, $room, '2026-06-09', '2026-06-09');
+        $gap->roomSchedules()->create([
+            'room_id' => $room->id,
+            'start_time' => '2026-06-13 08:00:00',
+            'end_time' => '2026-06-13 10:00:00',
+        ]);
 
         $query = Booking::query();
         BookingReportFilters::apply($query, [
@@ -55,6 +61,7 @@ class BookingReportFiltersTest extends TestCase
         );
         $this->assertNotContains($before->id, $filteredIds);
         $this->assertNotContains($after->id, $filteredIds);
+        $this->assertNotContains($gap->id, $filteredIds);
     }
 
     private function createBooking(
@@ -68,7 +75,7 @@ class BookingReportFiltersTest extends TestCase
         $startDate = $scheduleStart ?? $legacyStart;
         $endDate = $scheduleEnd ?? $legacyEnd;
 
-        return Booking::create([
+        $booking = Booking::create([
             'user_id' => $user->id,
             'room_id' => $room->id,
             'title' => "Booking {$startDate}",
@@ -81,5 +88,15 @@ class BookingReportFiltersTest extends TestCase
             'schedule_end_clock' => '10:00:00',
             'status' => 'approved',
         ]);
+
+        if ($scheduleStart !== null && $scheduleEnd !== null) {
+            $booking->roomSchedules()->create([
+                'room_id' => $room->id,
+                'start_time' => "{$startDate} 08:00:00",
+                'end_time' => "{$endDate} 10:00:00",
+            ]);
+        }
+
+        return $booking;
     }
 }

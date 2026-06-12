@@ -27,7 +27,7 @@ class BookingApprovalController extends Controller
     {
         $expirePendingBookings->handle();
 
-        $bookings = Booking::with(['user', 'room.building.campus'])
+        $bookings = Booking::with(['user', 'room.building.campus', 'roomSchedules.room.building.campus'])
             ->orderByRaw("
                 CASE
                     WHEN status IN ('waiting','pending') THEN 1
@@ -56,6 +56,7 @@ class BookingApprovalController extends Controller
         $booking->load([
             'user',
             'room.building.campus',
+            'roomSchedules.room.building.campus',
             'logs' => function ($query) {
                 $query->with('user')->orderBy('created_at');
             },
@@ -141,7 +142,7 @@ class BookingApprovalController extends Controller
         ]);
 
         if ($statusChanged) {
-            $booking->load(['user', 'room.building.campus']);
+            $booking->load(['user', 'roomSchedules.room.building.campus']);
 
             if ($booking->user && ! empty($booking->user->email)) {
                 try {
@@ -167,7 +168,7 @@ class BookingApprovalController extends Controller
 
     public function exportPdf()
     {
-        $bookings = Booking::with(['user', 'room.building.campus'])
+        $bookings = Booking::with(['user', 'room.building.campus', 'roomSchedules.room.building.campus'])
             ->orderBy('start_time')
             ->get();
 

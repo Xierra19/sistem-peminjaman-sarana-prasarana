@@ -69,11 +69,7 @@
                 <th>ID</th>
                 <th>Judul</th>
                 <th>Pemohon</th>
-                <th>Ruangan</th>
-                <th>Gedung</th>
-                <th>Kampus</th>
-                <th>Mode</th>
-                <th>Jadwal</th>
+                <th>Ruangan dan Jadwal</th>
                 <th>Status</th>
             </tr>
         </thead>
@@ -83,17 +79,23 @@
                 <td>{{ $booking->id }}</td>
                 <td>{{ $booking->title }}</td>
                 <td>{{ optional($booking->user)->name }}</td>
-                <td>{{ optional($booking->room)->name }}</td>
-                <td>{{ optional(optional($booking->room)->building)->name }}</td>
-                <td>{{ optional(optional(optional($booking->room)->building)->campus)->name }}</td>
-                <td>{{ $booking->schedule_mode_label }}</td>
-                <td>{{ $booking->schedule_summary }}</td>
+                <td>
+                    @foreach ($booking->roomSchedules as $schedule)
+                        <div style="margin-bottom: 4px;">
+                            <strong>{{ $schedule->room?->name ?? '-' }}</strong>
+                            · {{ $schedule->room?->building?->name ?? '-' }}
+                            · {{ $schedule->room?->building?->campus?->name ?? '-' }}
+                            <br>
+                            {{ $schedule->schedule_summary }}
+                        </div>
+                    @endforeach
+                </td>
                 @php($status = $normalizeStatus($booking->status))
                 <td>{{ $statusLabels[$status] ?? ucfirst($status ?? '-') }}</td>
             </tr>
         @empty
             <tr>
-                <td colspan="9" style="text-align: center; color: #6b7280;">Tidak ada data booking.</td>
+                <td colspan="5" style="text-align: center; color: #6b7280;">Tidak ada data booking.</td>
             </tr>
         @endforelse
         </tbody>

@@ -23,11 +23,25 @@ class ExpirePendingBookings
             ->whereIn('status', ['waiting', 'pending', 'requested'])
             ->where(function ($query) use ($today): void {
                 $query
-                    ->whereDate('schedule_end_date', '<', $today)
+                    ->where(function ($scheduleQuery) use ($today): void {
+                        $scheduleQuery
+                            ->whereHas('roomSchedules')
+                            ->whereDoesntHave('roomSchedules', function ($detailQuery) use ($today): void {
+                                $detailQuery->whereDate('end_time', '>=', $today);
+                            });
+                    })
                     ->orWhere(function ($legacyQuery) use ($today): void {
                         $legacyQuery
-                            ->whereNull('schedule_end_date')
-                            ->whereDate('end_time', '<', $today);
+                            ->whereDoesntHave('roomSchedules')
+                            ->where(function ($dateQuery) use ($today): void {
+                                $dateQuery
+                                    ->whereDate('schedule_end_date', '<', $today)
+                                    ->orWhere(function ($fallbackQuery) use ($today): void {
+                                        $fallbackQuery
+                                            ->whereNull('schedule_end_date')
+                                            ->whereDate('end_time', '<', $today);
+                                    });
+                            });
                     });
             })
             ->select('id')
