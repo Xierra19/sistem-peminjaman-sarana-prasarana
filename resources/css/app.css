@@ -253,6 +253,15 @@ html.dark .flatpickr-calendar .flatpickr-time .flatpickr-time-separator {
       border-radius: 1.25rem;
     }
 
+    .mobile-friendly-table.report-mobile-table tbody {
+      padding: 0.75rem;
+      background-color: rgb(248 250 252 / 0.7);
+    }
+
+    html.dark .mobile-friendly-table.report-mobile-table tbody {
+      background-color: rgb(15 23 42 / 0.35);
+    }
+
     .mobile-friendly-table.report-mobile-table tbody td {
       gap: 0.3rem;
       padding: 0;
@@ -288,6 +297,11 @@ html.dark .flatpickr-calendar .flatpickr-time .flatpickr-time-separator {
       width: 100%;
       justify-content: center;
       text-align: center;
+    }
+
+    .mobile-friendly-table.report-mobile-table tbody td.mobile-report-primary button {
+      width: 100%;
+      justify-content: center;
     }
 
     .mobile-friendly-table.report-mobile-table tbody td.mobile-report-muted {
@@ -571,6 +585,16 @@ html.dark .flatpickr-calendar .flatpickr-time .flatpickr-time-separator {
     }
 
     @media (max-width: 520px) {
+      .mobile-friendly-table.report-mobile-table tbody tr {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0.85rem;
+      }
+
+      .mobile-friendly-table.report-mobile-table tbody td.mobile-report-span-2,
+      .mobile-friendly-table.report-mobile-table tbody td[colspan] {
+        grid-column: auto;
+      }
+
       .mobile-friendly-table.approval-mobile-table tbody tr {
         grid-template-columns: minmax(0, 1fr);
       }

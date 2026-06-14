@@ -680,10 +680,10 @@ const trendChartOptions = computed(() => ({
     <Head title="Report Peminjaman Ruangan" />
 
     <div class="space-y-4 sm:space-y-6">
-      <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div class="flex flex-col gap-3 sm:gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 class="text-xl font-semibold text-gray-800 dark:text-gray-200 sm:text-3xl">Report Peminjaman Ruangan</h1>
-          <p class="mt-1 max-w-2xl text-sm leading-relaxed text-gray-500 dark:text-gray-400">
+          <p class="mt-1 max-w-2xl text-xs leading-relaxed text-gray-500 dark:text-gray-400 sm:text-sm">
             Rekap lengkap pengajuan ruangan beserta status terbaru dan data pemohon.
           </p>
         </div>
@@ -691,7 +691,7 @@ const trendChartOptions = computed(() => ({
           <template #trigger>
             <button
               type="button"
-              class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-medium text-blue-700 transition hover:bg-blue-100 dark:border-blue-800 dark:bg-slate-700 dark:text-blue-300 sm:w-auto"
+              class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-medium text-blue-700 transition hover:bg-blue-100 dark:border-blue-800 dark:bg-slate-700 dark:text-blue-300 sm:min-h-0 sm:w-auto sm:rounded-2xl"
             >
               <span>Export</span>
               <svg class="h-4 w-4" fill="none" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
@@ -726,38 +726,38 @@ const trendChartOptions = computed(() => ({
         </Dropdown>
       </div>
 
-      <div class="grid grid-cols-2 gap-3 xl:grid-cols-4">
-        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-          <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Total Data</p>
-          <div class="mt-3 flex items-end justify-between gap-3">
-            <p class="text-3xl font-semibold text-slate-900 dark:text-slate-100">{{ summary.total }}</p>
+      <div class="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
+        <div class="rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:rounded-2xl sm:p-4">
+          <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 sm:text-[11px] sm:tracking-[0.2em]">Total Data</p>
+          <div class="mt-2 flex items-end justify-between gap-2 sm:mt-3 sm:gap-3">
+            <p class="text-2xl font-semibold text-slate-900 dark:text-slate-100 sm:text-3xl">{{ summary.total }}</p>
             <span class="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500 dark:bg-slate-700 dark:text-slate-300">Aktif</span>
           </div>
-          <p class="mt-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">Seluruh hasil sesuai filter aktif</p>
+          <p class="mt-2 hidden text-xs leading-relaxed text-slate-500 dark:text-slate-400 sm:block">Seluruh hasil sesuai filter aktif</p>
         </div>
-        <div class="rounded-2xl border border-amber-200 bg-white p-4 shadow-sm dark:border-amber-800 dark:bg-slate-800">
-          <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-amber-500 dark:text-amber-400">Menunggu</p>
-          <div class="mt-3 flex items-end justify-between gap-3">
-            <p class="text-3xl font-semibold text-amber-600 dark:text-amber-400">{{ summary.waiting }}</p>
+        <div class="rounded-xl border border-amber-200 bg-white p-3 shadow-sm dark:border-amber-800 dark:bg-slate-800 sm:rounded-2xl sm:p-4">
+          <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-500 dark:text-amber-400 sm:text-[11px] sm:tracking-[0.2em]">Menunggu</p>
+          <div class="mt-2 flex items-end justify-between gap-2 sm:mt-3 sm:gap-3">
+            <p class="text-2xl font-semibold text-amber-600 dark:text-amber-400 sm:text-3xl">{{ summary.waiting }}</p>
             <span class="rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-medium text-amber-600 dark:bg-amber-900/20 dark:text-amber-300">Review</span>
           </div>
-          <p class="mt-2 text-xs leading-relaxed text-amber-500 dark:text-amber-400">Booking belum diputuskan</p>
+          <p class="mt-2 hidden text-xs leading-relaxed text-amber-500 dark:text-amber-400 sm:block">Booking belum diputuskan</p>
         </div>
-        <div class="rounded-2xl border border-emerald-200 bg-white p-4 shadow-sm dark:border-emerald-800 dark:bg-slate-800">
-          <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-500 dark:text-emerald-400">Disetujui</p>
-          <div class="mt-3 flex items-end justify-between gap-3">
-            <p class="text-3xl font-semibold text-emerald-600 dark:text-emerald-400">{{ summary.approved }}</p>
+        <div class="rounded-xl border border-emerald-200 bg-white p-3 shadow-sm dark:border-emerald-800 dark:bg-slate-800 sm:rounded-2xl sm:p-4">
+          <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-500 dark:text-emerald-400 sm:text-[11px] sm:tracking-[0.2em]">Disetujui</p>
+          <div class="mt-2 flex items-end justify-between gap-2 sm:mt-3 sm:gap-3">
+            <p class="text-2xl font-semibold text-emerald-600 dark:text-emerald-400 sm:text-3xl">{{ summary.approved }}</p>
             <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-300">Aktif</span>
           </div>
-          <p class="mt-2 text-xs leading-relaxed text-emerald-500 dark:text-emerald-400">Booking aktif</p>
+          <p class="mt-2 hidden text-xs leading-relaxed text-emerald-500 dark:text-emerald-400 sm:block">Booking aktif</p>
         </div>
-        <div class="rounded-2xl border border-rose-200 bg-white p-4 shadow-sm dark:border-rose-800 dark:bg-slate-800">
-          <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-rose-500 dark:text-rose-400">Status Final Lain</p>
-          <div class="mt-3 flex items-end justify-between gap-3">
-            <p class="text-3xl font-semibold text-rose-600 dark:text-rose-400">{{ summary.rejected + summary.cancelled + summary.expired }}</p>
+        <div class="rounded-xl border border-rose-200 bg-white p-3 shadow-sm dark:border-rose-800 dark:bg-slate-800 sm:rounded-2xl sm:p-4">
+          <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-rose-500 dark:text-rose-400 sm:text-[11px] sm:tracking-[0.2em]">Status Final Lain</p>
+          <div class="mt-2 flex items-end justify-between gap-2 sm:mt-3 sm:gap-3">
+            <p class="text-2xl font-semibold text-rose-600 dark:text-rose-400 sm:text-3xl">{{ summary.rejected + summary.cancelled + summary.expired }}</p>
             <span class="rounded-full bg-rose-50 px-2.5 py-1 text-[11px] font-medium text-rose-600 dark:bg-rose-900/20 dark:text-rose-300">Selesai</span>
           </div>
-          <p class="mt-2 text-xs leading-relaxed text-rose-500 dark:text-rose-400">Ditolak, dibatalkan, atau kedaluwarsa</p>
+          <p class="mt-2 hidden text-xs leading-relaxed text-rose-500 dark:text-rose-400 sm:block">Ditolak, dibatalkan, atau kedaluwarsa</p>
         </div>
       </div>
 
@@ -795,10 +795,10 @@ const trendChartOptions = computed(() => ({
       </div>
 
       <div class="grid gap-4 md:grid-cols-2">
-        <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:p-5">
+        <div class="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:p-5">
           <div class="mb-4 flex items-start justify-between gap-3">
             <div>
-              <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Distribusi Status</h3>
+              <h3 class="text-base font-semibold text-gray-800 dark:text-gray-200 sm:text-lg">Distribusi Status</h3>
               <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ chartPeriodDescription }}</p>
             </div>
             <span class="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500 dark:bg-slate-700 dark:text-slate-300">Pie</span>
@@ -810,10 +810,10 @@ const trendChartOptions = computed(() => ({
             Klik bagian pie atau label status untuk menyaring tabel.
           </p>
         </div>
-        <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:p-5">
+        <div class="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:p-5">
           <div class="mb-4 flex items-start justify-between gap-3">
             <div>
-              <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Tren Peminjaman</h3>
+              <h3 class="text-base font-semibold text-gray-800 dark:text-gray-200 sm:text-lg">Tren Peminjaman</h3>
               <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ chartPeriodDescription }}</p>
             </div>
             <span class="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500 dark:bg-slate-700 dark:text-slate-300">Bar</span>
@@ -831,58 +831,59 @@ const trendChartOptions = computed(() => ({
         v-if="selectedChartDate"
         class="overflow-hidden rounded-2xl border border-blue-200 bg-blue-50/60 shadow-sm dark:border-blue-900 dark:bg-blue-950/20"
       >
-        <div class="flex flex-col gap-3 border-b border-blue-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5 dark:border-blue-900">
-          <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600 dark:text-blue-400">
+        <div class="border-b border-blue-100 p-4 sm:flex sm:items-center sm:justify-between sm:gap-4 sm:px-5 dark:border-blue-900">
+          <div class="min-w-0">
+            <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-blue-600 dark:text-blue-400 sm:text-xs sm:tracking-[0.18em]">
               {{ chartDateBasis === 'booking' ? 'Jadwal pada tanggal terpilih' : 'Pengajuan pada tanggal terpilih' }}
             </p>
-            <h3 class="mt-1 text-lg font-semibold capitalize text-slate-900 dark:text-slate-100">
+            <h3 class="mt-1 text-lg font-bold capitalize leading-tight text-slate-900 dark:text-slate-100">
               {{ selectedDateLabel }}
             </h3>
-            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              {{ selectedDateBookings.length }} data ditemukan. Tabel hasil report otomatis disaring.
+            <p class="mt-1.5 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+              <span class="font-semibold text-slate-700 dark:text-slate-300">{{ selectedDateBookings.length }} data</span>
+              ditemukan. Tabel hasil report otomatis disaring.
             </p>
           </div>
           <button
             type="button"
-            class="inline-flex items-center justify-center rounded-lg border border-blue-200 bg-white px-3 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-100 dark:border-blue-800 dark:bg-slate-800 dark:text-blue-300 dark:hover:bg-slate-700"
+            class="mt-3 inline-flex min-h-10 w-full shrink-0 items-center justify-center rounded-lg border border-blue-300 bg-white px-4 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:border-blue-700 dark:bg-slate-800 dark:text-blue-300 dark:hover:bg-slate-700 dark:focus:ring-offset-slate-900 sm:mt-0 sm:min-h-0 sm:w-auto"
             @click="clearSelectedChartDate"
           >
             Tampilkan Semua
           </button>
         </div>
 
-        <div v-if="selectedDateBookings.length" class="grid gap-3 p-4 lg:grid-cols-2 sm:p-5">
+        <div v-if="selectedDateBookings.length" class="grid gap-2.5 p-3 sm:gap-3 sm:p-5 lg:grid-cols-2">
           <article
             v-for="booking in selectedDateBookings"
             :key="`preview-${booking.id}`"
-            class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800"
+            class="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:p-4"
           >
             <div class="flex items-start justify-between gap-3">
-              <div>
-                <p class="font-semibold text-slate-900 dark:text-slate-100">{{ booking.title ?? '-' }}</p>
-                <p class="mt-1 text-xs capitalize text-slate-500 dark:text-slate-400">{{ selectedDateLabel }}</p>
+              <div class="min-w-0">
+                <p class="truncate font-semibold text-slate-900 dark:text-slate-100">{{ booking.title ?? '-' }}</p>
+                <p class="mt-1 text-xs capitalize leading-relaxed text-slate-500 dark:text-slate-400">{{ selectedDateLabel }}</p>
               </div>
               <span
-                class="inline-flex shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                class="inline-flex shrink-0 self-start rounded-full px-2.5 py-1 text-[10px] font-semibold sm:text-[11px]"
                 :class="getBookingStatusClasses(booking.status)"
               >
                 {{ getBookingStatusLabel(booking.status) }}
               </span>
             </div>
-            <dl class="mt-4 grid gap-3 text-sm sm:grid-cols-2">
-              <div>
-                <dt class="text-xs font-medium uppercase tracking-wide text-slate-400">Waktu</dt>
-                <dd class="mt-1 font-medium text-slate-700 dark:text-slate-200">
+            <dl class="mt-3 grid grid-cols-2 divide-x divide-slate-200 rounded-lg bg-slate-50 px-3 py-2.5 text-sm dark:divide-slate-700 dark:bg-slate-900/40">
+              <div class="min-w-0 pr-3">
+                <dt class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Waktu</dt>
+                <dd class="mt-1 truncate font-medium text-slate-700 dark:text-slate-200">
                   {{ formatTimeForSelectedDate(booking) }}
                 </dd>
               </div>
-              <div>
-                <dt class="text-xs font-medium uppercase tracking-wide text-slate-400">Ruangan</dt>
-                <dd class="mt-1 font-medium text-slate-700 dark:text-slate-200">
+              <div class="min-w-0 pl-3">
+                <dt class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Ruangan</dt>
+                <dd class="mt-1 truncate font-medium text-slate-700 dark:text-slate-200">
                   {{ booking.room_summary ?? '-' }}
                 </dd>
-                <dd class="text-xs text-slate-500 dark:text-slate-400">
+                <dd class="mt-0.5 truncate text-[11px] text-slate-500 dark:text-slate-400">
                   {{ booking.room_schedules?.length ?? 0 }} jadwal ruangan
                 </dd>
               </div>
@@ -907,7 +908,7 @@ const trendChartOptions = computed(() => ({
               v-model="filterForm.search"
               type="text"
               placeholder="Nama pemohon, email, ruangan…"
-              class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
+              class="min-h-11 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
             />
           </div>
           <div class="flex flex-col gap-2">
@@ -915,7 +916,7 @@ const trendChartOptions = computed(() => ({
             <select
               id="report-status"
               v-model="filterForm.status"
-              class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
+              class="min-h-11 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
             >
               <option value="">Semua status</option>
               <option v-for="status in statusOptions" :key="`status-${status}`" :value="status">
@@ -930,7 +931,7 @@ const trendChartOptions = computed(() => ({
               ref="dateRangePicker"
               type="text"
               placeholder="Pilih rentang tanggal..."
-              class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 w-full dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
+              class="min-h-11 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
             />
             <p class="text-xs text-gray-500 mt-1 dark:text-gray-400">
               Dari: {{ filterForm.start_date || '-' }} | Sampai: {{ filterForm.end_date || '-' }}
@@ -943,7 +944,7 @@ const trendChartOptions = computed(() => ({
               ref="bookingDateRangePicker"
               type="text"
               placeholder="Pilih rentang tanggal..."
-              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
+              class="min-h-11 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
             />
             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
               Dari: {{ filterForm.booking_start_date || '-' }} | Sampai: {{ filterForm.booking_end_date || '-' }}
@@ -953,14 +954,14 @@ const trendChartOptions = computed(() => ({
         <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
           <button
             type="button"
-            class="w-full rounded-md border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 transition hover:border-gray-300 hover:text-gray-800 dark:border-slate-600 dark:text-slate-400 dark:hover:border-slate-500 dark:hover:text-slate-300 sm:w-auto"
+            class="min-h-11 w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-600 transition hover:border-gray-300 hover:text-gray-800 dark:border-slate-600 dark:text-slate-400 dark:hover:border-slate-500 dark:hover:text-slate-300 sm:min-h-0 sm:w-auto sm:rounded-md sm:py-2"
             @click="resetFilters"
           >
             Reset
           </button>
           <button
             type="button"
-            class="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 sm:w-auto"
+            class="min-h-11 w-full rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 sm:min-h-0 sm:w-auto sm:rounded-md sm:py-2"
             @click="applyFilters"
           >
             Terapkan Filter
@@ -969,7 +970,7 @@ const trendChartOptions = computed(() => ({
       </div>
 
       <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
-        <div class="flex flex-col gap-3 border-b border-gray-100 px-5 py-4 md:flex-row md:items-center md:justify-between dark:border-slate-700">
+        <div class="flex flex-col gap-3 border-b border-gray-100 px-4 py-4 sm:px-5 md:flex-row md:items-center md:justify-between dark:border-slate-700">
           <div>
             <div class="text-sm font-semibold text-gray-700 dark:text-gray-300">Hasil Report</div>
             <p v-if="selectedChartDate" class="mt-1 text-xs capitalize text-blue-600 dark:text-blue-400">
@@ -1078,7 +1079,7 @@ const trendChartOptions = computed(() => ({
                   </div>
                   <button
                     type="button"
-                    class="mt-3 inline-flex items-center rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:border-blue-300 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50 dark:focus:ring-offset-slate-800"
+                    class="mt-3 inline-flex min-h-10 w-full items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:border-blue-300 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50 dark:focus:ring-offset-slate-800 md:min-h-0 md:w-auto md:py-1.5"
                     @click.stop="openBookingApproval(booking)"
                   >
                     Buka Persetujuan
