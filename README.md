@@ -1,68 +1,262 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Sistem Peminjaman Sarana dan Prasarana
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Web application for managing room bookings and item borrowing at Universitas Esa Unggul. Users can submit requests, check availability, upload supporting documents, and monitor request status. Administrators manage facilities, approve requests, send notifications, and export reports.
 
-## About Laravel
+## Main Features
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- Room booking with multiple rooms, dates, and time slots in one request.
+- Automatic room schedule conflict detection.
+- Room booking submission from H+3.
+- Item borrowing with quantities, borrowing times, and return times.
+- Item borrowing submission using the H-7 calendar-date rule.
+- Approval, rejection, cancellation, and request history.
+- Automatic completion of approved item borrowings after the latest return time.
+- Automatic expiration of unprocessed room bookings after the final booking day.
+- Signed-letter upload for approved item borrowings.
+- Email verification, password reset, and status notifications.
+- Room and item reports with filters, charts, Excel export, and PDF export.
+- Responsive interface and dark mode.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## User Roles
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+| Role | Access |
+| --- | --- |
+| `user` | Submit and manage personal room or item borrowing requests. |
+| `admin_bap` | Manage campuses, buildings, rooms, room approvals, and room reports. |
+| `admin_sarpras` | Manage items, item borrowing approvals, and item reports. |
+| `super_admin` | Access all administrative modules, user management, and history. |
 
-## Learning Laravel
+The legacy `admin` role is treated as `super_admin`.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Technology
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+- PHP 8.2 or newer
+- Laravel 12
+- Inertia.js 2
+- Vue 3
+- Tailwind CSS 3
+- Vite 7
+- SQLite or MySQL
+- Chart.js
+- Flatpickr
+- Laravel DOMPDF
+- Laravel Excel
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Local Installation
 
-## Laravel Sponsors
+### Requirements
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+Install these tools before starting:
 
-### Premium Partners
+- PHP 8.2+
+- Composer
+- Node.js 20+ and npm
+- SQLite or MySQL
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+### Setup
 
-## Contributing
+1. Clone the repository and enter the project directory.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+git clone https://github.com/Xierra19/aplikasi-booking-ruangan.git
+cd aplikasi-booking-ruangan
+```
 
-## Code of Conduct
+2. Install backend and frontend dependencies.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```bash
+composer install
+npm ci
+```
 
-## Security Vulnerabilities
+3. Create the environment file and application key.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```bash
+cp .env.example .env
+php artisan key:generate
+```
 
-## License
+On Windows Command Prompt, use:
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```bat
+copy .env.example .env
+php artisan key:generate
+```
 
-## Brevo Email Notifications
+4. Configure the database in `.env`.
 
-- Create an SMTP key inside your Brevo account (Transactional > SMTP & API) and note the login/email and generated key.
-- Update your local `.env` with the same settings shipped in `.env.example`, replacing `MAIL_USERNAME`, `MAIL_PASSWORD`, and `MAIL_FROM_ADDRESS` with your Brevo credentials and desired sender address.
-- Ensure at least one admin user exists with a valid email (`users.role = 'admin'`), as booking requests will be routed to every admin mailbox.
-- After changing the environment file, run `php artisan config:clear` so Laravel picks up the new mail configuration.
+The default configuration uses SQLite:
+
+```env
+DB_CONNECTION=sqlite
+```
+
+Create the SQLite database file if it does not exist:
+
+```bash
+touch database/database.sqlite
+```
+
+For MySQL, replace the database section with your local credentials:
+
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=sistem_peminjaman
+DB_USERNAME=root
+DB_PASSWORD=
+```
+
+5. Create the database tables and public storage link.
+
+```bash
+php artisan migrate
+php artisan storage:link
+```
+
+Use `php artisan migrate --seed` only when you intentionally want the development fixture data from `database/seeders`.
+
+6. Start the application.
+
+```bash
+composer run dev
+```
+
+This starts Laravel, the queue worker, log viewer, and Vite development server. Alternatively, run the services in separate terminals:
+
+```bash
+php artisan serve
+php artisan queue:work
+npm run dev
+```
+
+Open `http://localhost:8000` unless your local environment uses another URL.
+
+## Laragon Setup
+
+When using Laragon:
+
+1. Place the project inside `C:\laragon\www`.
+2. Run the installation commands from the Laragon terminal.
+3. Set `APP_URL` and `FRONTEND_URL` to the Laragon site URL.
+
+Example:
+
+```env
+APP_URL=http://sistem-peminjaman-sarana-prasarana.test
+FRONTEND_URL="${APP_URL}"
+```
+
+4. Start Laragon and run `npm run dev`.
+
+## Email Configuration
+
+The project is prepared to use Brevo SMTP. Update these values in `.env`:
+
+```env
+MAIL_MAILER=smtp
+MAIL_HOST=smtp-relay.brevo.com
+MAIL_PORT=587
+MAIL_USERNAME=your_brevo_login
+MAIL_PASSWORD=your_brevo_api_key
+MAIL_FROM_ADDRESS=no-reply@example.com
+MAIL_FROM_NAME="${APP_NAME}"
+MAIL_ENCRYPTION=tls
+```
+
+After changing mail settings, clear the cached configuration:
+
+```bash
+php artisan config:clear
+```
+
+Keep a queue worker running because some notifications are queued:
+
+```bash
+php artisan queue:work
+```
+
+## Scheduler
+
+Pending room bookings are checked every day at `00:00` Asia/Jakarta and expire after their final booking day.
+
+During local development, run:
+
+```bash
+php artisan schedule:work
+```
+
+On a production server, configure cron to run Laravel's scheduler every minute:
+
+```cron
+* * * * * cd /path/to/project && php artisan schedule:run >> /dev/null 2>&1
+```
+
+The expiration command can also be executed manually:
+
+```bash
+php artisan bookings:expire-pending
+```
+
+## Development Commands
+
+```bash
+# Start all development services
+composer run dev
+
+# Start only the frontend development server
+npm run dev
+
+# Create a production frontend build
+npm run build
+
+# Run all automated tests
+php artisan test
+
+# Format PHP code
+./vendor/bin/pint
+```
+
+## Testing
+
+Tests use an in-memory SQLite database, so they do not modify the local development database.
+
+Run the complete suite:
+
+```bash
+php artisan test
+```
+
+Run one test file:
+
+```bash
+php artisan test tests/Feature/BookingControllerTest.php
+```
+
+## Production Notes
+
+Before deployment:
+
+- Set `APP_ENV=production`.
+- Set `APP_DEBUG=false`.
+- Set the correct `APP_URL` and `FRONTEND_URL`.
+- Configure production database and mail credentials.
+- Run `php artisan migrate --force`.
+- Run `php artisan storage:link`.
+- Run `npm ci && npm run build`.
+- Keep `php artisan queue:work` running with a process manager.
+- Configure the Laravel scheduler.
+- Do not commit the `.env` file or real credentials.
+
+## Project Structure
+
+```text
+app/                 Laravel models, controllers, requests, services, and notifications
+database/migrations/ Database schema
+database/seeders/    Development fixture data
+resources/js/        Vue pages, layouts, components, and composables
+resources/views/     Laravel and PDF templates
+routes/              Web, API, authentication, and console routes
+tests/               Unit and feature tests
+```
