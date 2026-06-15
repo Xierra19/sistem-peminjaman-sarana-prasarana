@@ -134,6 +134,7 @@ const loadAvailability = async (index) => {
         borrow_time: row.borrow_time,
         return_date: row.return_date,
         return_time: row.return_time,
+        exclude_item_borrowing_item_id: row.id || undefined,
       }),
       { headers: { Accept: 'application/json' } }
     )

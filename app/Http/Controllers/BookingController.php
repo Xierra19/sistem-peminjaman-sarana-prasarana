@@ -2,25 +2,22 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreBookingRequest;
 use App\Models\Booking;
-use App\Models\BookingRoomSchedule;
 use App\Models\Campus;
 use App\Models\LogHistory;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\Room;
-use App\Models\User;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Notification;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
 
 use Inertia\Inertia;
-use App\Notifications\BookingRequestedNotification;
-use App\Services\ExpirePendingBookings;
+use App\Services\BookingCreationWorkflow;
+use App\Services\BookingCancellationService;
+use App\Services\RoomAvailabilityService;
+use App\Support\CancellationResult;
 
 class BookingController extends Controller
 {
@@ -29,12 +26,39 @@ class BookingController extends Controller
      */
     public function index(Request $request)
     {
-        // Ambil parameter dari request
-        $search = $request->input('search');
-        $status = $request->input('status');
-        $sort = $request->input('sort', 'created_at');
-        $direction = $request->input('direction', 'desc');
-        $perPage = $request->input('per_page', 10);
+        $searchInput = $request->input('search');
+        $statusInput = $request->input('status');
+        $sortInput = $request->input('sort');
+        $directionInput = $request->input('direction');
+        $perPageInput = filter_var($request->input('per_page'), FILTER_VALIDATE_INT);
+
+        $search = is_string($searchInput) && trim($searchInput) !== ''
+            ? trim($searchInput)
+            : null;
+        $status = is_string($statusInput) && in_array($statusInput, [
+            Booking::STATUS_WAITING,
+            Booking::STATUS_APPROVED,
+            Booking::STATUS_REJECTED,
+            Booking::STATUS_CANCELLED,
+            Booking::STATUS_EXPIRED,
+        ], true)
+            ? $statusInput
+            : null;
+        $sort = is_string($sortInput) && in_array($sortInput, [
+            'number',
+            'title',
+            'room',
+            'start_time',
+            'end_time',
+            'status',
+            'created_at',
+        ], true)
+            ? $sortInput
+            : 'created_at';
+        $direction = $directionInput === 'asc' ? 'asc' : 'desc';
+        $perPage = $perPageInput === false
+            ? 10
+            : max(1, min($perPageInput, 100));
 
         $query = Booking::query()
             ->with([
@@ -70,6 +94,7 @@ class BookingController extends Controller
 
         // Sorting (flattened field mapping)
         $sortColumn = match ($sort) {
+            'number' => 'bookings.id',
             'room' => 'rooms.name',
             default => "bookings.{$sort}",
         };
@@ -95,11 +120,7 @@ class BookingController extends Controller
      */
     public function show(Booking $booking)
     {
-        $user = Auth::user();
-
-        if (! $user->isAdmin() && $booking->user_id !== $user->id) {
-            abort(403);
-        }
+        $this->authorize('view', $booking);
 
         $booking->load([
             'room.building.campus',
@@ -110,7 +131,12 @@ class BookingController extends Controller
         ]);
 
         $latestDecisionLog = $booking->logs
-            ->filter(fn (LogHistory $log) => in_array($log->action, ['approved', 'rejected', 'cancelled', 'expired'], true))
+            ->filter(fn (LogHistory $log) => in_array($log->action, [
+                Booking::STATUS_APPROVED,
+                Booking::STATUS_REJECTED,
+                Booking::STATUS_CANCELLED,
+                Booking::STATUS_EXPIRED,
+            ], true))
             ->last();
 
         return Inertia::render('Bookings/Show', [
@@ -146,166 +172,9 @@ class BookingController extends Controller
     /**
      * Store a newly created booking in storage.
      */
-    public function store(Request $request)
+    public function store(StoreBookingRequest $request, BookingCreationWorkflow $workflow)
     {
-        $minimumStartDate = now()->addDays(3)->startOfDay();
-        $minStartDateLabel = $minimumStartDate->format('d/m/Y');
-        $normalizedSchedules = collect($request->input('schedules', []))
-            ->map(function ($schedule): array {
-                $schedule = is_array($schedule) ? $schedule : [];
-                $dates = $schedule['dates'] ?? [];
-
-                if (! is_array($dates)) {
-                    $dates = [$dates];
-                }
-
-                if (empty($dates) && ! empty($schedule['date'])) {
-                    $dates = [$schedule['date']];
-                }
-
-                $schedule['dates'] = collect($dates)
-                    ->filter(fn ($date) => is_string($date) && $date !== '')
-                    ->unique()
-                    ->sort()
-                    ->values()
-                    ->all();
-
-                unset($schedule['date']);
-
-                return $schedule;
-            })
-            ->values()
-            ->all();
-
-        $request->merge(['schedules' => $normalizedSchedules]);
-
-        $validated = $request->validate([
-            'title'       => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'schedules' => 'required|array|min:1|max:20',
-            'schedules.*.room_id' => 'required|exists:rooms,id',
-            'schedules.*.dates' => 'required|array|min:1|max:20',
-            'schedules.*.dates.*' => 'required|date|after_or_equal:'.$minimumStartDate->toDateString(),
-            'schedules.*.start_time' => 'required|date_format:H:i',
-            'schedules.*.end_time' => 'required|date_format:H:i|after:schedules.*.start_time',
-            'attachment'  => 'nullable|file|mimes:pdf,jpg,png|max:2048',
-        ], [
-            'schedules.required' => 'Tambahkan minimal satu jadwal ruangan.',
-            'schedules.*.dates.required' => 'Pilih minimal satu tanggal penggunaan.',
-            'schedules.*.dates.min' => 'Pilih minimal satu tanggal penggunaan.',
-            'schedules.*.dates.*.after_or_equal' => 'Tanggal penggunaan minimal '.$minStartDateLabel.' (H+3 dari hari ini).',
-        ]);
-
-        $schedules = collect($validated['schedules'])
-            ->flatMap(fn (array $schedule, int $index) => collect($schedule['dates'])
-                ->map(fn (string $date) => [
-                    'input_index' => $index,
-                    'room_id' => (int) $schedule['room_id'],
-                    'start_time' => Carbon::parse($date.' '.$schedule['start_time'])->toDateTimeString(),
-                    'end_time' => Carbon::parse($date.' '.$schedule['end_time'])->toDateTimeString(),
-                ]))
-            ->values();
-
-        if ($schedules->count() > 20) {
-            throw ValidationException::withMessages([
-                'schedules' => 'Maksimal 20 jadwal penggunaan dalam satu pengajuan.',
-            ]);
-        }
-
-        foreach ($schedules->groupBy('room_id') as $roomSchedules) {
-            $orderedSchedules = $roomSchedules->sortBy('start_time')->values();
-
-            for ($index = 1; $index < $orderedSchedules->count(); $index++) {
-                $previous = $orderedSchedules[$index - 1];
-                $current = $orderedSchedules[$index];
-
-                if (Carbon::parse($current['start_time'])->lt(Carbon::parse($previous['end_time']))) {
-                    throw ValidationException::withMessages([
-                        "schedules.{$current['input_index']}.start_time" => 'Jadwal ruangan ini bertumpuk dengan baris lain dalam pengajuan yang sama.',
-                    ]);
-                }
-            }
-        }
-
-        $attachment = $request->file('attachment');
-
-        $booking = DB::transaction(function () use ($validated, $schedules, $attachment): Booking {
-            $rooms = Room::query()
-                ->whereIn('id', $schedules->pluck('room_id')->unique()->sort()->values())
-                ->lockForUpdate()
-                ->get()
-                ->keyBy('id');
-
-            foreach ($schedules as $schedule) {
-                $room = $rooms->get($schedule['room_id']);
-                $inputIndex = $schedule['input_index'];
-
-                if (! $room?->is_available) {
-                    throw ValidationException::withMessages([
-                        "schedules.{$inputIndex}.room_id" => 'Ruangan sedang ditandai tidak tersedia.',
-                    ]);
-                }
-
-                if ($this->roomHasScheduleConflict($schedule)) {
-                    throw ValidationException::withMessages([
-                        "schedules.{$inputIndex}.room_id" => 'Ruangan sudah digunakan pada tanggal dan jam yang dipilih.',
-                    ]);
-                }
-            }
-
-            $orderedSchedules = $schedules->sortBy('start_time')->values();
-            $firstSchedule = $orderedSchedules->first();
-            $lastEnd = $schedules->max('end_time');
-            $start = Carbon::parse($schedules->min('start_time'));
-            $end = Carbon::parse($lastEnd);
-            $attachmentPath = $attachment?->store('attachments', 'public');
-
-            $booking = Booking::query()->create([
-                'room_id' => $firstSchedule['room_id'],
-                'user_id' => Auth::id(),
-                'title' => $validated['title'],
-                'description' => $validated['description'] ?? null,
-                'status' => 'waiting',
-                'attachment' => $attachmentPath,
-                'start_time' => $start->toDateTimeString(),
-                'end_time' => $end->toDateTimeString(),
-                'schedule_mode' => Booking::MODE_CONTINUOUS,
-                'schedule_start_date' => $start->toDateString(),
-                'schedule_end_date' => $end->toDateString(),
-                'schedule_start_clock' => $start->format('H:i:s'),
-                'schedule_end_clock' => $end->format('H:i:s'),
-            ]);
-
-            $booking->roomSchedules()->createMany(
-                $orderedSchedules
-                    ->map(fn (array $schedule) => collect($schedule)->except('input_index')->all())
-                    ->all()
-            );
-
-            LogHistory::query()->create([
-                'booking_id' => $booking->id,
-                'user_id' => Auth::id(),
-                'action' => 'requested',
-                'description' => 'Booking diajukan oleh pengguna.',
-            ]);
-
-            return $booking;
-        });
-
-        $booking->load(['user', 'roomSchedules.room.building.campus']);
-
-        $admins = User::query()
-            ->where('role', User::ROLE_ADMIN_BAP)
-            ->whereNotNull('email')
-            ->get();
-
-        if ($admins->isNotEmpty()) {
-            try {
-                Notification::send($admins, new BookingRequestedNotification($booking));
-            } catch (\Throwable $exception) {
-                report($exception);
-            }
-        }
+        $workflow->create($request->validated(), $request->file('attachment'), $request->user());
 
         return redirect()->route('bookings.index')->with('success', 'Booking berhasil dibuat dan menunggu persetujuan.');
     }
@@ -313,7 +182,7 @@ class BookingController extends Controller
     /**
      * Return availability information for a room on a specific date or date range.
      */
-    public function availability(Request $request, Room $room)
+    public function availability(Request $request, Room $room, RoomAvailabilityService $availabilityService)
     {
         if (! $room->is_available) {
             return response()->json([
@@ -368,153 +237,24 @@ class BookingController extends Controller
             ], 422);
         }
 
-        if ($rangeStart && $rangeEnd && $rangeStart->gt($rangeEnd)) {
-            [$rangeStart, $rangeEnd] = [$rangeEnd->copy()->startOfDay(), $rangeStart->copy()->endOfDay()];
-        }
-
-        $queryStart = $rangeStart
-            ?? $selectedDates->first()?->copy()->startOfDay()
-            ?? $day?->copy()->startOfDay();
-        $queryEnd = $rangeEnd
-            ?? $selectedDates->last()?->copy()->endOfDay()
-            ?? $day?->copy()->endOfDay();
-
-        if (! $queryStart || ! $queryEnd) {
-            return response()->json([
-                'available' => true,
-                'bookings' => [],
-                'daily_bookings' => [],
-            ], 200);
-        }
-
-        $schedules = $room->bookingSchedules()
-            ->with('booking:id,title,status')
-            ->whereHas('booking', function ($query): void {
-                $query->whereNotIn('status', ['rejected', 'cancelled', 'expired']);
-            })
-            ->where('start_time', '<', $queryEnd)
-            ->where('end_time', '>', $queryStart)
-            ->get();
-
-        $legacyBookings = $room->bookings()
-            ->whereDoesntHave('roomSchedules')
-            ->whereNotIn('status', ['rejected', 'cancelled', 'expired'])
-            ->get();
-
-        $dailyBookings = $selectedDates->isNotEmpty()
-            ? $selectedDates
-                ->flatMap(fn (Carbon $selectedDate) => $this->buildDailyBookings(
-                    $schedules,
-                    $legacyBookings,
-                    $selectedDate->copy()->startOfDay(),
-                    $selectedDate->copy()->endOfDay(),
-                ))
-                ->values()
-                ->all()
-            : $this->buildDailyBookings(
-                $schedules,
-                $legacyBookings,
-                $queryStart,
-                $queryEnd,
-            );
-        $selectedDateEntry = $day
-            ? collect($dailyBookings)->firstWhere('date', $day->toDateString())
-            : null;
-        $bookingsForSelectedDate = $selectedDateEntry['bookings'] ?? [];
-
-        return response()->json([
-            'available' => true,
-            'bookings' => $bookingsForSelectedDate,
-            'daily_bookings' => $dailyBookings,
-        ], 200);
-    }
-
-    /**
-     * Build room booking intervals grouped per day within the requested range.
-     *
-     * @return array<int, array<string, mixed>>
-     */
-    private function buildDailyBookings(
-        $schedules,
-        $legacyBookings,
-        Carbon $rangeStart,
-        Carbon $rangeEnd,
-    ): array
-    {
-        $grouped = collect();
-
-        foreach ($schedules as $schedule) {
-            foreach ($schedule->buildDailyIntervalsWithinRange($rangeStart, $rangeEnd) as $interval) {
-                $grouped->push($interval);
-            }
-        }
-
-        foreach ($legacyBookings as $booking) {
-            foreach ($booking->buildDailyIntervalsWithinRange($rangeStart, $rangeEnd) as $interval) {
-                $grouped->push($interval);
-            }
-        }
-
-        return $grouped
-            ->groupBy('date')
-            ->map(function ($items, $date) {
-                return [
-                    'date' => $date,
-                    'bookings' => $items
-                        ->sortBy(['start', 'end'])
-                        ->values()
-                        ->map(fn ($item) => [
-                            'id' => $item['id'],
-                            'title' => $item['title'],
-                            'status' => $item['status'],
-                            'start' => $item['start'],
-                            'end' => $item['end'],
-                        ])
-                        ->all(),
-                ];
-            })
-            ->sortBy('date')
-            ->values()
-            ->all();
-    }
-
-    /**
-     * @param  array{room_id: int, start_time: string, end_time: string}  $schedule
-     */
-    private function roomHasScheduleConflict(array $schedule): bool
-    {
-        $hasDetailConflict = BookingRoomSchedule::query()
-            ->where('room_id', $schedule['room_id'])
-            ->where('start_time', '<', $schedule['end_time'])
-            ->where('end_time', '>', $schedule['start_time'])
-            ->whereHas('booking', function ($query): void {
-                $query->whereNotIn('status', ['rejected', 'cancelled', 'expired']);
-            })
-            ->exists();
-
-        if ($hasDetailConflict) {
-            return true;
-        }
-
-        return Booking::query()
-            ->where('room_id', $schedule['room_id'])
-            ->whereDoesntHave('roomSchedules')
-            ->whereNotIn('status', ['rejected', 'cancelled', 'expired'])
-            ->where('start_time', '<', $schedule['end_time'])
-            ->where('end_time', '>', $schedule['start_time'])
-            ->exists();
+        return response()->json(
+            $availabilityService->getAvailability(
+                $room,
+                $day,
+                $selectedDates,
+                $rangeStart,
+                $rangeEnd,
+            ),
+            200,
+        );
     }
 
     public function downloadAttachment(Booking $booking)
     {
-        $user = Auth::user();
+        $this->authorize('downloadAttachment', $booking);
 
         if (! $booking->attachment) {
             abort(404, 'Lampiran tidak ditemukan.');
-        }
-
-        if (! $user->isAdmin() && $booking->user_id !== $user->id) {
-            abort(403);
         }
 
         if (! Storage::disk('public')->exists($booking->attachment)) {
@@ -524,64 +264,39 @@ class BookingController extends Controller
         return response()->download(Storage::disk('public')->path($booking->attachment), basename($booking->attachment));
     }
 
-    public function cancel(Booking $booking, ExpirePendingBookings $expirePendingBookings)
+    public function cancel(Booking $booking, BookingCancellationService $cancellationService)
     {
         $user = Auth::user();
 
-        if ($booking->user_id !== $user->id) {
-            abort(403);
-        }
+        $this->authorize('cancel', $booking);
 
-        if ($expirePendingBookings->expireIfPastDue($booking)) {
-            return redirect()->back()->with(
-                'error',
-                'Permintaan sudah kedaluwarsa karena hari peminjaman terakhir telah berakhir.'
-            );
-        }
+        $result = $cancellationService->cancel($booking, $user);
 
-        $cancellableStatuses = ['waiting', 'pending', 'requested'];
-
-        if (! in_array($booking->status, $cancellableStatuses, true)) {
-            $message = match ($booking->status) {
-                'cancelled' => 'Booking sudah dibatalkan sebelumnya.',
-                'expired' => 'Permintaan sudah kedaluwarsa dan tidak dapat dibatalkan.',
+        if ($result !== CancellationResult::Cancelled) {
+            $message = match ($result) {
+                CancellationResult::AlreadyCancelled => 'Booking sudah dibatalkan sebelumnya.',
+                CancellationResult::ExpiredNow => 'Permintaan sudah kedaluwarsa karena hari peminjaman terakhir telah berakhir.',
+                CancellationResult::Expired => 'Permintaan sudah kedaluwarsa dan tidak dapat dibatalkan.',
                 default => 'Booking tidak dapat dibatalkan karena sudah diproses oleh admin.',
             };
 
             return redirect()->back()->with('error', $message);
         }
 
-        DB::transaction(function () use ($booking, $user): void {
-            $booking->update([
-                'status' => 'cancelled',
-            ]);
-
-            LogHistory::create([
-                'booking_id' => $booking->id,
-                'user_id' => $user->id,
-                'action' => 'cancelled',
-                'description' => 'Booking dibatalkan oleh pemohon.',
-            ]);
-        });
-
         return redirect()->back()->with('success', 'Booking berhasil dibatalkan.');
     }
 
     public function downloadLetter(Booking $booking)
     {
-        $user = Auth::user();
+        $this->authorize('downloadLetter', $booking);
 
-        if (! $user->isAdmin() && $booking->user_id !== $user->id) {
-            abort(403);
-        }
-
-        if ($booking->status !== 'approved') {
+        if ($booking->status !== Booking::STATUS_APPROVED) {
             abort(403, 'Booking belum disetujui.');
         }
 
         $booking->load(['user', 'roomSchedules.room.building.campus']);
         $approvedAt = $booking->logs()
-            ->where('action', 'approved')
+            ->where('action', Booking::STATUS_APPROVED)
             ->latest('created_at')
             ->value('created_at');
         $approvedAt = $approvedAt ? Carbon::parse($approvedAt) : null;

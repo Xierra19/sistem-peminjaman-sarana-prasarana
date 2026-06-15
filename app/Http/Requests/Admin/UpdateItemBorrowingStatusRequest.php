@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Models\ItemBorrowing;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -16,7 +17,11 @@ class UpdateItemBorrowingStatusRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => ['required', Rule::in(['approved', 'rejected', 'cancelled'])],
+            'status' => ['required', Rule::in([
+                ItemBorrowing::STATUS_APPROVED,
+                ItemBorrowing::STATUS_REJECTED,
+                ItemBorrowing::STATUS_CANCELLED,
+            ])],
             'notes' => ['nullable', 'string', 'max:500'],
             'signed_letter' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:2048'],
         ];
@@ -25,15 +30,18 @@ class UpdateItemBorrowingStatusRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->sometimes('notes', ['required', 'string', 'max:500'], function ($input) {
-            return in_array($input->status, ['rejected', 'cancelled'], true);
+            return in_array($input->status, [
+                ItemBorrowing::STATUS_REJECTED,
+                ItemBorrowing::STATUS_CANCELLED,
+            ], true);
         });
 
         $validator->sometimes('signed_letter', ['required'], function ($input) {
-            return $input->status === 'approved';
+            return $input->status === ItemBorrowing::STATUS_APPROVED;
         });
 
         $validator->sometimes('signed_letter', ['prohibited'], function ($input) {
-            return $input->status === 'cancelled';
+            return $input->status === ItemBorrowing::STATUS_CANCELLED;
         });
     }
 

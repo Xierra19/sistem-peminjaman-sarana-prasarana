@@ -5,11 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateItemBorrowingStatusRequest;
 use App\Models\ItemBorrowing;
-use App\Models\ItemBorrowingLog;
-use App\Notifications\ItemBorrowingStatusUpdatedNotification;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
+use App\Services\ItemBorrowingApprovalWorkflow;
+use App\Support\AdminStatusTransitionResult;
 use Inertia\Inertia;
 
 class ItemBorrowingApprovalController extends Controller
@@ -51,92 +48,42 @@ class ItemBorrowingApprovalController extends Controller
         ]);
     }
 
-
-    public function updateStatus(UpdateItemBorrowingStatusRequest $request, ItemBorrowing $itemBorrowing)
-    {
+    public function updateStatus(
+        UpdateItemBorrowingStatusRequest $request,
+        ItemBorrowing $itemBorrowing,
+        ItemBorrowingApprovalWorkflow $workflow,
+    ) {
         $data = $request->validated();
-        $itemBorrowing->loadMissing('items');
-        $currentStatus = $itemBorrowing->status === 'requested' ? 'waiting' : $itemBorrowing->status;
-        $targetStatus = $data['status'];
+        $result = $workflow->update(
+            $itemBorrowing,
+            $data['status'],
+            $data['notes'] ?? null,
+            $request->file('signed_letter'),
+            $request->user(),
+        );
 
-        if (in_array($currentStatus, ['rejected', 'cancelled', 'returned'], true)) {
+        if ($result === AdminStatusTransitionResult::Final) {
             return back()
                 ->withErrors(['status' => 'Status peminjaman barang sudah final.'])
                 ->with('error', 'Status peminjaman barang sudah final.');
         }
 
-        if (in_array($targetStatus, ['approved', 'rejected'], true) && $currentStatus !== 'waiting') {
+        if ($result === AdminStatusTransitionResult::PendingRequired) {
             return back()
                 ->withErrors(['status' => 'Hanya permintaan yang masih menunggu yang dapat disetujui atau ditolak.'])
                 ->with('error', 'Aksi tidak valid untuk status saat ini.');
         }
 
-        if ($targetStatus === 'cancelled' && $currentStatus !== 'approved') {
+        if ($result === AdminStatusTransitionResult::ApprovedRequired) {
             return back()
                 ->withErrors(['status' => 'Hanya peminjaman yang sudah disetujui yang dapat dibatalkan atau ditandai kembali.'])
                 ->with('error', 'Aksi tidak valid untuk status saat ini.');
         }
 
-        if ($targetStatus === 'cancelled' && $itemBorrowing->effective_status === 'completed') {
+        if ($result === AdminStatusTransitionResult::Completed) {
             return back()
                 ->withErrors(['status' => 'Peminjaman yang waktunya sudah selesai tidak dapat dibatalkan.'])
                 ->with('error', 'Aksi tidak valid untuk status saat ini.');
-        }
-
-        DB::transaction(function () use ($request, $itemBorrowing, $targetStatus, $data): void {
-            $updatePayload = [
-                'status' => $targetStatus,
-            ];
-
-            if ($request->hasFile('signed_letter')) {
-                if ($itemBorrowing->signed_letter && Storage::disk('public')->exists($itemBorrowing->signed_letter)) {
-                    Storage::disk('public')->delete($itemBorrowing->signed_letter);
-                }
-
-                $updatePayload['signed_letter'] = $request->file('signed_letter')->store('item-borrowing-signed-letters', 'public');
-                $updatePayload['signed_letter_uploaded_at'] = now();
-            }
-
-            if ($targetStatus === 'approved') {
-                $updatePayload['approved_at'] = now();
-                $updatePayload['approved_by'] = Auth::id();
-            }
-
-            $itemBorrowing->update($updatePayload);
-
-            $description = match ($targetStatus) {
-                'approved' => 'Peminjaman barang disetujui',
-                'rejected' => 'Peminjaman barang ditolak',
-                'cancelled' => 'Peminjaman barang dibatalkan oleh admin',
-                default => 'Status peminjaman barang diperbarui',
-            };
-
-            if (! empty($data['notes'])) {
-                $description .= ' - '.$data['notes'];
-            }
-
-            ItemBorrowingLog::create([
-                'item_borrowing_id' => $itemBorrowing->id,
-                'user_id' => Auth::id(),
-                'action' => $targetStatus,
-                'description' => $description,
-            ]);
-        });
-
-        $itemBorrowing->load(['user', 'items.item', 'singleItem']);
-
-
-        if ($itemBorrowing->user && ! empty($itemBorrowing->user->email)) {
-            try {
-                $itemBorrowing->user->notify(new ItemBorrowingStatusUpdatedNotification(
-                    $itemBorrowing,
-                    $targetStatus,
-                    $data['notes'] ?? null,
-                    Auth::user()?->name
-                ));
-            } catch (\Throwable $exception) {
-                report($exception);
-            }
         }
 
         return redirect()

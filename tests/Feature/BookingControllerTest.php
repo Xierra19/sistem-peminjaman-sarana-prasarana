@@ -8,13 +8,25 @@ use App\Models\Building;
 use App\Models\Campus;
 use App\Models\Room;
 use App\Models\User;
+use App\Notifications\BookingRequestedNotification;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class BookingControllerTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+
+        parent::tearDown();
+    }
 
     public function test_availability_returns_booking_room_schedule_for_selected_date(): void
     {
@@ -39,6 +51,87 @@ class BookingControllerTest extends TestCase
         $response->assertJsonPath('bookings.0.start', '09:00');
         $response->assertJsonPath('bookings.0.end', '11:30');
         $response->assertJsonPath('daily_bookings.0.date', $date);
+    }
+
+    public function test_availability_includes_legacy_booking_without_room_schedule(): void
+    {
+        [$user, $rooms] = $this->createLocation(1);
+        $date = now()->addDays(5)->toDateString();
+        $this->createBooking($user, $rooms[0], [
+            'start_time' => "{$date} 13:00:00",
+            'end_time' => "{$date} 15:00:00",
+        ]);
+
+        $response = $this->actingAs($user)->getJson(route('rooms.availability', [
+            'room' => $rooms[0],
+            'date' => $date,
+        ]));
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('bookings.0.start', '13:00')
+            ->assertJsonPath('bookings.0.end', '15:00')
+            ->assertJsonPath('daily_bookings.0.date', $date);
+    }
+
+    public function test_availability_rejects_more_than_twenty_selected_dates(): void
+    {
+        [$user, $rooms] = $this->createLocation(1);
+        $dates = collect(range(1, 21))
+            ->map(fn (int $days) => now()->addDays($days)->toDateString())
+            ->all();
+
+        $this->actingAs($user)
+            ->getJson(route('rooms.availability', [
+                'room' => $rooms[0],
+                'dates' => $dates,
+            ]))
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'Maksimal 20 tanggal dapat diperiksa sekaligus.')
+            ->assertJsonPath('daily_bookings', []);
+    }
+
+    public function test_index_normalizes_invalid_query_parameters(): void
+    {
+        [$user, $rooms] = $this->createLocation(1);
+        $this->createBooking($user, $rooms[0]);
+
+        $response = $this->actingAs($user)->get(route('bookings.index', [
+            'status' => 'not-a-status',
+            'sort' => 'id desc; drop table bookings',
+            'direction' => 'sideways',
+            'per_page' => 100000,
+        ]));
+
+        $response->assertOk();
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('Bookings/Index')
+            ->where('filters.status', null)
+            ->where('filters.sort', 'created_at')
+            ->where('filters.direction', 'desc')
+            ->where('filters.per_page', 100)
+            ->where('bookings.per_page', 100)
+        );
+    }
+
+    public function test_index_supports_all_exposed_sort_columns(): void
+    {
+        [$user, $rooms] = $this->createLocation(1);
+        $this->createBooking($user, $rooms[0]);
+
+        foreach (['number', 'title', 'room', 'start_time', 'end_time', 'status', 'created_at'] as $sort) {
+            $response = $this->actingAs($user)->get(route('bookings.index', [
+                'sort' => $sort,
+                'direction' => 'asc',
+            ]));
+
+            $response->assertOk();
+            $response->assertInertia(fn (Assert $page) => $page
+                ->component('Bookings/Index')
+                ->where('filters.sort', $sort)
+                ->where('filters.direction', 'asc')
+            );
+        }
     }
 
     public function test_availability_returns_only_selected_multiple_dates(): void
@@ -93,6 +186,92 @@ class BookingControllerTest extends TestCase
             [$rooms[0]->id, $rooms[1]->id],
             BookingRoomSchedule::query()->pluck('room_id')->all(),
         );
+    }
+
+    public function test_new_booking_notifies_only_bap_admins(): void
+    {
+        Notification::fake();
+
+        [$user, $rooms] = $this->createLocation(1);
+        $bapAdmin = User::factory()->create(['role' => User::ROLE_ADMIN_BAP]);
+        $sarprasAdmin = User::factory()->create(['role' => User::ROLE_ADMIN_SARPRAS]);
+        $date = now()->addDays(5)->toDateString();
+
+        $this->actingAs($user)->post(route('bookings.store'), [
+            'title' => 'Seminar',
+            'schedules' => [
+                $this->schedulePayload($rooms[0], $date, '09:00', '11:00'),
+            ],
+        ])->assertRedirect(route('bookings.index'));
+
+        Notification::assertSentTo($bapAdmin, BookingRequestedNotification::class);
+        Notification::assertNotSentTo($sarprasAdmin, BookingRequestedNotification::class);
+    }
+
+    public function test_owner_can_cancel_waiting_booking_only_once(): void
+    {
+        [$owner, $rooms] = $this->createLocation(1);
+        $booking = $this->createBooking($owner, $rooms[0]);
+
+        $this->actingAs($owner)
+            ->from(route('bookings.show', $booking))
+            ->post(route('bookings.cancel', $booking))
+            ->assertRedirect(route('bookings.show', $booking))
+            ->assertSessionHas('success', 'Booking berhasil dibatalkan.');
+
+        $this->assertSame(Booking::STATUS_CANCELLED, $booking->fresh()->status);
+        $this->assertDatabaseHas('log_histories', [
+            'booking_id' => $booking->id,
+            'user_id' => $owner->id,
+            'action' => Booking::STATUS_CANCELLED,
+        ]);
+
+        $this->actingAs($owner)
+            ->from(route('bookings.show', $booking))
+            ->post(route('bookings.cancel', $booking))
+            ->assertSessionHas('error', 'Booking sudah dibatalkan sebelumnya.');
+
+        $this->assertDatabaseCount('log_histories', 1);
+    }
+
+    public function test_cancelling_past_due_booking_expires_it_instead(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-06-10 00:01', 'Asia/Jakarta'));
+        [$owner, $rooms] = $this->createLocation(1);
+        $booking = $this->createBooking($owner, $rooms[0], [
+            'start_time' => '2026-06-09 08:00:00',
+            'end_time' => '2026-06-09 10:00:00',
+            'schedule_start_date' => '2026-06-09',
+            'schedule_end_date' => '2026-06-09',
+        ]);
+
+        $this->actingAs($owner)
+            ->post(route('bookings.cancel', $booking))
+            ->assertSessionHas('error', 'Permintaan sudah kedaluwarsa karena hari peminjaman terakhir telah berakhir.');
+
+        $this->assertSame(Booking::STATUS_EXPIRED, $booking->fresh()->status);
+        $this->assertDatabaseHas('log_histories', [
+            'booking_id' => $booking->id,
+            'action' => Booking::STATUS_EXPIRED,
+        ]);
+    }
+
+    public function test_owner_cannot_cancel_approved_booking(): void
+    {
+        [$owner, $rooms] = $this->createLocation(1);
+        $booking = $this->createBooking($owner, $rooms[0], [
+            'status' => Booking::STATUS_APPROVED,
+        ]);
+
+        $this->actingAs($owner)
+            ->post(route('bookings.cancel', $booking))
+            ->assertSessionHas('error', 'Booking tidak dapat dibatalkan karena sudah diproses oleh admin.');
+
+        $this->assertSame(Booking::STATUS_APPROVED, $booking->fresh()->status);
+        $this->assertDatabaseMissing('log_histories', [
+            'booking_id' => $booking->id,
+            'action' => Booking::STATUS_CANCELLED,
+        ]);
     }
 
     public function test_store_allows_same_room_at_non_overlapping_times(): void
@@ -201,6 +380,8 @@ class BookingControllerTest extends TestCase
 
     public function test_store_rejects_entire_booking_when_one_room_conflicts_with_active_booking(): void
     {
+        Storage::fake('public');
+
         [$user, $rooms] = $this->createLocation(2);
         $date = now()->addDays(5)->toDateString();
         $existing = $this->createBooking($user, $rooms[0], [
@@ -219,6 +400,7 @@ class BookingControllerTest extends TestCase
             ->from(route('bookings.create'))
             ->post(route('bookings.store'), [
                 'title' => 'Booking Baru',
+                'attachment' => UploadedFile::fake()->create('surat.pdf', 100, 'application/pdf'),
                 'schedules' => [
                     $this->schedulePayload($rooms[1], $date, '08:00', '09:00'),
                     $this->schedulePayload($rooms[0], $date, '10:00', '12:00'),
@@ -229,6 +411,57 @@ class BookingControllerTest extends TestCase
         $response->assertSessionHasErrors('schedules.1.room_id');
         $this->assertDatabaseCount('bookings', 1);
         $this->assertDatabaseCount('booking_room_schedules', 1);
+        Storage::disk('public')->assertDirectoryEmpty('attachments');
+    }
+
+    public function test_sarpras_admin_cannot_access_user_facing_booking_routes(): void
+    {
+        Storage::fake('public');
+
+        [$owner, $rooms] = $this->createLocation(1);
+        $sarprasAdmin = User::factory()->create([
+            'role' => User::ROLE_ADMIN_SARPRAS,
+            'email_verified_at' => now(),
+        ]);
+        $attachment = 'attachments/booking.pdf';
+        Storage::disk('public')->put($attachment, 'booking');
+        $booking = $this->createBooking($owner, $rooms[0], [
+            'status' => 'approved',
+            'attachment' => $attachment,
+        ]);
+
+        $this->actingAs($sarprasAdmin)
+            ->get(route('bookings.show', $booking))
+            ->assertForbidden();
+        $this->actingAs($sarprasAdmin)
+            ->get(route('bookings.attachment', $booking))
+            ->assertForbidden();
+        $this->actingAs($sarprasAdmin)
+            ->get(route('bookings.letter', $booking))
+            ->assertForbidden();
+    }
+
+    public function test_bap_admin_can_access_user_facing_booking_routes(): void
+    {
+        Storage::fake('public');
+
+        [$owner, $rooms] = $this->createLocation(1);
+        $bapAdmin = User::factory()->create([
+            'role' => User::ROLE_ADMIN_BAP,
+            'email_verified_at' => now(),
+        ]);
+        $attachment = 'attachments/booking.pdf';
+        Storage::disk('public')->put($attachment, 'booking');
+        $booking = $this->createBooking($owner, $rooms[0], [
+            'attachment' => $attachment,
+        ]);
+
+        $this->actingAs($bapAdmin)
+            ->get(route('bookings.show', $booking))
+            ->assertOk();
+        $this->actingAs($bapAdmin)
+            ->get(route('bookings.attachment', $booking))
+            ->assertDownload('booking.pdf');
     }
 
     /**

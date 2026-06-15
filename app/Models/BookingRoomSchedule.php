@@ -3,10 +3,10 @@
 namespace App\Models;
 
 use Carbon\Carbon;
+use Carbon\CarbonPeriod;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Carbon\CarbonPeriod;
 
 class BookingRoomSchedule extends Model
 {
@@ -111,7 +111,7 @@ class BookingRoomSchedule extends Model
                 'date' => $day->toDateString(),
                 'id' => $this->booking_id,
                 'title' => $this->booking?->title ?? 'Booking',
-                'status' => $this->booking?->status ?? 'waiting',
+                'status' => $this->booking?->status ?? Booking::STATUS_WAITING,
                 'start' => $intervalStart->format('H:i'),
                 'end' => $intervalEnd->format('H:i'),
             ];

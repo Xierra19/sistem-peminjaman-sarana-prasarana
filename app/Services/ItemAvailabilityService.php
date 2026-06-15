@@ -11,6 +11,27 @@ use Illuminate\Support\Facades\DB;
 
 class ItemAvailabilityService
 {
+    public function getAvailabilityForUser(
+        Item $item,
+        Carbon $borrowDate,
+        Carbon $returnDate,
+        ?int $excludeItemBorrowingItemId,
+        int $userId,
+    ): array {
+        $excludeRecord = $excludeItemBorrowingItemId
+            ? ItemBorrowingItem::query()
+                ->whereKey($excludeItemBorrowingItemId)
+                ->where('item_id', $item->id)
+                ->whereHas('borrowing', function ($query) use ($userId): void {
+                    $query->where('user_id', $userId)
+                        ->whereIn('status', ItemBorrowing::EDITABLE_STATUSES);
+                })
+                ->first()
+            : null;
+
+        return $this->getAvailability($item, $borrowDate, $returnDate, $excludeRecord);
+    }
+
     /**
      * Get availability for item - support both legacy ItemBorrowing & new ItemBorrowingItem
      */
@@ -60,6 +81,7 @@ class ItemAvailabilityService
         mixed $excludeRecord = null
     ): bool {
         $availability = $this->getAvailability($item, $borrowDate, $returnDate, $excludeRecord);
+
         return $availability['remaining_quantity'] >= $requestedQuantity;
     }
 
@@ -69,15 +91,15 @@ class ItemAvailabilityService
     public function overlappingRecords(Item $item, Carbon $borrowDate, Carbon $returnDate, mixed $excludeRecord = null): Collection
     {
         $legacyQuery = ItemBorrowing::overlappingPeriod($item->id, $borrowDate, $returnDate);
-        
+
         $pivotQuery = ItemBorrowingItem::where('item_id', $item->id)
             ->where('borrow_date', '<', $returnDate)
             ->where('return_date', '>', $borrowDate)
             ->whereExists(function ($q) {
                 $q->select(DB::raw(1))
-                  ->from('item_borrowings')
-                  ->whereColumn('item_borrowings.id', 'item_borrowing_items.item_borrowing_id')
-                  ->whereNotIn('item_borrowings.status', ['rejected', 'cancelled', 'returned']);
+                    ->from('item_borrowings')
+                    ->whereColumn('item_borrowings.id', 'item_borrowing_items.item_borrowing_id')
+                  ->whereNotIn('item_borrowings.status', ItemBorrowing::NON_BLOCKING_STATUSES);
             });
 
         // Exclude logic

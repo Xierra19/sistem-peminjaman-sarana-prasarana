@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\ItemBorrowing;
 use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -11,17 +12,26 @@ class UpdateMultipleItemBorrowingRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user() !== null;
+        $itemBorrowing = $this->route('itemBorrowing');
+
+        return $itemBorrowing instanceof ItemBorrowing
+            && $this->user()?->can('update', $itemBorrowing) === true;
     }
 
     public function rules(): array
     {
+        $itemBorrowing = $this->route('itemBorrowing');
+
         return [
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'attachment' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:2048'], // Optional for update
             'items' => ['required', 'array', 'min:1'],
-            'items.*.id' => ['nullable', 'exists:item_borrowing_items,id'], // Existing item
+            'items.*.id' => [
+                'nullable',
+                Rule::exists('item_borrowing_items', 'id')
+                    ->where('item_borrowing_id', $itemBorrowing?->id),
+            ],
             'items.*.item_id' => ['required', 'exists:items,id', 'distinct'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
             'items.*.borrow_date' => ['required', 'date_format:Y-m-d'],
@@ -59,6 +69,7 @@ class UpdateMultipleItemBorrowingRequest extends FormRequest
         return [
             'items.required' => 'Minimal 1 barang harus dipilih.',
             'items.min' => 'Minimal 1 barang harus dipilih.',
+            'items.*.id.exists' => 'Detail barang tidak valid untuk pengajuan ini.',
             'items.*.borrow_time.required' => 'Jam mulai wajib diisi.',
             'items.*.return_time.required' => 'Jam kembali wajib diisi.',
         ];

@@ -2,21 +2,16 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Controllers\Controller;
-use App\Models\Booking;
 use App\Exports\BookingExport;
-use App\Models\LogHistory;
-use App\Notifications\BookingStatusUpdatedNotification;
-use Illuminate\Http\Request;
-use Barryvdh\DomPDF\Facade\Pdf;
-use Maatwebsite\Excel\Facades\Excel;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
-use Inertia\Inertia;
-use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\UpdateBookingStatusRequest;
+use App\Models\Booking;
+use App\Services\BookingApprovalWorkflow;
 use App\Services\ExpirePendingBookings;
+use App\Support\AdminStatusTransitionResult;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Inertia\Inertia;
+use Maatwebsite\Excel\Facades\Excel;
 
 class BookingApprovalController extends Controller
 {
@@ -70,92 +65,35 @@ class BookingApprovalController extends Controller
     /**
      * Update the status of a booking (approve / reject).
      */
-    public function updateStatus(Request $request, Booking $booking, ExpirePendingBookings $expirePendingBookings)
-    {
-        $validator = Validator::make(
-            $request->all(),
-            [
-                'status' => ['required', Rule::in(['approved', 'rejected', 'cancelled'])],
-                'notes'  => ['nullable', 'string', 'max:500'],
-            ],
-            [
-                'notes.required' => 'Catatan wajib diisi ketika membatalkan booking.',
-            ]
+    public function updateStatus(
+        UpdateBookingStatusRequest $request,
+        Booking $booking,
+        BookingApprovalWorkflow $workflow,
+    ) {
+        $data = $request->validated();
+        $result = $workflow->update(
+            $booking,
+            $data['status'],
+            $data['notes'] ?? null,
+            $request->user(),
         );
 
-        $validator->sometimes('notes', ['required', 'string', 'max:500'], function ($input) {
-            return $input->status === 'cancelled';
-        });
-
-        $data = $validator->validate();
-
-        if ($expirePendingBookings->expireIfPastDue($booking)) {
+        if ($result === AdminStatusTransitionResult::Expired) {
             return back()
                 ->withErrors(['status' => 'Permintaan sudah kedaluwarsa karena hari peminjaman terakhir telah berakhir.'])
                 ->with('error', 'Permintaan sudah kedaluwarsa dan tidak dapat diproses.');
         }
 
-        if (
-            in_array($data['status'], ['approved', 'rejected'], true)
-            && ! in_array($booking->status, ['waiting', 'pending', 'requested'], true)
-        ) {
+        if ($result === AdminStatusTransitionResult::PendingRequired) {
             return back()
                 ->withErrors(['status' => 'Hanya booking yang masih menunggu yang dapat disetujui atau ditolak.'])
                 ->with('error', 'Status booking sudah final dan tidak dapat diproses kembali.');
         }
 
-        if ($data['status'] === 'cancelled' && $booking->status !== 'approved') {
+        if ($result === AdminStatusTransitionResult::ApprovedRequired) {
             return back()
                 ->withErrors(['status' => 'Hanya booking yang sudah disetujui yang dapat dibatalkan.'])
                 ->with('error', 'Hanya booking yang sudah disetujui yang dapat dibatalkan.');
-        }
-
-        $statusChanged = $booking->status !== $data['status'];
-
-        if ($statusChanged) {
-            $booking->update([
-                'status' => $data['status'],
-            ]);
-
-            // Generate nomor surat jika booking disetujui
-            if ($data['status'] === 'approved' && !$booking->letter_number) {
-                $this->generateLetterNumber($booking);
-            }
-        }
-
-        $description = match ($data['status']) {
-            'approved' => 'Booking disetujui',
-            'rejected' => 'Booking ditolak',
-            'cancelled' => 'Booking dibatalkan oleh admin',
-            default => 'Status booking diperbarui',
-        };
-
-        if (!empty($data['notes'])) {
-            $description .= ' - ' . $data['notes'];
-        }
-
-        LogHistory::create([
-            'booking_id'  => $booking->id,
-            'user_id'     => Auth::id(),
-            'action'      => $data['status'],
-            'description' => $description,
-        ]);
-
-        if ($statusChanged) {
-            $booking->load(['user', 'roomSchedules.room.building.campus']);
-
-            if ($booking->user && ! empty($booking->user->email)) {
-                try {
-                    $booking->user->notify(new BookingStatusUpdatedNotification(
-                        $booking,
-                        $data['status'],
-                        $data['notes'] ?? null,
-                        Auth::user()?->name
-                    ));
-                } catch (\Throwable $exception) {
-                    report($exception);
-                }
-            }
         }
 
         return redirect()->back()->with('success', 'Status booking berhasil diperbarui.');
@@ -163,7 +101,7 @@ class BookingApprovalController extends Controller
 
     public function exportExcel()
     {
-        return Excel::download(new BookingExport(), 'data-booking-ruangan.xlsx');
+        return Excel::download(new BookingExport, 'data-booking-ruangan.xlsx');
     }
 
     public function exportPdf()
@@ -178,56 +116,5 @@ class BookingApprovalController extends Controller
         ])->setPaper('a4', 'landscape');
 
         return $pdf->download('data-booking-ruangan.pdf');
-    }
-
-    /**
-     * Generate nomor surat untuk booking yang disetujui.
-     * Menggunakan transaksi database dengan lock untuk mencegah duplikasi nomor surat.
-     */
-    private function generateLetterNumber(Booking $booking): void
-    {
-        // Pengaman tambahan: cek jika nomor surat sudah ada
-        if ($booking->letter_number) {
-            return;
-        }
-
-        DB::transaction(function () use ($booking): void {
-            // Refresh data booking untuk memastikan konsistensi
-            $booking->refresh();
-
-            if ($booking->letter_number) {
-                return;
-            }
-
-            $issuedAt = now();
-            $year = (int) $issuedAt->format('Y');
-            $month = (int) $issuedAt->format('m');
-
-            // Ambil urutan terakhir di bulan dan tahun yang sama dengan lock untuk mencegah race condition
-            $latestSequence = Booking::whereYear('letter_generated_at', $year)
-                ->whereMonth('letter_generated_at', $month)
-                ->lockForUpdate()
-                ->orderByDesc('letter_sequence')
-                ->value('letter_sequence');
-
-            $nextSequence = ((int) $latestSequence) + 1;
-
-            // Format nomor surat: {sequence}/BAP-Bekasi/Booking/{bulan}/{tahun}
-            $formattedNumber = sprintf(
-                '%d/BAP-Bekasi/Booking/%s/%s',
-                $nextSequence,
-                $issuedAt->format('m'),
-                $issuedAt->format('Y')
-            );
-
-            // Simpan informasi surat ke database
-            $booking->letter_sequence = $nextSequence;
-            $booking->letter_number = $formattedNumber;
-            $booking->letter_generated_at = $issuedAt;
-            $booking->save();
-        });
-
-        // Refresh booking setelah transaksi selesai
-        $booking->refresh();
     }
 }

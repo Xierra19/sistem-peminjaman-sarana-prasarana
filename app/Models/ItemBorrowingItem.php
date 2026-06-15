@@ -26,7 +26,7 @@ class ItemBorrowingItem extends Model
 
     public function borrowing(): BelongsTo
     {
-        return $this->belongsTo(ItemBorrowing::class);
+        return $this->belongsTo(ItemBorrowing::class, 'item_borrowing_id');
     }
 
     public function item(): BelongsTo

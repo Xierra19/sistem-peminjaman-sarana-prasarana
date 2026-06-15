@@ -20,7 +20,7 @@ class ExpirePendingBookings
         $expiredCount = 0;
 
         Booking::query()
-            ->whereIn('status', ['waiting', 'pending', 'requested'])
+            ->whereIn('status', Booking::PENDING_STATUSES)
             ->where(function ($query) use ($today): void {
                 $query
                     ->where(function ($scheduleQuery) use ($today): void {
@@ -66,20 +66,20 @@ class ExpirePendingBookings
 
             if (
                 ! $lockedBooking
-                || ! in_array($lockedBooking->status, ['waiting', 'pending', 'requested'], true)
+                || ! in_array($lockedBooking->status, Booking::PENDING_STATUSES, true)
                 || ! $lockedBooking->isPastExpirationCutoff($now)
             ) {
                 return false;
             }
 
             $lockedBooking->update([
-                'status' => 'expired',
+                'status' => Booking::STATUS_EXPIRED,
             ]);
 
             LogHistory::query()->create([
                 'booking_id' => $lockedBooking->id,
                 'user_id' => null,
-                'action' => 'expired',
+                'action' => Booking::STATUS_EXPIRED,
                 'description' => 'Permintaan kedaluwarsa karena belum diproses hingga hari peminjaman terakhir berakhir.',
             ]);
 

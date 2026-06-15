@@ -2,16 +2,51 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Carbon\Carbon;
 
 class ItemBorrowing extends Model
 {
     use HasFactory;
+
+    public const STATUS_WAITING = 'waiting';
+
+    public const STATUS_REQUESTED = 'requested';
+
+    public const STATUS_APPROVED = 'approved';
+
+    public const STATUS_REJECTED = 'rejected';
+
+    public const STATUS_CANCELLED = 'cancelled';
+
+    public const STATUS_RETURNED = 'returned';
+
+    public const STATUS_COMPLETED = 'completed';
+
+    public const CANCELLABLE_STATUSES = [
+        self::STATUS_WAITING,
+    ];
+
+    public const EDITABLE_STATUSES = [
+        self::STATUS_REJECTED,
+        self::STATUS_WAITING,
+    ];
+
+    public const FINAL_STATUSES = [
+        self::STATUS_REJECTED,
+        self::STATUS_CANCELLED,
+        self::STATUS_RETURNED,
+    ];
+
+    public const NON_BLOCKING_STATUSES = [
+        self::STATUS_REJECTED,
+        self::STATUS_CANCELLED,
+        self::STATUS_RETURNED,
+    ];
 
     protected $appends = [
         'effective_status',
@@ -65,7 +100,7 @@ class ItemBorrowing extends Model
      */
     public function singleItem(): BelongsTo
     {
-        return $this->belongsTo(Item::class);
+        return $this->belongsTo(Item::class, 'item_id');
     }
 
     /**
@@ -101,17 +136,17 @@ class ItemBorrowing extends Model
             ->where('item_id', $itemId)
             ->where('borrow_date', '<', $end)
             ->where('return_date', '>', $start)
-            ->whereNotIn('status', ['rejected', 'cancelled', 'returned']);
+            ->whereNotIn('status', self::NON_BLOCKING_STATUSES);
     }
 
     public function getEffectiveStatusAttribute(): string
     {
-        if ($this->status === 'returned') {
-            return 'completed';
+        if ($this->status === self::STATUS_RETURNED) {
+            return self::STATUS_COMPLETED;
         }
 
-        if ($this->status !== 'approved') {
-            return $this->status === 'requested' ? 'waiting' : $this->status;
+        if ($this->status !== self::STATUS_APPROVED) {
+            return $this->status === self::STATUS_REQUESTED ? self::STATUS_WAITING : $this->status;
         }
 
         $latestReturn = $this->relationLoaded('items')
@@ -121,8 +156,7 @@ class ItemBorrowing extends Model
         $latestReturn ??= $this->return_date;
 
         return $latestReturn && Carbon::parse($latestReturn)->lte(now())
-            ? 'completed'
-            : 'approved';
+            ? self::STATUS_COMPLETED
+            : self::STATUS_APPROVED;
     }
-
 }

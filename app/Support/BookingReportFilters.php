@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\Booking;
 use Illuminate\Database\Eloquent\Builder;
 
 class BookingReportFilters
@@ -20,8 +21,9 @@ class BookingReportFilters
 
         if ($status) {
             $query->where(function (Builder $statusQuery) use ($status): void {
-                if ($status === 'waiting') {
-                    $statusQuery->whereIn('status', ['waiting', 'pending']);
+                if ($status === Booking::STATUS_WAITING) {
+                    $statusQuery->whereIn('status', Booking::WAITING_STATUSES);
+
                     return;
                 }
 

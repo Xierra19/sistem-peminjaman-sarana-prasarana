@@ -2,8 +2,13 @@
 
 namespace App\Providers;
 
+use App\Models\Booking;
+use App\Models\ItemBorrowing;
+use App\Policies\BookingPolicy;
+use App\Policies\ItemBorrowingPolicy;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
@@ -23,6 +28,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Gate::policy(Booking::class, BookingPolicy::class);
+        Gate::policy(ItemBorrowing::class, ItemBorrowingPolicy::class);
+
         Vite::prefetch(concurrency: 3);
 
         RateLimiter::for('otp-issue', function (Request $request) {

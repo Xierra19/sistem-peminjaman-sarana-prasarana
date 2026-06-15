@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\ItemBorrowing;
 use Illuminate\Database\Eloquent\Builder;
 
 class ItemBorrowingReportFilters
@@ -15,17 +16,18 @@ class ItemBorrowingReportFilters
 
         if ($status) {
             $query->where(function (Builder $statusQuery) use ($status): void {
-                if ($status === 'waiting') {
-                    $statusQuery->whereIn('status', ['waiting']);
+                if ($status === ItemBorrowing::STATUS_WAITING) {
+                    $statusQuery->whereIn('status', [ItemBorrowing::STATUS_WAITING]);
+
                     return;
                 }
 
-                if ($status === 'completed') {
+                if ($status === ItemBorrowing::STATUS_COMPLETED) {
                     $statusQuery
-                        ->where('status', 'returned')
+                        ->where('status', ItemBorrowing::STATUS_RETURNED)
                         ->orWhere(function (Builder $completedQuery): void {
                             $completedQuery
-                                ->where('status', 'approved')
+                                ->where('status', ItemBorrowing::STATUS_APPROVED)
                                 ->where(function (Builder $periodQuery): void {
                                     $periodQuery
                                         ->whereHas('items')
@@ -37,12 +39,13 @@ class ItemBorrowingReportFilters
                                         });
                                 });
                         });
+
                     return;
                 }
 
-                if ($status === 'approved') {
+                if ($status === ItemBorrowing::STATUS_APPROVED) {
                     $statusQuery
-                        ->where('status', 'approved')
+                        ->where('status', ItemBorrowing::STATUS_APPROVED)
                         ->where(function (Builder $periodQuery): void {
                             $periodQuery
                                 ->whereHas('items', fn (Builder $itemQuery) => $itemQuery->where('return_date', '>', now()))
@@ -52,6 +55,7 @@ class ItemBorrowingReportFilters
                                         ->where('return_date', '>', now());
                                 });
                         });
+
                     return;
                 }
 

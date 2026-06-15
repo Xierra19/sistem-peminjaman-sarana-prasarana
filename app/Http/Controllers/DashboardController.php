@@ -25,7 +25,7 @@ class DashboardController extends Controller
             ])
             ->orderByDesc('created_at');
 
-        $waitingStatuses = ['waiting', 'pending'];
+        $waitingStatuses = Booking::WAITING_STATUSES;
 
         if ($user?->isAdmin()) {
             $roomSummary = null;
@@ -36,11 +36,11 @@ class DashboardController extends Controller
 
                 $roomSummary = [
                     'total' => $bookings->count(),
-                    'approved' => $bookings->where('status', 'approved')->count(),
+                    'approved' => $bookings->where('status', Booking::STATUS_APPROVED)->count(),
                     'waiting' => $bookings->whereIn('status', $waitingStatuses)->count(),
-                    'rejected' => $bookings->where('status', 'rejected')->count(),
-                    'cancelled' => $bookings->where('status', 'cancelled')->count(),
-                    'expired' => $bookings->where('status', 'expired')->count(),
+                    'rejected' => $bookings->where('status', Booking::STATUS_REJECTED)->count(),
+                    'cancelled' => $bookings->where('status', Booking::STATUS_CANCELLED)->count(),
+                    'expired' => $bookings->where('status', Booking::STATUS_EXPIRED)->count(),
                 ];
             }
 
@@ -48,11 +48,11 @@ class DashboardController extends Controller
                 $itemBorrowings = ItemBorrowing::query()->with('items')->get();
                 $itemSummary = [
                     'total' => $itemBorrowings->count(),
-                    'approved' => $itemBorrowings->where('effective_status', 'approved')->count(),
-                    'waiting' => $itemBorrowings->where('effective_status', 'waiting')->count(),
-                    'rejected' => $itemBorrowings->where('effective_status', 'rejected')->count(),
-                    'cancelled' => $itemBorrowings->where('effective_status', 'cancelled')->count(),
-                    'completed' => $itemBorrowings->where('effective_status', 'completed')->count(),
+                    'approved' => $itemBorrowings->where('effective_status', ItemBorrowing::STATUS_APPROVED)->count(),
+                    'waiting' => $itemBorrowings->where('effective_status', ItemBorrowing::STATUS_WAITING)->count(),
+                    'rejected' => $itemBorrowings->where('effective_status', ItemBorrowing::STATUS_REJECTED)->count(),
+                    'cancelled' => $itemBorrowings->where('effective_status', ItemBorrowing::STATUS_CANCELLED)->count(),
+                    'completed' => $itemBorrowings->where('effective_status', ItemBorrowing::STATUS_COMPLETED)->count(),
                 ];
             }
 
@@ -68,11 +68,11 @@ class DashboardController extends Controller
 
         $statusSummary = [
             'total' => $bookings->count(),
-            'approved' => $bookings->where('status', 'approved')->count(),
+            'approved' => $bookings->where('status', Booking::STATUS_APPROVED)->count(),
             'waiting' => $bookings->whereIn('status', $waitingStatuses)->count(),
-            'rejected' => $bookings->where('status', 'rejected')->count(),
-            'cancelled' => $bookings->where('status', 'cancelled')->count(),
-            'expired' => $bookings->where('status', 'expired')->count(),
+            'rejected' => $bookings->where('status', Booking::STATUS_REJECTED)->count(),
+            'cancelled' => $bookings->where('status', Booking::STATUS_CANCELLED)->count(),
+            'expired' => $bookings->where('status', Booking::STATUS_EXPIRED)->count(),
         ];
 
         $rooms = Room::query()

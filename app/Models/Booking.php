@@ -2,13 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property int $id
@@ -39,7 +39,39 @@ class Booking extends Model
 {
     use HasFactory;
 
+    public const STATUS_WAITING = 'waiting';
+
+    public const STATUS_PENDING = 'pending';
+
+    public const STATUS_REQUESTED = 'requested';
+
+    public const STATUS_APPROVED = 'approved';
+
+    public const STATUS_REJECTED = 'rejected';
+
+    public const STATUS_CANCELLED = 'cancelled';
+
+    public const STATUS_EXPIRED = 'expired';
+
+    public const PENDING_STATUSES = [
+        self::STATUS_WAITING,
+        self::STATUS_PENDING,
+        self::STATUS_REQUESTED,
+    ];
+
+    public const WAITING_STATUSES = [
+        self::STATUS_WAITING,
+        self::STATUS_PENDING,
+    ];
+
+    public const INACTIVE_STATUSES = [
+        self::STATUS_REJECTED,
+        self::STATUS_CANCELLED,
+        self::STATUS_EXPIRED,
+    ];
+
     public const MODE_CONTINUOUS = 'continuous';
+
     public const MODE_SAME_HOURS_DAILY = 'same_hours_daily';
 
     protected $fillable = [
@@ -402,7 +434,7 @@ class Booking extends Model
         return $query
             ->where('room_id', $roomId)
             ->whereDate('start_time', $date)
-            ->whereIn('status', ['waiting', 'approved'])
+            ->whereIn('status', [self::STATUS_WAITING, self::STATUS_APPROVED])
             ->where('start_time', '<', $end)
             ->where('end_time', '>', $start);
     }

@@ -6,20 +6,17 @@ use App\Http\Requests\StoreMultipleItemBorrowingRequest;
 use App\Http\Requests\UpdateMultipleItemBorrowingRequest;
 use App\Models\Item;
 use App\Models\ItemBorrowing;
-use App\Models\ItemBorrowingItem;
 use App\Models\ItemBorrowingLog;
-use App\Models\User;
-use App\Notifications\ItemBorrowingRequestedNotification;
 use App\Services\ItemAvailabilityService;
+use App\Services\ItemBorrowingCancellationService;
+use App\Services\ItemBorrowingPeriod;
+use App\Services\ItemBorrowingWorkflow;
+use App\Support\CancellationResult;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
-use Inertia\Response;
 
 class ItemBorrowingController extends Controller
 {
@@ -56,9 +53,7 @@ class ItemBorrowingController extends Controller
 
     public function edit(ItemBorrowing $itemBorrowing)
     {
-        if ($itemBorrowing->user_id !== Auth::id() || !in_array($itemBorrowing->status, ['rejected', 'waiting'])) {
-            abort(403, 'Tidak dapat mengedit request ini.');
-        }
+        $this->authorize('edit', $itemBorrowing);
 
         $items = Item::query()
             ->select('id', 'code', 'name', 'category', 'quantity', 'is_available')
@@ -96,188 +91,31 @@ class ItemBorrowingController extends Controller
     }
 
 
-    public function store(StoreMultipleItemBorrowingRequest $request, ItemAvailabilityService $availabilityService)
+    public function store(
+        StoreMultipleItemBorrowingRequest $request,
+        ItemBorrowingWorkflow $workflow,
+    )
     {
         $validated = $request->validated();
-        $itemsData = $validated['items'];
-
-        // Pre-validate availability for all items
-        $errors = [];
-        foreach ($itemsData as $index => $itemData) {
-            $item = Item::findOrFail($itemData['item_id']);
-            
-            if (! $item->is_available) {
-                $errors["items.{$index}.item_id"] = 'Barang sedang tidak tersedia untuk dipinjam.';
-                continue;
-            }
-
-            [$borrowDate, $returnDate] = $this->parseItemPeriod($itemData);
-            
-            if ($availabilityService->hasEnoughStock($item, $borrowDate, $returnDate, (int) $itemData['quantity'])) {
-                continue;
-            }
-
-            $availability = $availabilityService->getAvailability($item, $borrowDate, $returnDate);
-            $errors["items.{$index}.quantity"] = 'Stok tidak mencukupi. Sisa tersedia: ' . $availability['remaining_quantity'];
-        }
-
-        if (!empty($errors)) {
-            return back()->withErrors($errors)->withInput();
-        }
-
-        // Store attachment
-        $attachmentPath = null;
-        if ($request->hasFile('attachment')) {
-            $attachmentPath = $request->file('attachment')->store('item-borrowing-attachments', 'public');
-        }
-
-        $itemBorrowing = DB::transaction(function () use ($validated, $attachmentPath) {
-            // Create main borrowing record
-            $borrowing = ItemBorrowing::create([
-                'title' => $validated['title'],
-                'description' => $validated['description'] ?? null,
-                'attachment' => $attachmentPath,
-                'user_id' => Auth::id(),
-                'status' => 'waiting',
-                // Legacy fields for old schema compatibility
-                'item_id' => null,
-                'quantity' => 0,
-                'borrow_date' => null,
-                'return_date' => null,
-            ]);
-
-            // Create pivot items (deduplicate by item_id)
-            $deduped = collect($validated['items'])
-                ->keyBy('item_id')
-                ->values();
-
-            foreach ($deduped as $itemData) {
-                ItemBorrowingItem::create([
-                    'item_borrowing_id' => $borrowing->id,
-                    'item_id'           => $itemData['item_id'],
-                    'quantity'          => $itemData['quantity'],
-                    'borrow_date'       => $this->parseItemPeriod($itemData)[0],
-                    'return_date'       => $this->parseItemPeriod($itemData)[1],
-                ]);
-            }
-
-            // Log request
-            ItemBorrowingLog::create([
-                'item_borrowing_id' => $borrowing->id,
-                'user_id' => Auth::id(),
-                'action' => 'requested',
-                'description' => 'Peminjaman ' . count($validated['items']) . ' jenis barang diajukan oleh pengguna.',
-            ]);
-
-            return $borrowing;
-        });
-
-        $itemBorrowing->load(['user', 'items.item']);
-
-        // Notify admins
-        $admins = User::where('role', User::ROLE_ADMIN_SARPRAS)
-            ->whereNotNull('email')
-            ->get();
-
-        \Log::info('ItemBorrowing: Preparing to send notification', [
-            'admins_count' => $admins->count(),
-            'admins_emails' => $admins->pluck('email')->toArray(),
-            'item_borrowing_id' => $itemBorrowing->id,
-        ]);
-
-        if ($admins->isNotEmpty()) {
-            try {
-                \Log::info('ItemBorrowing: Sending notification now...');
-                Notification::send($admins, new ItemBorrowingRequestedNotification($itemBorrowing));
-                \Log::info('ItemBorrowing: Notification sent successfully.');
-            } catch (\Throwable $e) {
-                \Log::error('ItemBorrowing: Failed to send notification', [
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString()
-                ]);
-                report($e);
-            }
-        } else {
-            \Log::warning('ItemBorrowing: No admins found with valid email. Notification not sent.');
-        }
+        $workflow->create($validated, $request->file('attachment'), $request->user());
 
         return redirect()
             ->route('item-borrowings.index')
-            ->with('success', 'Permintaan peminjaman ' . count($itemsData) . ' jenis barang berhasil dibuat dan menunggu persetujuan.');
+            ->with('success', 'Permintaan peminjaman '.count($validated['items']).' jenis barang berhasil dibuat dan menunggu persetujuan.');
     }
 
-    public function update(UpdateMultipleItemBorrowingRequest $request, ItemBorrowing $itemBorrowing, ItemAvailabilityService $availabilityService)
+    public function update(
+        UpdateMultipleItemBorrowingRequest $request,
+        ItemBorrowing $itemBorrowing,
+        ItemBorrowingWorkflow $workflow,
+    )
     {
-        if ($itemBorrowing->user_id !== Auth::id() || !in_array($itemBorrowing->status, ['rejected', 'waiting'])) {
-            abort(403);
-        }
-
-        $validated = $request->validated();
-
-        // Pre-validate new availability
-        $errors = [];
-        foreach ($validated['items'] as $index => $itemData) {
-            $item = Item::findOrFail($itemData['item_id']);
-            [$borrowDate, $returnDate] = $this->parseItemPeriod($itemData);
-
-            $exclude = isset($itemData['id']) ? ItemBorrowingItem::find($itemData['id']) : null;
-            
-            if (!$availabilityService->hasEnoughStock($item, $borrowDate, $returnDate, (int) $itemData['quantity'], $exclude)) {
-                $availability = $availabilityService->getAvailability($item, $borrowDate, $returnDate, $exclude);
-                $errors["items.{$index}.quantity"] = 'Stok tidak mencukupi. Sisa: ' . $availability['remaining_quantity'];
-            }
-        }
-
-        if (!empty($errors)) {
-            return back()->withErrors($errors)->withInput();
-        }
-
-        DB::transaction(function () use ($validated, $itemBorrowing, $request) {
-            // Update main record
-            $updateData = [
-                'title' => $validated['title'],
-                'description' => $validated['description'] ?? null,
-            ];
-
-            if ($request->hasFile('attachment')) {
-                // Delete old if exists
-                if ($itemBorrowing->attachment && Storage::disk('public')->exists($itemBorrowing->attachment)) {
-                    Storage::disk('public')->delete($itemBorrowing->attachment);
-                }
-                $updateData['attachment'] = $request->file('attachment')->store('item-borrowing-attachments', 'public');
-            }
-
-            $updateData = array_merge($updateData, [
-                // Ensure legacy fields remain null for multi-item
-                'item_id' => null,
-                'quantity' => 0,
-                'borrow_date' => null,
-                'return_date' => null,
-            ]);
-            $itemBorrowing->update($updateData);
-
-            // Sync items (delete old, create/update new)
-            $existingIds = collect($validated['items'])->pluck('id')->filter()->toArray();
-            ItemBorrowingItem::where('item_borrowing_id', $itemBorrowing->id)
-                ->whereNotIn('id', $existingIds)
-                ->delete();
-
-            foreach ($validated['items'] as $itemData) {
-                $pivotData = [
-                    'item_id' => $itemData['item_id'],
-                    'quantity' => $itemData['quantity'],
-                    'borrow_date' => $this->parseItemPeriod($itemData)[0],
-                    'return_date' => $this->parseItemPeriod($itemData)[1],
-                ];
-
-                if (isset($itemData['id'])) {
-                    ItemBorrowingItem::find($itemData['id'])->update($pivotData);
-                } else {
-                    $pivotData['item_borrowing_id'] = $itemBorrowing->id;
-                    ItemBorrowingItem::create($pivotData);
-                }
-            }
-        });
+        $workflow->update(
+            $request->validated(),
+            $itemBorrowing,
+            $request->file('attachment'),
+            $request->user(),
+        );
 
         return redirect()
             ->route('item-borrowings.index')
@@ -287,11 +125,7 @@ class ItemBorrowingController extends Controller
 
     public function show(ItemBorrowing $itemBorrowing)
     {
-        $user = Auth::user();
-
-        if (! $user->isAdmin() && $itemBorrowing->user_id !== $user->id) {
-            abort(403);
-        }
+        $this->authorize('view', $itemBorrowing);
 
         $itemBorrowing->load([
             'items.item',
@@ -302,7 +136,12 @@ class ItemBorrowingController extends Controller
         ]);
 
         $latestDecisionLog = $itemBorrowing->logs
-            ->filter(fn (ItemBorrowingLog $log) => in_array($log->action, ['approved', 'rejected', 'cancelled', 'returned'], true))
+            ->filter(fn (ItemBorrowingLog $log) => in_array($log->action, [
+                ItemBorrowing::STATUS_APPROVED,
+                ItemBorrowing::STATUS_REJECTED,
+                ItemBorrowing::STATUS_CANCELLED,
+                ItemBorrowing::STATUS_RETURNED,
+            ], true))
             ->last();
 
         return Inertia::render('ItemBorrowings/Show', [
@@ -312,7 +151,12 @@ class ItemBorrowingController extends Controller
     }
 
 
-    public function availability(Request $request, Item $item, ItemAvailabilityService $availabilityService)
+    public function availability(
+        Request $request,
+        Item $item,
+        ItemAvailabilityService $availabilityService,
+        ItemBorrowingPeriod $period,
+    )
     {
         if (! $item->is_available) {
             return response()->json([
@@ -330,10 +174,11 @@ class ItemBorrowingController extends Controller
             'borrow_time' => 'required|date_format:H:i',
             'return_date' => 'required|date_format:Y-m-d',
             'return_time' => 'required|date_format:H:i',
+            'exclude_item_borrowing_item_id' => 'nullable|integer',
         ]);
 
         try {
-            [$start, $end] = $this->parseItemPeriod([
+            [$start, $end] = $period->parse([
                 'borrow_date' => $request->query('borrow_date'),
                 'borrow_time' => $request->query('borrow_time'),
                 'return_date' => $request->query('return_date'),
@@ -352,28 +197,23 @@ class ItemBorrowingController extends Controller
         }
 
         return response()->json(
-            $availabilityService->getAvailability($item, $start, $end)
-        , 200);
-    }
-
-    private function parseItemPeriod(array $itemData): array
-    {
-        return [
-            Carbon::createFromFormat('Y-m-d H:i', $itemData['borrow_date'].' '.$itemData['borrow_time'], config('app.business_timezone'))->utc(),
-            Carbon::createFromFormat('Y-m-d H:i', $itemData['return_date'].' '.$itemData['return_time'], config('app.business_timezone'))->utc(),
-        ];
+            $availabilityService->getAvailabilityForUser(
+                $item,
+                $start,
+                $end,
+                $request->integer('exclude_item_borrowing_item_id') ?: null,
+                (int) Auth::id(),
+            ),
+            200,
+        );
     }
 
     public function downloadAttachment(ItemBorrowing $itemBorrowing)
     {
-        $user = Auth::user();
+        $this->authorize('downloadAttachment', $itemBorrowing);
 
         if (! $itemBorrowing->attachment) {
             abort(404, 'Lampiran tidak ditemukan.');
-        }
-
-        if (! $user->isAdmin() && $itemBorrowing->user_id !== $user->id) {
-            abort(403);
         }
 
         if (! Storage::disk('public')->exists($itemBorrowing->attachment)) {
@@ -388,14 +228,10 @@ class ItemBorrowingController extends Controller
 
     public function downloadSignedLetter(ItemBorrowing $itemBorrowing)
     {
-        $user = Auth::user();
+        $this->authorize('downloadSignedLetter', $itemBorrowing);
 
         if (! $itemBorrowing->signed_letter) {
             abort(404, 'Surat yang ditandatangani tidak ditemukan.');
-        }
-
-        if (! $user->isAdmin() && $itemBorrowing->user_id !== $user->id) {
-            abort(403);
         }
 
         if (! Storage::disk('public')->exists($itemBorrowing->signed_letter)) {
@@ -408,30 +244,24 @@ class ItemBorrowingController extends Controller
         );
     }
 
-    public function cancel(ItemBorrowing $itemBorrowing)
+    public function cancel(
+        ItemBorrowing $itemBorrowing,
+        ItemBorrowingCancellationService $cancellationService,
+    )
     {
-        if ($itemBorrowing->user_id !== Auth::id()) {
-            abort(403);
-        }
+        $this->authorize('cancel', $itemBorrowing);
 
-        if (! in_array($itemBorrowing->status, ['waiting'], true)) {
+        $result = $cancellationService->cancel($itemBorrowing, Auth::user());
+
+        if ($result !== CancellationResult::Cancelled) {
+            $message = $result === CancellationResult::AlreadyCancelled
+                ? 'Permintaan peminjaman barang sudah dibatalkan sebelumnya.'
+                : 'Permintaan tidak dapat dibatalkan karena sudah diproses oleh admin.';
+
             return redirect()
                 ->back()
-                ->with('error', 'Permintaan tidak dapat dibatalkan karena sudah diproses oleh admin.');
+                ->with('error', $message);
         }
-
-        DB::transaction(function () use ($itemBorrowing): void {
-            $itemBorrowing->update([
-                'status' => 'cancelled',
-            ]);
-
-            ItemBorrowingLog::create([
-                'item_borrowing_id' => $itemBorrowing->id,
-                'user_id' => Auth::id(),
-                'action' => 'cancelled',
-                'description' => 'Peminjaman barang dibatalkan oleh pemohon.',
-            ]);
-        });
 
         return redirect()
             ->back()
