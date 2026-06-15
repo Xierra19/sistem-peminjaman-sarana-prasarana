@@ -29,7 +29,6 @@ class ProfileTest extends TestCase
             ->actingAs($user)
             ->patch('/profile', [
                 'name' => 'Test User',
-                'email' => 'test@example.com',
                 'phone' => '081234567890',
             ]);
 
@@ -40,20 +39,21 @@ class ProfileTest extends TestCase
         $user->refresh();
 
         $this->assertSame('Test User', $user->name);
-        $this->assertSame('test@example.com', $user->email);
         $this->assertSame('081234567890', $user->phone);
-        $this->assertNull($user->email_verified_at);
+        $this->assertNotNull($user->email_verified_at);
     }
 
-    public function test_email_verification_status_is_unchanged_when_the_email_address_is_unchanged(): void
+    public function test_email_address_cannot_be_updated_from_the_profile(): void
     {
         $user = User::factory()->create();
+        $originalEmail = $user->email;
+        $originalVerifiedAt = $user->email_verified_at;
 
         $response = $this
             ->actingAs($user)
             ->patch('/profile', [
                 'name' => 'Test User',
-                'email' => $user->email,
+                'email' => 'changed@student.esaunggul.ac.id',
                 'phone' => $user->phone,
             ]);
 
@@ -61,7 +61,10 @@ class ProfileTest extends TestCase
             ->assertSessionHasNoErrors()
             ->assertRedirect('/profile');
 
-        $this->assertNotNull($user->refresh()->email_verified_at);
+        $user->refresh();
+
+        $this->assertSame($originalEmail, $user->email);
+        $this->assertTrue($originalVerifiedAt->equalTo($user->email_verified_at));
     }
 
     public function test_user_can_delete_their_account(): void

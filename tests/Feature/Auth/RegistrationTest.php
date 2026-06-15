@@ -38,6 +38,6 @@ class RegistrationTest extends TestCase
         $this->assertNull($user->email_verified_at);
         $this->assertAuthenticatedAs($user);
 
-        Notification::assertSentTo($user, VerifyEmail::class);
+        Notification::assertSentToTimes($user, VerifyEmail::class, 1);
     }
 }

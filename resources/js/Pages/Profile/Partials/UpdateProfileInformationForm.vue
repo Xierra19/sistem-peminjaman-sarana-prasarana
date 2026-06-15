@@ -18,7 +18,6 @@ const user = usePage().props.auth.user;
 
 const form = useForm({
     name: user.name,
-    email: user.email,
     phone: user.phone ?? '',
 });
 </script>
@@ -31,7 +30,7 @@ const form = useForm({
             </h2>
 
             <p class="mt-1 text-sm text-gray-600 dark:text-slate-300">
-                Perbarui nama, email kampus, dan nomor telepon yang dipakai untuk proses booking dan verifikasi.
+                Perbarui nama dan nomor telepon yang dipakai untuk proses booking.
             </p>
         </header>
 
@@ -58,16 +57,18 @@ const form = useForm({
             <div>
                 <InputLabel for="email" value="Email Kampus" />
 
-                <TextInput
+                <input
                     id="email"
                     type="email"
-                    class="mt-1 block h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 shadow-sm transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100"
-                    v-model="form.email"
-                    required
-                    autocomplete="username"
+                    :value="user.email"
+                    class="mt-1 block h-12 w-full cursor-not-allowed rounded-2xl border border-slate-200 bg-slate-100 px-4 text-sm text-slate-500 shadow-sm dark:border-slate-600 dark:bg-slate-700/70 dark:text-slate-300"
+                    readonly
+                    aria-describedby="email-help"
                 />
 
-                <InputError class="mt-2" :message="form.errors.email" />
+                <p id="email-help" class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                    Email kampus terikat pada akun dan tidak dapat diubah.
+                </p>
             </div>
 
             <div>
