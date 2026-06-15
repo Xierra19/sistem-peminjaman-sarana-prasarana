@@ -32,20 +32,23 @@ class BookingStatusUpdatedNotification extends Notification
         $status = Str::headline($this->status);
 
         // Ubah status ke bahasa Indonesia
-        $statusIndo = match($this->status) {
+        $statusIndo = match ($this->status) {
             'approved' => 'Disetujui',
+            'needs_revision' => 'Perlu Direvisi',
             'rejected' => 'Ditolak',
             'cancelled' => 'Dibatalkan',
             'expired' => 'Kedaluwarsa',
             default => $status
         };
 
-        $mail = (new MailMessage())
+        $mail = (new MailMessage)
             ->subject($statusIndo.' Booking: '.$booking->title)
             ->greeting('Halo '.$booking->user?->name.',');
 
         if ($this->status === 'cancelled') {
             $mail->line('Dengan menyesal kami informasikan bahwa booking ruangan Anda yang sebelumnya disetujui telah dibatalkan oleh admin karena terdapat kegiatan dengan prioritas lebih tinggi.');
+        } elseif ($this->status === 'needs_revision') {
+            $mail->line('Admin meminta perbaikan pada pengajuan booking ruangan Anda. Silakan buka detail pengajuan dan kirim revisi.');
         } else {
             $mail->line('Pengajuan booking ruangan Anda telah '.$statusIndo.'.');
         }

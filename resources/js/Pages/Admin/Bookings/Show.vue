@@ -3,6 +3,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import { Head, Link, useForm } from '@inertiajs/vue3'
 import { computed } from 'vue'
 import {
+  getBookingActionLabel,
   getBookingStatusClasses,
   getBookingStatusLabel,
   normalizeBookingStatus,
@@ -12,6 +13,14 @@ const props = defineProps({
   booking: {
     type: Object,
     required: true,
+  },
+  approvedConflicts: {
+    type: Array,
+    default: () => [],
+  },
+  queuedConflicts: {
+    type: Array,
+    default: () => [],
   },
 })
 
@@ -193,6 +202,7 @@ const normalizedStatus = computed(() => normalizeBookingStatus(props.booking.sta
 const isWaiting = computed(() => normalizedStatus.value === 'waiting')
 const canCancel = computed(() => normalizedStatus.value === 'approved')
 const actionsLocked = computed(() => !isWaiting.value && !canCancel.value)
+const hasApprovedConflict = computed(() => props.approvedConflicts.length > 0)
 
 const submitApproval = (status) => {
   approvalForm.status = status
@@ -317,6 +327,75 @@ const submitApproval = (status) => {
             </div>
           </section>
 
+          <section
+            v-if="approvedConflicts.length || queuedConflicts.length"
+            class="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800"
+          >
+            <header class="border-b border-gray-100 px-5 py-4 dark:border-slate-700 sm:px-6">
+              <h2 class="text-lg font-semibold text-gray-800 dark:text-white">Pengajuan Bentrok</h2>
+              <p class="text-sm text-gray-500 dark:text-slate-400">
+                Bandingkan pengajuan lain yang memakai ruangan pada waktu yang sama.
+              </p>
+            </header>
+            <div class="space-y-4 px-5 py-5 sm:px-6">
+              <div
+                v-if="approvedConflicts.length"
+                class="rounded-xl border border-rose-200 bg-rose-50 p-4 dark:border-rose-900 dark:bg-rose-950/30"
+              >
+                <p class="font-semibold text-rose-800 dark:text-rose-300">
+                  Jadwal telah dikunci oleh {{ approvedConflicts.length }} booking yang disetujui.
+                </p>
+                <p class="mt-1 text-xs text-rose-700 dark:text-rose-400">
+                  Booking ini tidak dapat disetujui sebelum jadwalnya direvisi.
+                </p>
+              </div>
+
+              <div
+                v-if="queuedConflicts.length"
+                class="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/30"
+              >
+                <p class="font-semibold text-amber-800 dark:text-amber-300">
+                  {{ queuedConflicts.length }} pengajuan lain masih menunggu keputusan.
+                </p>
+                <p class="mt-1 text-xs text-amber-700 dark:text-amber-400">
+                  Menyetujui booking ini akan mengunci jadwal bagi pengajuan lainnya.
+                </p>
+              </div>
+
+              <div class="divide-y divide-slate-100 rounded-xl border border-slate-200 dark:divide-slate-700 dark:border-slate-700">
+                <div
+                  v-for="conflict in [...approvedConflicts, ...queuedConflicts]"
+                  :key="conflict.id"
+                  class="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <p class="font-semibold text-slate-900 dark:text-white">{{ conflict.title }}</p>
+                      <span
+                        class="inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold"
+                        :class="getBookingStatusClasses(normalizeBookingStatus(conflict.status))"
+                      >
+                        {{ getBookingStatusLabel(normalizeBookingStatus(conflict.status)) }}
+                      </span>
+                    </div>
+                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                      {{ conflict.user?.name ?? '-' }} · {{ conflict.schedule_short_summary }}
+                    </p>
+                    <p class="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
+                      Diajukan {{ formatDateTime(conflict.created_at) }}
+                    </p>
+                  </div>
+                  <Link
+                    :href="route('admin.bookings.show', conflict.id)"
+                    class="inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-lg border border-blue-300 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-50 dark:border-blue-700 dark:text-blue-300 dark:hover:bg-blue-950/40"
+                  >
+                    Lihat Detail
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </section>
+
           <section class="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
             <header class="border-b border-gray-100 px-5 py-4 dark:border-slate-700 sm:px-6">
               <h2 class="text-lg font-semibold text-gray-800 dark:text-white">Lampiran</h2>
@@ -375,7 +454,7 @@ const submitApproval = (status) => {
                 v-model="approvalForm.notes"
                 class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:focus:border-blue-500 dark:focus:ring-blue-900/30"
                 rows="3"
-                :placeholder="canCancel ? 'Catatan (wajib) ketika membatalkan booking' : 'Catatan (opsional) untuk pemohon'"
+                :placeholder="canCancel ? 'Catatan (wajib) ketika membatalkan booking' : 'Catatan untuk pemohon (wajib saat revisi atau penolakan)'"
               />
               <p v-if="canCancel" class="text-xs text-slate-500 dark:text-slate-400">
                 Cantumkan alasan pembatalan agar pengguna memahami perubahan mendadak.
@@ -387,8 +466,16 @@ const submitApproval = (status) => {
               <div class="flex flex-col gap-2">
                 <button
                   type="button"
-                  class="inline-flex items-center justify-center rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-emerald-700 dark:hover:bg-emerald-800"
+                  class="inline-flex items-center justify-center rounded-md bg-violet-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-violet-700 dark:hover:bg-violet-800"
                   :disabled="approvalForm.processing || !isWaiting"
+                  @click="submitApproval('needs_revision')"
+                >
+                  Minta Revisi
+                </button>
+                <button
+                  type="button"
+                  class="inline-flex items-center justify-center rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-emerald-700 dark:hover:bg-emerald-800"
+                  :disabled="approvalForm.processing || !isWaiting || hasApprovedConflict"
                   @click="submitApproval('approved')"
                 >
                   Setujui Booking
@@ -411,9 +498,14 @@ const submitApproval = (status) => {
                   Batalkan Booking (Darurat)
                 </button>
               </div>
+              <p v-if="isWaiting && hasApprovedConflict" class="text-xs font-medium text-rose-600 dark:text-rose-400">
+                Tombol persetujuan dinonaktifkan karena jadwal sudah dikunci booking lain.
+              </p>
               <p v-if="actionsLocked" class="text-xs text-gray-400 dark:text-slate-500">
                 {{ normalizedStatus === 'expired'
                   ? 'Permintaan sudah kedaluwarsa dan tidak dapat diproses.'
+                  : normalizedStatus === 'needs_revision'
+                    ? 'Menunggu pemohon mengirim revisi.'
                   : 'Status booking sudah final. Tidak dapat melakukan tindakan lanjutan.' }}
               </p>
             </div>
@@ -434,13 +526,13 @@ const submitApproval = (status) => {
                   class="mt-1 h-2.5 w-2.5 flex-shrink-0 rounded-full"
                   :class="getBookingStatusClasses(log.action)"
                 />
-                <div class="space-y-1 text-sm text-gray-600 dark:text-slate-300">
-                  <div class="flex items-center justify-between gap-3">
-                    <span class="font-medium text-gray-800 dark:text-white">{{ log.user?.name ?? 'Sistem' }}</span>
-                    <span class="text-xs text-gray-400 dark:text-slate-500">{{ formatDateTime(log.created_at) }}</span>
+                <div class="min-w-0 flex-1 space-y-1 text-sm text-gray-600 dark:text-slate-300">
+                  <div class="flex w-full items-start gap-3">
+                    <span class="min-w-0 font-medium text-gray-800 dark:text-white">{{ log.user?.name ?? 'Sistem' }}</span>
+                    <span class="ml-auto shrink-0 whitespace-nowrap text-right text-xs text-gray-400 dark:text-slate-500">{{ formatDateTime(log.created_at) }}</span>
                   </div>
                   <p class="text-xs uppercase tracking-wide text-gray-400 dark:text-slate-500">
-                    {{ getBookingStatusLabel(log.action) || log.action }}
+                    {{ getBookingActionLabel(log.action) || log.action }}
                   </p>
                   <p class="leading-snug text-gray-600 dark:text-slate-300">{{ log.description ?? '-' }}</p>
                 </div>

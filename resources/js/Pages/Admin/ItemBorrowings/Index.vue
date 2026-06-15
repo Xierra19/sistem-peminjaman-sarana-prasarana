@@ -24,7 +24,7 @@ const props = defineProps({
   },
 })
 
-const statusOptions = ['waiting', 'approved', 'completed', 'rejected', 'cancelled']
+const statusOptions = ['waiting', 'needs_revision', 'approved', 'completed', 'rejected', 'cancelled']
 
 const {
   filterForm,
@@ -121,7 +121,7 @@ const summary = computed(() => {
 
   return {
     total: filtered.length,
-    waiting:   count(filtered, (b) => ['waiting', 'requested'].includes(b.status)),
+    waiting:   count(filtered, (b) => ['waiting', 'requested', 'needs_revision'].includes(b.status)),
     approved:  count(filtered, (b) => b.effective_status === 'approved'),
     completed: count(filtered, (b) => b.effective_status === 'completed'),
     rejected:  count(filtered, (b) => b.status === 'rejected'),

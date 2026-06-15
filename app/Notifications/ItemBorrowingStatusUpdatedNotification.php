@@ -31,14 +31,24 @@ class ItemBorrowingStatusUpdatedNotification extends Notification implements Sho
     public function toMail(object $notifiable): MailMessage
     {
         $borrowing = $this->itemBorrowing;
-        $status = Str::headline($this->status);
+        $status = match ($this->status) {
+            ItemBorrowing::STATUS_APPROVED => 'Disetujui',
+            ItemBorrowing::STATUS_NEEDS_REVISION => 'Perlu Direvisi',
+            ItemBorrowing::STATUS_REJECTED => 'Ditolak',
+            ItemBorrowing::STATUS_CANCELLED => 'Dibatalkan',
+            default => Str::headline($this->status),
+        };
         $items = $borrowing->items instanceof Collection ? $borrowing->items : collect();
 
-        $mail = (new MailMessage())
+        $mail = (new MailMessage)
             ->subject($status.' Peminjaman Barang: '.$borrowing->title)
             ->greeting('Halo '.$borrowing->user?->name.',');
 
-        $mail->line('Pengajuan peminjaman barang Anda telah '.$status.' oleh tim Sarpras.');
+        if ($this->status === ItemBorrowing::STATUS_NEEDS_REVISION) {
+            $mail->line('Tim Sarpras meminta perbaikan pada pengajuan Anda. Silakan buka detail pengajuan dan kirim revisi.');
+        } else {
+            $mail->line('Pengajuan peminjaman barang Anda telah '.$status.' oleh tim Sarpras.');
+        }
 
         if ($items->isNotEmpty()) {
             $mail->line('Barang: '.$items->map(function ($borrowingItem) {

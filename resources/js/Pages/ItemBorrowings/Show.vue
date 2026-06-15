@@ -47,7 +47,7 @@ const borrowingItems = computed(() => {
 })
 const decisionStatus = computed(() => props.latestDecisionLog?.action ?? '')
 const hasDecision = computed(() =>
-  ['approved', 'rejected', 'cancelled', 'returned'].includes(decisionStatus.value),
+  ['approved', 'needs_revision', 'rejected', 'cancelled', 'returned'].includes(decisionStatus.value),
 )
 const earliestBorrowDate = computed(() => borrowingItems.value[0]?.borrow_date ?? null)
 const latestReturnDate = computed(() => borrowingItems.value[borrowingItems.value.length - 1]?.return_date ?? null)
@@ -66,6 +66,8 @@ const decisionNote = computed(() => {
 
 const cancelForm = useForm({})
 const canCancel = computed(() => normalizedStatus.value === 'waiting')
+const canRevise = computed(() => normalizedStatus.value === 'needs_revision')
+const canResubmit = computed(() => normalizedStatus.value === 'rejected')
 
 const cancelBorrowing = () => {
   if (!canCancel.value) {
@@ -108,6 +110,20 @@ const cancelBorrowing = () => {
           >
             {{ cancelForm.processing ? 'Membatalkan...' : 'Batalkan Permintaan' }}
           </button>
+          <Link
+            v-if="canRevise"
+            :href="route('item-borrowings.edit', itemBorrowing.id)"
+            class="inline-flex items-center rounded-md bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-700"
+          >
+            Perbaiki Pengajuan
+          </Link>
+          <Link
+            v-if="canResubmit"
+            :href="route('item-borrowings.resubmit', itemBorrowing.id)"
+            class="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+          >
+            Ajukan Ulang
+          </Link>
           <Link
             :href="route('item-borrowings.index')"
             class="inline-flex items-center rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700"
@@ -255,10 +271,10 @@ const cancelBorrowing = () => {
                   class="mt-1 h-2.5 w-2.5 flex-shrink-0 rounded-full"
                   :class="getItemBorrowingStatusClasses(log.action)"
                 />
-                <div class="space-y-1 text-sm text-gray-600 dark:text-slate-300">
-                  <div class="flex items-center justify-between gap-3">
-                    <span class="font-medium text-gray-800 dark:text-white">{{ log.user?.name ?? 'Sistem' }}</span>
-                    <span class="text-xs text-gray-400 dark:text-slate-500">{{ formatDateTime(log.created_at) }}</span>
+                <div class="min-w-0 flex-1 space-y-1 text-sm text-gray-600 dark:text-slate-300">
+                  <div class="flex w-full items-start gap-3">
+                    <span class="min-w-0 font-medium text-gray-800 dark:text-white">{{ log.user?.name ?? 'Sistem' }}</span>
+                    <span class="ml-auto shrink-0 whitespace-nowrap text-right text-xs text-gray-400 dark:text-slate-500">{{ formatDateTime(log.created_at) }}</span>
                   </div>
                   <p class="text-xs uppercase tracking-wide text-gray-400 dark:text-slate-500">
                     {{ getItemBorrowingActionLabel(log.action) || log.action }}

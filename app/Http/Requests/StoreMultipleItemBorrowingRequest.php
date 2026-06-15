@@ -18,7 +18,8 @@ class StoreMultipleItemBorrowingRequest extends FormRequest
         return [
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'attachment' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:2048'],
+            'attachment' => ['required_without:resubmitted_from_id', 'nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:2048'],
+            'resubmitted_from_id' => ['nullable', 'integer', 'exists:item_borrowings,id'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.item_id' => ['required', 'exists:items,id', 'distinct'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],

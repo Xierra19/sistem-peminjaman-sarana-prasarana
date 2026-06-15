@@ -225,7 +225,7 @@ const onSignedLetterChange = (event) => {
                 v-model="approvalForm.notes"
                 class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:focus:border-blue-500 dark:focus:ring-blue-900/30"
                 rows="3"
-                :placeholder="canCancel ? 'Catatan (wajib) untuk pembatalan' : 'Catatan (opsional) untuk pemohon'"
+                :placeholder="canCancel ? 'Catatan (wajib) untuk pembatalan' : 'Catatan untuk pemohon (wajib saat revisi atau penolakan)'"
               />
               <p v-if="approvalForm.errors.notes" class="text-xs text-rose-500">{{ approvalForm.errors.notes }}</p>
 
@@ -269,6 +269,15 @@ const onSignedLetterChange = (event) => {
                 <button
                   v-if="isWaiting"
                   type="button"
+                  class="inline-flex items-center justify-center rounded-md bg-violet-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  :disabled="approvalForm.processing"
+                  @click="submitApproval('needs_revision')"
+                >
+                  Minta Revisi
+                </button>
+                <button
+                  v-if="isWaiting"
+                  type="button"
                   class="inline-flex items-center justify-center rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
                   :disabled="approvalForm.processing"
                   @click="submitApproval('approved')"
@@ -295,7 +304,9 @@ const onSignedLetterChange = (event) => {
                 </button>
               </div>
               <p v-if="actionsLocked" class="text-xs text-gray-400">
-                Status peminjaman sudah final. Tidak ada tindakan lanjutan yang tersedia.
+                {{ normalizedStatus === 'needs_revision'
+                  ? 'Menunggu pemohon mengirim revisi.'
+                  : 'Status peminjaman sudah final. Tidak ada tindakan lanjutan yang tersedia.' }}
               </p>
             </div>
           </section>
@@ -315,10 +326,10 @@ const onSignedLetterChange = (event) => {
                   class="mt-1 h-2.5 w-2.5 flex-shrink-0 rounded-full"
                   :class="getItemBorrowingStatusClasses(log.action)"
                 />
-                <div class="space-y-1 text-sm text-gray-600 dark:text-slate-300">
-                  <div class="flex items-center justify-between gap-3">
-                    <span class="font-medium text-gray-800 dark:text-white">{{ log.user?.name ?? 'Sistem' }}</span>
-                    <span class="text-xs text-gray-400 dark:text-slate-500">{{ formatDateTime(log.created_at) }}</span>
+                <div class="min-w-0 flex-1 space-y-1 text-sm text-gray-600 dark:text-slate-300">
+                  <div class="flex w-full items-start gap-3">
+                    <span class="min-w-0 font-medium text-gray-800 dark:text-white">{{ log.user?.name ?? 'Sistem' }}</span>
+                    <span class="ml-auto shrink-0 whitespace-nowrap text-right text-xs text-gray-400 dark:text-slate-500">{{ formatDateTime(log.created_at) }}</span>
                   </div>
                   <p class="text-xs uppercase tracking-wide text-gray-400 dark:text-slate-500">
                     {{ getItemBorrowingActionLabel(log.action) || log.action }}

@@ -28,6 +28,12 @@ class ItemBorrowingPolicy
         return $this->view($user, $itemBorrowing);
     }
 
+    public function resubmit(User $user, ItemBorrowing $itemBorrowing): bool
+    {
+        return $this->owns($user, $itemBorrowing)
+            && $itemBorrowing->status === ItemBorrowing::STATUS_REJECTED;
+    }
+
     public function downloadSignedLetter(User $user, ItemBorrowing $itemBorrowing): bool
     {
         return $this->view($user, $itemBorrowing);

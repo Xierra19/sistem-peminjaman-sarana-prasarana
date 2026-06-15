@@ -51,7 +51,7 @@ const summary = computed(() => {
   const list = bookingsList.value
   return {
     total: list.length,
-    waiting: list.filter((b) => b.normalizedStatus === 'waiting').length,
+    waiting: list.filter((b) => ['waiting', 'needs_revision'].includes(b.normalizedStatus)).length,
     approved: list.filter((b) => b.normalizedStatus === 'approved').length,
     rejected: list.filter((b) => b.normalizedStatus === 'rejected').length,
     cancelled: list.filter((b) => b.normalizedStatus === 'cancelled').length,
@@ -321,7 +321,7 @@ onMounted(() => {
                 align="center"
                 @toggle="toggleAdminBookingSort"
               />
-              <th class="px-5 py-3 text-slate-500 dark:text-slate-300"></th>
+              <th class="min-w-36 px-5 py-3 text-center text-slate-500 dark:text-slate-300">Aksi</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 text-slate-700 dark:divide-slate-700 dark:text-slate-300">
@@ -353,10 +353,10 @@ onMounted(() => {
                   {{ getBookingStatusLabel(booking.normalizedStatus) || booking.status }}
                 </span>
               </td>
-              <td class="mobile-action-cell px-5 py-4 text-right" data-title="Aksi">
+              <td class="mobile-action-cell min-w-36 px-5 py-4 text-center" data-title="Aksi">
                 <Link
                   :href="route('admin.bookings.show', booking.id)"
-                  class="inline-flex items-center rounded-md border border-blue-200 px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 dark:border-slate-600 dark:text-blue-300 dark:hover:border-slate-500 dark:hover:bg-slate-600"
+                  class="inline-flex min-h-10 min-w-28 items-center justify-center whitespace-nowrap rounded-lg border border-blue-200 px-4 py-2 text-xs font-semibold text-blue-600 transition hover:bg-blue-50 dark:border-slate-600 dark:text-blue-300 dark:hover:border-slate-500 dark:hover:bg-slate-600"
                 >
                   Lihat Detail
                 </Link>

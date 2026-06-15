@@ -63,6 +63,7 @@ final class ItemBorrowingApprovalWorkflow
                     if (
                         in_array($targetStatus, [
                             ItemBorrowing::STATUS_APPROVED,
+                            ItemBorrowing::STATUS_NEEDS_REVISION,
                             ItemBorrowing::STATUS_REJECTED,
                         ], true)
                         && $currentStatus !== ItemBorrowing::STATUS_WAITING
@@ -103,6 +104,7 @@ final class ItemBorrowingApprovalWorkflow
 
                     $description = match ($targetStatus) {
                         ItemBorrowing::STATUS_APPROVED => 'Peminjaman barang disetujui',
+                        ItemBorrowing::STATUS_NEEDS_REVISION => 'Peminjaman barang dikembalikan untuk direvisi',
                         ItemBorrowing::STATUS_REJECTED => 'Peminjaman barang ditolak',
                         ItemBorrowing::STATUS_CANCELLED => 'Peminjaman barang dibatalkan oleh admin',
                         default => 'Status peminjaman barang diperbarui',

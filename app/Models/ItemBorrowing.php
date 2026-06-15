@@ -17,6 +17,8 @@ class ItemBorrowing extends Model
 
     public const STATUS_REQUESTED = 'requested';
 
+    public const STATUS_NEEDS_REVISION = 'needs_revision';
+
     public const STATUS_APPROVED = 'approved';
 
     public const STATUS_REJECTED = 'rejected';
@@ -29,11 +31,12 @@ class ItemBorrowing extends Model
 
     public const CANCELLABLE_STATUSES = [
         self::STATUS_WAITING,
+        self::STATUS_NEEDS_REVISION,
     ];
 
     public const EDITABLE_STATUSES = [
-        self::STATUS_REJECTED,
         self::STATUS_WAITING,
+        self::STATUS_NEEDS_REVISION,
     ];
 
     public const FINAL_STATUSES = [
@@ -56,6 +59,7 @@ class ItemBorrowing extends Model
         'title',
         'description',
         'user_id',
+        'resubmitted_from_id',
         'status',
         'attachment',
         'signed_letter',
@@ -109,6 +113,11 @@ class ItemBorrowing extends Model
     public function approvedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function resubmittedFrom(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'resubmitted_from_id');
     }
 
     /**

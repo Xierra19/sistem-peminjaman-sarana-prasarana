@@ -9,5 +9,6 @@ enum AdminStatusTransitionResult
     case Final;
     case PendingRequired;
     case ApprovedRequired;
+    case ScheduleConflict;
     case Completed;
 }

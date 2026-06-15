@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\Booking;
-use App\Models\BookingRoomSchedule;
 use App\Models\LogHistory;
 use App\Models\Room;
 use App\Models\User;
@@ -12,6 +11,7 @@ use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\ValidationException;
 use Throwable;
@@ -20,6 +20,7 @@ final class BookingCreationWorkflow
 {
     public function __construct(
         private readonly PublicFileStorage $fileStorage,
+        private readonly BookingScheduleConflictService $conflictService,
     ) {}
 
     public function create(array $validated, ?UploadedFile $attachment, User $user): Booking
@@ -32,6 +33,10 @@ final class BookingCreationWorkflow
             'attachments',
             function (?string $attachmentPath) use ($validated, $schedules, $user): Booking {
                 return DB::transaction(function () use ($validated, $schedules, $user, $attachmentPath): Booking {
+                    $source = $this->resolveResubmissionSource(
+                        $validated['resubmitted_from_id'] ?? null,
+                        $user,
+                    );
                     $this->lockRoomsAndValidateAvailability($schedules);
 
                     $orderedSchedules = $schedules->sortBy('start_time')->values();
@@ -42,10 +47,11 @@ final class BookingCreationWorkflow
                     $booking = Booking::query()->create([
                         'room_id' => $firstSchedule['room_id'],
                         'user_id' => $user->id,
+                        'resubmitted_from_id' => $source?->id,
                         'title' => $validated['title'],
                         'description' => $validated['description'] ?? null,
                         'status' => Booking::STATUS_WAITING,
-                        'attachment' => $attachmentPath,
+                        'attachment' => $attachmentPath ?: $source?->attachment,
                         'start_time' => $start->toDateTimeString(),
                         'end_time' => $end->toDateTimeString(),
                         'schedule_mode' => Booking::MODE_CONTINUOUS,
@@ -65,7 +71,9 @@ final class BookingCreationWorkflow
                         'booking_id' => $booking->id,
                         'user_id' => $user->id,
                         'action' => 'requested',
-                        'description' => 'Booking diajukan oleh pengguna.',
+                        'description' => $source
+                            ? "Booking diajukan ulang dari pengajuan #{$source->id}."
+                            : 'Booking diajukan oleh pengguna.',
                     ]);
 
                     return $booking;
@@ -77,6 +85,94 @@ final class BookingCreationWorkflow
         $this->notifyAdmins($booking);
 
         return $booking;
+    }
+
+    public function updateRevision(
+        array $validated,
+        Booking $booking,
+        ?UploadedFile $attachment,
+        User $user,
+    ): void {
+        $schedules = $this->expandSchedules($validated['schedules']);
+        $this->validateSchedulesWithinRequest($schedules);
+        $oldAttachmentPath = null;
+
+        $this->fileStorage->runWithStoredFile(
+            $attachment,
+            'attachments',
+            function (?string $newAttachmentPath) use (
+                $validated,
+                $schedules,
+                $booking,
+                $user,
+                &$oldAttachmentPath,
+            ): void {
+                DB::transaction(function () use (
+                    $validated,
+                    $schedules,
+                    $booking,
+                    $user,
+                    $newAttachmentPath,
+                    &$oldAttachmentPath,
+                ): void {
+                    $lockedBooking = Booking::query()
+                        ->lockForUpdate()
+                        ->findOrFail($booking->id);
+
+                    Gate::forUser($user)->authorize('update', $lockedBooking);
+                    $this->lockRoomsAndValidateAvailability($schedules, $lockedBooking->id);
+
+                    $orderedSchedules = $schedules->sortBy('start_time')->values();
+                    $firstSchedule = $orderedSchedules->first();
+                    $start = Carbon::parse($orderedSchedules->min('start_time'));
+                    $end = Carbon::parse($orderedSchedules->max('end_time'));
+                    $updateData = [
+                        'room_id' => $firstSchedule['room_id'],
+                        'title' => $validated['title'],
+                        'description' => $validated['description'] ?? null,
+                        'status' => Booking::STATUS_WAITING,
+                        'start_time' => $start->toDateTimeString(),
+                        'end_time' => $end->toDateTimeString(),
+                        'schedule_mode' => Booking::MODE_CONTINUOUS,
+                        'schedule_start_date' => $start->toDateString(),
+                        'schedule_end_date' => $end->toDateString(),
+                        'schedule_start_clock' => $start->format('H:i:s'),
+                        'schedule_end_clock' => $end->format('H:i:s'),
+                    ];
+
+                    if ($newAttachmentPath) {
+                        $oldAttachmentPath = $lockedBooking->attachment;
+                        $updateData['attachment'] = $newAttachmentPath;
+                    }
+
+                    $lockedBooking->update($updateData);
+                    $lockedBooking->roomSchedules()->delete();
+                    $lockedBooking->roomSchedules()->createMany(
+                        $orderedSchedules
+                            ->map(fn (array $schedule) => collect($schedule)->except('input_index')->all())
+                            ->all(),
+                    );
+
+                    LogHistory::query()->create([
+                        'booking_id' => $lockedBooking->id,
+                        'user_id' => $user->id,
+                        'action' => 'revised',
+                        'description' => 'Revisi booking dikirim dan menunggu persetujuan ulang.',
+                    ]);
+
+                    $booking->setRawAttributes($lockedBooking->getAttributes(), true);
+                });
+            },
+        );
+
+        if (
+            $oldAttachmentPath
+            && ! Booking::query()->where('attachment', $oldAttachmentPath)->exists()
+        ) {
+            $this->fileStorage->delete($oldAttachmentPath);
+        }
+        $booking->load(['user', 'roomSchedules.room.building.campus']);
+        $this->notifyAdmins($booking);
     }
 
     private function expandSchedules(array $scheduleRows): Collection
@@ -118,10 +214,13 @@ final class BookingCreationWorkflow
         }
     }
 
-    private function lockRoomsAndValidateAvailability(Collection $schedules): void
-    {
+    private function lockRoomsAndValidateAvailability(
+        Collection $schedules,
+        ?int $excludeBookingId = null,
+    ): void {
         $rooms = Room::query()
             ->whereIn('id', $schedules->pluck('room_id')->unique()->sort()->values())
+            ->orderBy('id')
             ->lockForUpdate()
             ->get()
             ->keyBy('id');
@@ -136,36 +235,34 @@ final class BookingCreationWorkflow
                 ]);
             }
 
-            if ($this->roomHasScheduleConflict($schedule)) {
+            if ($this->conflictService->hasApprovedConflict(collect([$schedule]), $excludeBookingId)) {
                 throw ValidationException::withMessages([
-                    "schedules.{$inputIndex}.room_id" => 'Ruangan sudah digunakan pada tanggal dan jam yang dipilih.',
+                    "schedules.{$inputIndex}.room_id" => 'Ruangan sudah disetujui untuk digunakan pada tanggal dan jam yang dipilih.',
                 ]);
             }
         }
     }
 
-    private function roomHasScheduleConflict(array $schedule): bool
+    private function resolveResubmissionSource(?int $sourceId, User $user): ?Booking
     {
-        $hasDetailConflict = BookingRoomSchedule::query()
-            ->where('room_id', $schedule['room_id'])
-            ->where('start_time', '<', $schedule['end_time'])
-            ->where('end_time', '>', $schedule['start_time'])
-            ->whereHas('booking', function ($query): void {
-                $query->whereNotIn('status', Booking::INACTIVE_STATUSES);
-            })
-            ->exists();
-
-        if ($hasDetailConflict) {
-            return true;
+        if (! $sourceId) {
+            return null;
         }
 
-        return Booking::query()
-            ->where('room_id', $schedule['room_id'])
-            ->whereDoesntHave('roomSchedules')
-            ->whereNotIn('status', Booking::INACTIVE_STATUSES)
-            ->where('start_time', '<', $schedule['end_time'])
-            ->where('end_time', '>', $schedule['start_time'])
-            ->exists();
+        $source = Booking::query()
+            ->lockForUpdate()
+            ->findOrFail($sourceId);
+
+        if (
+            $source->user_id !== $user->id
+            || ! $source->canBeResubmitted()
+        ) {
+            throw ValidationException::withMessages([
+                'resubmitted_from_id' => 'Pengajuan sumber tidak valid untuk diajukan ulang.',
+            ]);
+        }
+
+        return $source;
     }
 
     private function notifyAdmins(Booking $booking): void

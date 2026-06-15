@@ -12,6 +12,7 @@ use Carbon\Carbon;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
+use Inertia\Testing\AssertableInertia as Assert;
 use PDOException;
 use Tests\TestCase;
 
@@ -77,6 +78,12 @@ class BookingApprovalWorkflowTest extends TestCase
         $secondOwner = User::factory()->create();
         $firstBooking = $this->createBooking($firstOwner);
         $secondBooking = $this->createBooking($secondOwner);
+        $secondBooking->update([
+            'start_time' => '2026-06-20 10:00:00',
+            'end_time' => '2026-06-20 12:00:00',
+            'schedule_start_clock' => '10:00:00',
+            'schedule_end_clock' => '12:00:00',
+        ]);
 
         $this->actingAs($admin)->post(
             route('admin.bookings.update-status', $firstBooking),
@@ -102,6 +109,61 @@ class BookingApprovalWorkflowTest extends TestCase
         $this->assertSame(1, $firstBooking->fresh()->letter_sequence);
         $this->assertDatabaseCount('log_histories', 2);
         Notification::assertSentToTimes($firstOwner, BookingStatusUpdatedNotification::class, 1);
+    }
+
+    public function test_only_one_overlapping_booking_can_be_approved(): void
+    {
+        Carbon::setTestNow('2026-06-14 10:00:00');
+        Notification::fake();
+
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN_BAP,
+        ]);
+        $firstBooking = $this->createBooking(User::factory()->create());
+        $secondOwner = User::factory()->create();
+        $secondBooking = $this->createBooking($secondOwner);
+
+        $this->actingAs($admin)
+            ->post(route('admin.bookings.update-status', $firstBooking), [
+                'status' => Booking::STATUS_APPROVED,
+            ])
+            ->assertSessionHasNoErrors();
+
+        $response = $this->actingAs($admin)
+            ->post(route('admin.bookings.update-status', $secondBooking), [
+                'status' => Booking::STATUS_APPROVED,
+            ]);
+
+        $response
+            ->assertSessionHasErrors('status')
+            ->assertSessionHas('error', 'Jadwal sudah terkunci oleh booking lain. Minta pengguna merevisi jadwalnya.');
+        $this->assertSame(Booking::STATUS_WAITING, $secondBooking->fresh()->status);
+        $this->assertNull($secondBooking->fresh()->letter_number);
+        $this->assertDatabaseMissing('log_histories', [
+            'booking_id' => $secondBooking->id,
+            'action' => Booking::STATUS_APPROVED,
+        ]);
+        Notification::assertNotSentTo($secondOwner, BookingStatusUpdatedNotification::class);
+    }
+
+    public function test_admin_detail_lists_queued_and_approved_schedule_conflicts(): void
+    {
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN_BAP,
+        ]);
+        $booking = $this->createBooking(User::factory()->create());
+        $queuedConflict = $this->createBooking(User::factory()->create());
+        $approvedConflict = $this->createBooking(User::factory()->create());
+        $approvedConflict->update(['status' => Booking::STATUS_APPROVED]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.bookings.show', $booking))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Admin/Bookings/Show')
+                ->where('queuedConflicts.0.id', $queuedConflict->id)
+                ->where('approvedConflicts.0.id', $approvedConflict->id)
+            );
     }
 
     public function test_database_rejects_duplicate_booking_letter_numbers(): void

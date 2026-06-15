@@ -4,11 +4,11 @@ namespace App\Exports;
 
 use App\Models\Booking;
 use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 
-class BookingExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize
+class BookingExport implements FromCollection, ShouldAutoSize, WithHeadings, WithMapping
 {
     public function collection()
     {
@@ -36,6 +36,7 @@ class BookingExport implements FromCollection, WithHeadings, WithMapping, Should
             'waiting' => 'Menunggu Persetujuan',
             'pending' => 'Menunggu Persetujuan',
             'requested' => 'Menunggu Persetujuan',
+            'needs_revision' => 'Perlu Direvisi',
             'approved' => 'Disetujui',
             'rejected' => 'Ditolak',
             'cancelled' => 'Dibatalkan',

@@ -1,7 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import { Head, Link, useForm } from '@inertiajs/vue3'
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import flatpickr from 'flatpickr'
 import 'flatpickr/dist/flatpickr.css'
 import { Indonesian } from 'flatpickr/dist/l10n/id'
@@ -11,25 +11,52 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  minimumBookingDate: {
+    type: String,
+    required: true,
+  },
+  formMode: {
+    type: String,
+    default: 'create',
+  },
+  sourceBookingId: {
+    type: Number,
+    default: null,
+  },
+  initialData: {
+    type: Object,
+    default: null,
+  },
+  revisionNote: {
+    type: String,
+    default: null,
+  },
+  existingAttachment: {
+    type: String,
+    default: null,
+  },
 })
 
 let nextScheduleKey = 1
 
-const createSchedule = () => ({
+const createSchedule = (data = {}) => ({
   _key: nextScheduleKey++,
-  campus_id: '',
-  building_id: '',
-  room_id: '',
-  dates: [],
-  start_time: '',
-  end_time: '',
+  campus_id: data.campus_id ?? '',
+  building_id: data.building_id ?? '',
+  room_id: data.room_id ?? '',
+  dates: [...(data.dates ?? [])],
+  start_time: data.start_time ?? '',
+  end_time: data.end_time ?? '',
 })
 
 const form = useForm({
-  title: '',
-  description: '',
-  schedules: [createSchedule()],
+  title: props.initialData?.title ?? '',
+  description: props.initialData?.description ?? '',
+  schedules: props.initialData?.schedules?.length
+    ? props.initialData.schedules.map((schedule) => createSchedule(schedule))
+    : [createSchedule()],
   attachment: null,
+  resubmitted_from_id: props.formMode === 'resubmission' ? props.sourceBookingId : null,
 })
 
 const availabilityByKey = ref({})
@@ -45,13 +72,19 @@ const formatDateForInput = (date) => {
   return `${year}-${month}-${day}`
 }
 
-const minimumBookingDate = computed(() => {
-  const date = new Date()
-  date.setHours(0, 0, 0, 0)
-  date.setDate(date.getDate() + 3)
-
-  return formatDateForInput(date)
+const minimumBookingDate = computed(() => props.minimumBookingDate)
+const isRevision = computed(() => props.formMode === 'revision')
+const isResubmission = computed(() => props.formMode === 'resubmission')
+const pageTitle = computed(() => {
+  if (isRevision.value) return 'Perbaiki Booking Ruangan'
+  if (isResubmission.value) return 'Ajukan Ulang Booking Ruangan'
+  return 'Ajukan Booking Ruangan'
 })
+const hasInvalidPrefilledDates = computed(() =>
+  form.schedules.some((schedule) =>
+    schedule.dates.some((date) => date < minimumBookingDate.value),
+  ),
+)
 
 const timeSlots = (() => {
   const slots = []
@@ -85,6 +118,45 @@ const availabilityFor = (schedule) =>
     bookings: [],
     message: '',
   }
+
+const isBlockingBooking = (booking) => booking.status === 'approved'
+const blockingBookings = (schedule) =>
+  availabilityFor(schedule).bookings.filter(isBlockingBooking)
+const queuedBookings = (schedule) =>
+  availabilityFor(schedule).bookings.filter((booking) =>
+    ['waiting', 'pending', 'requested'].includes(booking.status),
+  )
+
+const overlapsSelectedTime = (schedule, booking) =>
+  Boolean(
+    schedule.start_time
+      && schedule.end_time
+      && schedule.start_time < booking.end
+      && schedule.end_time > booking.start,
+  )
+
+const selectedBlockingBookings = (schedule) =>
+  blockingBookings(schedule).filter((booking) => overlapsSelectedTime(schedule, booking))
+
+const selectedQueuedBookings = (schedule) =>
+  queuedBookings(schedule).filter((booking) => overlapsSelectedTime(schedule, booking))
+
+const hasApprovedScheduleConflict = computed(() =>
+  form.schedules.some((schedule) => selectedBlockingBookings(schedule).length > 0),
+)
+
+const hasUncheckedCompleteSchedule = computed(() =>
+  form.schedules.some((schedule) =>
+    Boolean(
+      schedule.room_id
+        && schedule.dates.length
+        && schedule.start_time
+        && schedule.end_time,
+    )
+      && !availabilityFor(schedule).loaded
+      && !availabilityFor(schedule).message,
+  ),
+)
 
 const resetAvailability = (schedule) => {
   availabilityRequestIds.set(schedule._key, (availabilityRequestIds.get(schedule._key) ?? 0) + 1)
@@ -237,12 +309,12 @@ const loadAvailability = async (schedule) => {
 }
 
 const isStartBlocked = (schedule, time) =>
-  availabilityFor(schedule).bookings.some(
+  blockingBookings(schedule).some(
     (booking) => time >= booking.start && time < booking.end,
   )
 
 const wouldOverlapExisting = (schedule, time) =>
-  availabilityFor(schedule).bookings.some(
+  blockingBookings(schedule).some(
     (booking) => schedule.start_time < booking.end && time > booking.start,
   )
 
@@ -315,10 +387,10 @@ const formatScheduleDates = (schedule) => {
   return `${dates.length} tanggal: ${dates.map((date) => formatScheduleDate(date)).join(', ')}`
 }
 
-const groupedAvailability = (schedule) => {
+const groupedAvailability = (bookings) => {
   const grouped = new Map()
 
-  for (const booking of availabilityFor(schedule).bookings) {
+  for (const booking of bookings) {
     if (!grouped.has(booking.date)) grouped.set(booking.date, [])
     grouped.get(booking.date).push(`${booking.start}-${booking.end}`)
   }
@@ -345,11 +417,33 @@ const onAttachmentChange = (event) => {
 }
 
 const submit = () => {
+  if (hasApprovedScheduleConflict.value || hasUncheckedCompleteSchedule.value) {
+    return
+  }
+
+  if (isRevision.value) {
+    form
+      .transform((data) => ({ ...data, _method: 'put' }))
+      .post(route('bookings.update', props.sourceBookingId), {
+        forceFormData: true,
+        preserveScroll: true,
+      })
+    return
+  }
+
   form.post(route('bookings.store'), {
     forceFormData: true,
     preserveScroll: true,
   })
 }
+
+onMounted(() => {
+  for (const schedule of form.schedules) {
+    if (schedule.room_id && schedule.dates.length) {
+      loadAvailability(schedule)
+    }
+  }
+})
 
 onBeforeUnmount(() => {
   datePickers.forEach((picker) => picker.destroy())
@@ -359,15 +453,34 @@ onBeforeUnmount(() => {
 
 <template>
   <AuthenticatedLayout>
-    <Head title="Ajukan Booking Ruangan" />
+    <Head :title="pageTitle" />
 
     <div class="mx-auto max-w-6xl space-y-6 pb-24">
       <section class="space-y-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:p-6">
         <div class="border-b border-slate-200 pb-5 dark:border-slate-700">
-          <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Permintaan Booking Ruangan</h1>
+          <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">{{ pageTitle }}</h1>
           <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Tambahkan satu atau beberapa ruangan dengan jadwal penggunaan masing-masing.
+            {{ isRevision
+              ? 'Perbaiki data berdasarkan catatan admin. Tenggat H+3 tetap mengacu pada pengajuan awal.'
+              : isResubmission
+                ? 'Data lama sudah disalin. Pengajuan baru tetap mengikuti tenggat H+3 dari hari ini.'
+                : 'Tambahkan satu atau beberapa ruangan dengan jadwal penggunaan masing-masing.' }}
           </p>
+        </div>
+
+        <div
+          v-if="revisionNote"
+          class="rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-800 dark:border-violet-900 dark:bg-violet-950/40 dark:text-violet-200"
+        >
+          <p class="font-semibold">Catatan admin</p>
+          <p class="mt-1">{{ revisionNote }}</p>
+        </div>
+
+        <div
+          v-if="hasInvalidPrefilledDates"
+          class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300"
+        >
+          Sebagian jadwal lama tidak lagi memenuhi batas minimum {{ minimumBookingDate }}. Ganti tanggal tersebut sebelum mengirim.
         </div>
 
         <div class="grid gap-4 rounded-2xl bg-slate-50 p-4 text-xs text-slate-600 dark:bg-slate-700/50 dark:text-slate-300 sm:grid-cols-3">
@@ -462,17 +575,21 @@ onBeforeUnmount(() => {
             v-for="(schedule, index) in form.schedules"
             :key="schedule._key"
             class="group overflow-hidden rounded-3xl border bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg dark:bg-slate-800"
-            :class="isScheduleComplete(schedule)
-              ? 'border-emerald-200 dark:border-emerald-900/70'
-              : 'border-slate-200 hover:border-blue-300 dark:border-slate-700 dark:hover:border-blue-700'"
+            :class="selectedBlockingBookings(schedule).length
+              ? 'border-rose-300 dark:border-rose-900/70'
+              : isScheduleComplete(schedule)
+                ? 'border-emerald-200 dark:border-emerald-900/70'
+                : 'border-slate-200 hover:border-blue-300 dark:border-slate-700 dark:hover:border-blue-700'"
           >
             <header class="flex flex-col gap-4 border-b border-slate-100 bg-slate-50/70 px-5 py-5 dark:border-slate-700 dark:bg-slate-900/30 sm:flex-row sm:items-center sm:justify-between sm:px-7">
               <div class="flex min-w-0 items-center gap-4">
                 <span
                   class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold"
-                  :class="isScheduleComplete(schedule)
-                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
-                    : 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'"
+                  :class="selectedBlockingBookings(schedule).length
+                    ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300'
+                    : isScheduleComplete(schedule)
+                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
+                      : 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'"
                 >
                   {{ index + 1 }}
                 </span>
@@ -481,11 +598,17 @@ onBeforeUnmount(() => {
                     <h3 class="font-semibold text-slate-900 dark:text-white">Jadwal {{ index + 1 }}</h3>
                     <span
                       class="rounded-full px-2.5 py-1 text-[11px] font-semibold"
-                      :class="isScheduleComplete(schedule)
-                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
-                        : 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'"
+                      :class="selectedBlockingBookings(schedule).length
+                        ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300'
+                        : isScheduleComplete(schedule)
+                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
+                          : 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'"
                     >
-                      {{ isScheduleComplete(schedule) ? 'Lengkap' : 'Belum lengkap' }}
+                      {{ selectedBlockingBookings(schedule).length
+                        ? 'Jadwal bentrok'
+                        : isScheduleComplete(schedule)
+                          ? 'Lengkap'
+                          : 'Belum lengkap' }}
                     </span>
                   </div>
                   <p class="mt-1 truncate text-xs text-slate-500 dark:text-slate-400">{{ scheduleLocationSummary(schedule) }}</p>
@@ -541,7 +664,10 @@ onBeforeUnmount(() => {
                     {{ room.name }}{{ room.is_available ? '' : ' (tidak tersedia)' }}
                   </option>
                 </select>
-                <span v-if="scheduleError(index, 'room_id')" class="text-sm font-medium text-rose-600 dark:text-rose-400">{{ scheduleError(index, 'room_id') }}</span>
+                <span v-if="selectedBlockingBookings(schedule).length" class="text-sm font-medium text-rose-600 dark:text-rose-400">
+                  Jadwal yang dipilih sudah disetujui untuk booking lain.
+                </span>
+                <span v-else-if="scheduleError(index, 'room_id')" class="text-sm font-medium text-rose-600 dark:text-rose-400">{{ scheduleError(index, 'room_id') }}</span>
               </label>
 
               <label class="space-y-2">
@@ -601,11 +727,21 @@ onBeforeUnmount(() => {
                 <div v-else-if="availabilityFor(schedule).message" class="rounded-xl bg-amber-100 px-3 py-2 text-sm font-medium text-amber-800 dark:bg-amber-950 dark:text-amber-300">
                   {{ availabilityFor(schedule).message }}
                 </div>
-                <div v-else-if="availabilityFor(schedule).bookings.length" class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/50 dark:text-amber-300">
-                  <p class="font-semibold">Jadwal terpakai:</p>
-                  <p v-for="entry in groupedAvailability(schedule)" :key="entry.date">
+                <div v-else-if="selectedBlockingBookings(schedule).length" class="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800 dark:border-rose-900 dark:bg-rose-950/50 dark:text-rose-300">
+                  <p class="font-semibold">Jadwal yang dipilih bertabrakan dengan booking yang sudah disetujui:</p>
+                  <p v-for="entry in groupedAvailability(selectedBlockingBookings(schedule))" :key="entry.date">
                     {{ entry.label }}: {{ entry.intervals }}
                   </p>
+                  <p class="mt-1 font-medium">Ganti ruangan, tanggal, atau jam sebelum mengirim pengajuan.</p>
+                </div>
+                <div v-else-if="selectedQueuedBookings(schedule).length" class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/50 dark:text-amber-300">
+                  <p class="font-semibold">
+                    Ada {{ new Set(selectedQueuedBookings(schedule).map((booking) => booking.id)).size }} pengajuan lain pada jadwal yang dipilih.
+                  </p>
+                  <p v-for="entry in groupedAvailability(selectedQueuedBookings(schedule))" :key="entry.date">
+                    {{ entry.label }}: {{ entry.intervals }}
+                  </p>
+                  <p class="mt-1">Pengajuan tetap dapat dikirim. Admin akan menentukan pengajuan yang disetujui.</p>
                 </div>
                 <div v-else-if="availabilityFor(schedule).loaded && selectedRoom(schedule)" class="inline-flex items-center gap-2 rounded-xl bg-emerald-100 px-3 py-2 text-sm font-semibold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
                   <span class="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-600 text-xs text-white">✓</span>
@@ -623,6 +759,9 @@ onBeforeUnmount(() => {
             <div>
               <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Lampiran Pendukung</h2>
               <p class="text-sm text-slate-500 dark:text-slate-400">Opsional, PDF/JPG/PNG maksimal 2 MB.</p>
+              <p v-if="existingAttachment" class="text-xs text-emerald-600 dark:text-emerald-400">
+                Lampiran lama tetap digunakan bila tidak memilih file baru.
+              </p>
             </div>
           </header>
           <div class="p-5 sm:p-7">
@@ -640,7 +779,10 @@ onBeforeUnmount(() => {
           <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div class="text-sm">
               <p class="font-semibold text-slate-900 dark:text-white">{{ completedScheduleCount }} dari {{ form.schedules.length }} jadwal sudah lengkap</p>
-              <p class="text-xs text-slate-500 dark:text-slate-400">Pastikan informasi kegiatan dan seluruh jadwal sudah benar.</p>
+              <p v-if="hasApprovedScheduleConflict" class="text-xs font-medium text-rose-600 dark:text-rose-400">
+                Ganti jadwal yang bentrok dengan booking yang sudah disetujui.
+              </p>
+              <p v-else class="text-xs text-slate-500 dark:text-slate-400">Pastikan informasi kegiatan dan seluruh jadwal sudah benar.</p>
             </div>
             <div class="flex flex-col-reverse gap-2 sm:flex-row">
               <Link
@@ -651,10 +793,23 @@ onBeforeUnmount(() => {
               </Link>
               <button
                 type="submit"
-                :disabled="form.processing"
+                :disabled="
+                  form.processing
+                    || hasInvalidPrefilledDates
+                    || hasApprovedScheduleConflict
+                    || hasUncheckedCompleteSchedule
+                "
                 class="inline-flex min-h-11 items-center justify-center rounded-xl bg-blue-600 px-6 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:-translate-y-0.5 hover:bg-blue-700 disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-60"
               >
-                {{ form.processing ? 'Mengirim Pengajuan...' : 'Ajukan Booking Ruangan' }}
+                {{ form.processing
+                  ? 'Mengirim Pengajuan...'
+                  : hasUncheckedCompleteSchedule
+                    ? 'Memeriksa Jadwal...'
+                  : isRevision
+                    ? 'Kirim Revisi'
+                    : isResubmission
+                      ? 'Ajukan Ulang'
+                      : 'Ajukan Booking Ruangan' }}
               </button>
             </div>
           </div>

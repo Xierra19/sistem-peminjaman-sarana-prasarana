@@ -241,7 +241,8 @@ const statusChartData = computed(() => {
   }
   
   borrowings.forEach(b => {
-    const normalizedStatus = normalizeItemBorrowingStatus(b.effective_status ?? b.status)
+    const rawStatus = normalizeItemBorrowingStatus(b.effective_status ?? b.status)
+    const normalizedStatus = rawStatus === 'needs_revision' ? 'waiting' : rawStatus
     if (counts[normalizedStatus] !== undefined) {
       counts[normalizedStatus]++
     }

@@ -20,6 +20,10 @@ const props = defineProps({
     type: String,
     required: true,
   },
+  revisionNote: {
+    type: String,
+    default: null,
+  },
 })
 
 const form = useForm({
@@ -206,6 +210,15 @@ watch(() => form.items, (newItems) => {
           </p>
         </div>
 
+        <div
+          v-if="revisionNote"
+          class="rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-800"
+        >
+          <p class="font-semibold">Catatan admin</p>
+          <p class="mt-1">{{ revisionNote }}</p>
+          <p class="mt-2 text-xs">Tenggat H-7 tetap dihitung dari tanggal pengajuan awal.</p>
+        </div>
+
         <form @submit.prevent="submit" class="space-y-8">
           <div class="space-y-2">
             <label class="block text-sm font-medium text-slate-700">Keperluan / Judul <span class="text-rose-500">*</span></label>
@@ -384,13 +397,13 @@ watch(() => form.items, (newItems) => {
           <!-- Attachment -->
           <div class="space-y-3">
             <div class="flex items-center justify-between">
-              <label class="block text-sm font-medium text-slate-700">Lampiran Pendukung <span class="text-rose-500">*</span></label>
-              <span class="text-xs text-slate-400">PDF, JPG, PNG max 2MB (wajib)</span>
+              <label class="block text-sm font-medium text-slate-700">Lampiran Pendukung</label>
+              <span class="text-xs text-slate-400">PDF, JPG, PNG max 2MB (opsional bila lampiran lama tetap digunakan)</span>
             </div>
             <label class="flex cursor-pointer items-center justify-between rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-4 transition hover:border-blue-400 hover:bg-blue-50/40">
               <div>
                 <p class="text-sm font-medium text-slate-700">
-                  {{ form.attachment ? form.attachment.name : 'Pilih file lampiran baru (wajib untuk revisi)' }}
+                  {{ form.attachment ? form.attachment.name : 'Pilih file lampiran baru bila perlu' }}
                 </p>
                 <p v-if="itemBorrowing.attachment" class="text-xs text-slate-500">
                   Saat ini: {{ itemBorrowing.attachment.split('/').pop() }} (akan ditimpa jika upload baru)

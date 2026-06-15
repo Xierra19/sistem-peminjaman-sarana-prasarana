@@ -19,6 +19,7 @@ class UpdateItemBorrowingStatusRequest extends FormRequest
         return [
             'status' => ['required', Rule::in([
                 ItemBorrowing::STATUS_APPROVED,
+                ItemBorrowing::STATUS_NEEDS_REVISION,
                 ItemBorrowing::STATUS_REJECTED,
                 ItemBorrowing::STATUS_CANCELLED,
             ])],
@@ -32,6 +33,7 @@ class UpdateItemBorrowingStatusRequest extends FormRequest
         $validator->sometimes('notes', ['required', 'string', 'max:500'], function ($input) {
             return in_array($input->status, [
                 ItemBorrowing::STATUS_REJECTED,
+                ItemBorrowing::STATUS_NEEDS_REVISION,
                 ItemBorrowing::STATUS_CANCELLED,
             ], true);
         });
@@ -41,14 +43,17 @@ class UpdateItemBorrowingStatusRequest extends FormRequest
         });
 
         $validator->sometimes('signed_letter', ['prohibited'], function ($input) {
-            return $input->status === ItemBorrowing::STATUS_CANCELLED;
+            return in_array($input->status, [
+                ItemBorrowing::STATUS_NEEDS_REVISION,
+                ItemBorrowing::STATUS_CANCELLED,
+            ], true);
         });
     }
 
     public function messages(): array
     {
         return [
-            'notes.required' => 'Catatan wajib diisi untuk penolakan atau pembatalan.',
+            'notes.required' => 'Catatan wajib diisi untuk permintaan revisi, penolakan, atau pembatalan.',
             'signed_letter.required' => 'Surat yang sudah ditandatangani wajib diunggah saat menyetujui peminjaman.',
             'signed_letter.prohibited' => 'Upload surat hanya tersedia saat menyetujui atau menolak peminjaman.',
             'signed_letter.mimes' => 'File surat harus berformat PDF, JPG, JPEG, atau PNG.',

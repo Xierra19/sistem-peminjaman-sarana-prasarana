@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\Room;
 use App\Models\Booking;
+use App\Models\Room;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
@@ -37,7 +37,10 @@ final class RoomAvailabilityService
         $schedules = $room->bookingSchedules()
             ->with('booking:id,title,status')
             ->whereHas('booking', function ($query): void {
-                $query->whereNotIn('status', Booking::INACTIVE_STATUSES);
+                $query->whereIn('status', [
+                    ...Booking::QUEUED_STATUSES,
+                    ...Booking::BLOCKING_STATUSES,
+                ]);
             })
             ->where('start_time', '<', $queryEnd)
             ->where('end_time', '>', $queryStart)
@@ -45,7 +48,10 @@ final class RoomAvailabilityService
 
         $legacyBookings = $room->bookings()
             ->whereDoesntHave('roomSchedules')
-            ->whereNotIn('status', Booking::INACTIVE_STATUSES)
+            ->whereIn('status', [
+                ...Booking::QUEUED_STATUSES,
+                ...Booking::BLOCKING_STATUSES,
+            ])
             ->where('start_time', '<', $queryEnd)
             ->where('end_time', '>', $queryStart)
             ->get();

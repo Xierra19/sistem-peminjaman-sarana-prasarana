@@ -50,7 +50,31 @@ class BookingControllerTest extends TestCase
         $response->assertOk();
         $response->assertJsonPath('bookings.0.start', '09:00');
         $response->assertJsonPath('bookings.0.end', '11:30');
+        $response->assertJsonPath('bookings.0.status', Booking::STATUS_WAITING);
         $response->assertJsonPath('daily_bookings.0.date', $date);
+    }
+
+    public function test_availability_excludes_booking_that_is_waiting_for_revision(): void
+    {
+        [$user, $rooms] = $this->createLocation(1);
+        $date = now()->addDays(5)->toDateString();
+        $booking = $this->createBooking($user, $rooms[0], [
+            'status' => Booking::STATUS_NEEDS_REVISION,
+        ]);
+        $booking->roomSchedules()->create([
+            'room_id' => $rooms[0]->id,
+            'start_time' => "{$date} 09:00:00",
+            'end_time' => "{$date} 11:00:00",
+        ]);
+
+        $this->actingAs($user)
+            ->getJson(route('rooms.availability', [
+                'room' => $rooms[0],
+                'date' => $date,
+            ]))
+            ->assertOk()
+            ->assertJsonPath('bookings', [])
+            ->assertJsonPath('daily_bookings', []);
     }
 
     public function test_availability_includes_legacy_booking_without_room_schedule(): void
@@ -289,6 +313,35 @@ class BookingControllerTest extends TestCase
 
         $response->assertRedirect(route('bookings.index'));
         $this->assertDatabaseCount('bookings', 1);
+        $this->assertDatabaseCount('booking_room_schedules', 2);
+    }
+
+    public function test_store_allows_overlapping_request_when_existing_booking_is_still_waiting(): void
+    {
+        [$existingOwner, $rooms] = $this->createLocation(1);
+        $requestingUser = User::factory()->create(['email_verified_at' => now()]);
+        $date = now()->addDays(5)->toDateString();
+        $existing = $this->createBooking($existingOwner, $rooms[0], [
+            'status' => Booking::STATUS_WAITING,
+            'start_time' => "{$date} 09:00:00",
+            'end_time' => "{$date} 11:00:00",
+        ]);
+        $existing->roomSchedules()->create([
+            'room_id' => $rooms[0]->id,
+            'start_time' => "{$date} 09:00:00",
+            'end_time' => "{$date} 11:00:00",
+        ]);
+
+        $response = $this->actingAs($requestingUser)->post(route('bookings.store'), [
+            'title' => 'Pengajuan Paralel',
+            'schedules' => [
+                $this->schedulePayload($rooms[0], $date, '10:00', '12:00'),
+            ],
+        ]);
+
+        $response->assertRedirect(route('bookings.index'));
+        $response->assertSessionHasNoErrors();
+        $this->assertDatabaseCount('bookings', 2);
         $this->assertDatabaseCount('booking_room_schedules', 2);
     }
 

@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateBookingStatusRequest;
 use App\Models\Booking;
 use App\Services\BookingApprovalWorkflow;
+use App\Services\BookingScheduleConflictService;
 use App\Services\ExpirePendingBookings;
 use App\Support\AdminStatusTransitionResult;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -25,12 +26,13 @@ class BookingApprovalController extends Controller
         $bookings = Booking::with(['user', 'room.building.campus', 'roomSchedules.room.building.campus'])
             ->orderByRaw("
                 CASE
-                    WHEN status IN ('waiting','pending') THEN 1
-                    WHEN status = 'approved' THEN 2
-                    WHEN status = 'expired' THEN 3
-                    WHEN status = 'cancelled' THEN 4
-                    WHEN status = 'rejected' THEN 5
-                    ELSE 6
+                    WHEN status IN ('waiting','pending','requested') THEN 1
+                    WHEN status = 'needs_revision' THEN 2
+                    WHEN status = 'approved' THEN 3
+                    WHEN status = 'expired' THEN 4
+                    WHEN status = 'cancelled' THEN 5
+                    WHEN status = 'rejected' THEN 6
+                    ELSE 7
                 END
             ")
             ->orderBy('start_time')
@@ -44,8 +46,11 @@ class BookingApprovalController extends Controller
     /**
      * Display the specified booking with its audit trail.
      */
-    public function show(Booking $booking, ExpirePendingBookings $expirePendingBookings)
-    {
+    public function show(
+        Booking $booking,
+        ExpirePendingBookings $expirePendingBookings,
+        BookingScheduleConflictService $conflictService,
+    ) {
         $expirePendingBookings->expireIfPastDue($booking);
 
         $booking->load([
@@ -59,6 +64,14 @@ class BookingApprovalController extends Controller
 
         return Inertia::render('Admin/Bookings/Show', [
             'booking' => $booking,
+            'approvedConflicts' => $conflictService->conflictsForBooking(
+                $booking,
+                Booking::BLOCKING_STATUSES,
+            ),
+            'queuedConflicts' => $conflictService->conflictsForBooking(
+                $booking,
+                Booking::QUEUED_STATUSES,
+            ),
         ]);
     }
 
@@ -86,7 +99,7 @@ class BookingApprovalController extends Controller
 
         if ($result === AdminStatusTransitionResult::PendingRequired) {
             return back()
-                ->withErrors(['status' => 'Hanya booking yang masih menunggu yang dapat disetujui atau ditolak.'])
+                ->withErrors(['status' => 'Hanya booking yang masih menunggu yang dapat diproses oleh admin.'])
                 ->with('error', 'Status booking sudah final dan tidak dapat diproses kembali.');
         }
 
@@ -94,6 +107,12 @@ class BookingApprovalController extends Controller
             return back()
                 ->withErrors(['status' => 'Hanya booking yang sudah disetujui yang dapat dibatalkan.'])
                 ->with('error', 'Hanya booking yang sudah disetujui yang dapat dibatalkan.');
+        }
+
+        if ($result === AdminStatusTransitionResult::ScheduleConflict) {
+            return back()
+                ->withErrors(['status' => 'Booking tidak dapat disetujui karena jadwalnya sudah ditempati booking lain yang disetujui.'])
+                ->with('error', 'Jadwal sudah terkunci oleh booking lain. Minta pengguna merevisi jadwalnya.');
         }
 
         return redirect()->back()->with('success', 'Status booking berhasil diperbarui.');

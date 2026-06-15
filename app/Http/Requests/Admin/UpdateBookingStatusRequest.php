@@ -19,6 +19,7 @@ class UpdateBookingStatusRequest extends FormRequest
         return [
             'status' => ['required', Rule::in([
                 Booking::STATUS_APPROVED,
+                Booking::STATUS_NEEDS_REVISION,
                 Booking::STATUS_REJECTED,
                 Booking::STATUS_CANCELLED,
             ])],
@@ -29,14 +30,18 @@ class UpdateBookingStatusRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->sometimes('notes', ['required', 'string', 'max:500'], function ($input) {
-            return $input->status === Booking::STATUS_CANCELLED;
+            return in_array($input->status, [
+                Booking::STATUS_NEEDS_REVISION,
+                Booking::STATUS_REJECTED,
+                Booking::STATUS_CANCELLED,
+            ], true);
         });
     }
 
     public function messages(): array
     {
         return [
-            'notes.required' => 'Catatan wajib diisi ketika membatalkan booking.',
+            'notes.required' => 'Catatan wajib diisi untuk permintaan revisi, penolakan, atau pembatalan.',
         ];
     }
 }

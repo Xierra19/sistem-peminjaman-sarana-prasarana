@@ -18,6 +18,7 @@ final class BookingApprovalWorkflow
 
     public function __construct(
         private readonly ExpirePendingBookings $expirePendingBookings,
+        private readonly BookingScheduleConflictService $conflictService,
     ) {}
 
     public function update(
@@ -82,8 +83,12 @@ final class BookingApprovalWorkflow
             ->findOrFail($booking->getKey());
 
         if (
-            in_array($targetStatus, [Booking::STATUS_APPROVED, Booking::STATUS_REJECTED], true)
-            && ! in_array($lockedBooking->status, Booking::PENDING_STATUSES, true)
+            in_array($targetStatus, [
+                Booking::STATUS_APPROVED,
+                Booking::STATUS_NEEDS_REVISION,
+                Booking::STATUS_REJECTED,
+            ], true)
+            && ! in_array($lockedBooking->status, Booking::APPROVAL_PENDING_STATUSES, true)
         ) {
             return AdminStatusTransitionResult::PendingRequired;
         }
@@ -93,6 +98,14 @@ final class BookingApprovalWorkflow
             && $lockedBooking->status !== Booking::STATUS_APPROVED
         ) {
             return AdminStatusTransitionResult::ApprovedRequired;
+        }
+
+        if ($targetStatus === Booking::STATUS_APPROVED) {
+            $this->conflictService->lockRoomsForBooking($lockedBooking);
+
+            if ($this->conflictService->bookingHasApprovedConflict($lockedBooking)) {
+                return AdminStatusTransitionResult::ScheduleConflict;
+            }
         }
 
         $lockedBooking->update([
@@ -105,6 +118,7 @@ final class BookingApprovalWorkflow
 
         $description = match ($targetStatus) {
             Booking::STATUS_APPROVED => 'Booking disetujui',
+            Booking::STATUS_NEEDS_REVISION => 'Booking dikembalikan untuk direvisi',
             Booking::STATUS_REJECTED => 'Booking ditolak',
             Booking::STATUS_CANCELLED => 'Booking dibatalkan oleh admin',
             default => 'Status booking diperbarui',

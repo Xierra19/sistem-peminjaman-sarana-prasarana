@@ -55,6 +55,7 @@
     $statusLabels = [
         'waiting' => 'Menunggu',
         'requested' => 'Menunggu',
+        'needs_revision' => 'Perlu Direvisi',
         'approved' => 'Disetujui',
         'completed' => 'Selesai',
         'rejected' => 'Ditolak',

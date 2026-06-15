@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 
@@ -31,14 +32,20 @@ final class ItemBorrowingWorkflow
             'item-borrowing-attachments',
             function (?string $attachmentPath) use ($validated, $user): ItemBorrowing {
                 return DB::transaction(function () use ($validated, $user, $attachmentPath): ItemBorrowing {
+                    $source = $this->resolveResubmissionSource(
+                        $validated['resubmitted_from_id'] ?? null,
+                        $user,
+                        $attachmentPath !== null,
+                    );
                     $this->lockItemsAndValidateAvailability($validated['items']);
 
                     $borrowing = ItemBorrowing::create([
                         'title' => $validated['title'],
                         'description' => $validated['description'] ?? null,
-                        'attachment' => $attachmentPath,
                         'user_id' => $user->id,
+                        'resubmitted_from_id' => $source?->id,
                         'status' => ItemBorrowing::STATUS_WAITING,
+                        'attachment' => $attachmentPath ?: $source?->attachment,
                         'item_id' => null,
                         'quantity' => 0,
                         'borrow_date' => null,
@@ -61,7 +68,9 @@ final class ItemBorrowingWorkflow
                         'item_borrowing_id' => $borrowing->id,
                         'user_id' => $user->id,
                         'action' => 'requested',
-                        'description' => 'Peminjaman '.count($validated['items']).' jenis barang diajukan oleh pengguna.',
+                        'description' => $source
+                            ? "Peminjaman barang diajukan ulang dari pengajuan #{$source->id}."
+                            : 'Peminjaman '.count($validated['items']).' jenis barang diajukan oleh pengguna.',
                     ]);
 
                     return $borrowing;
@@ -109,9 +118,11 @@ final class ItemBorrowingWorkflow
                     $existingItems = $lockedBorrowing->items()->get()->keyBy('id');
                     $this->lockItemsAndValidateAvailability($validated['items'], $existingItems);
 
+                    $wasRevisionRequested = $lockedBorrowing->status === ItemBorrowing::STATUS_NEEDS_REVISION;
                     $updateData = [
                         'title' => $validated['title'],
                         'description' => $validated['description'] ?? null,
+                        'status' => ItemBorrowing::STATUS_WAITING,
                         'item_id' => null,
                         'quantity' => 0,
                         'borrow_date' => null,
@@ -147,11 +158,29 @@ final class ItemBorrowingWorkflow
 
                         $lockedBorrowing->items()->create($itemValues);
                     }
+
+                    ItemBorrowingLog::query()->create([
+                        'item_borrowing_id' => $lockedBorrowing->id,
+                        'user_id' => $user->id,
+                        'action' => 'revised',
+                        'description' => $wasRevisionRequested
+                            ? 'Revisi peminjaman barang dikirim dan menunggu persetujuan ulang.'
+                            : 'Peminjaman barang diperbarui oleh pengguna.',
+                    ]);
+
+                    $itemBorrowing->setRawAttributes($lockedBorrowing->getAttributes(), true);
                 });
             },
         );
 
-        $this->fileStorage->delete($oldAttachmentPath);
+        if (
+            $oldAttachmentPath
+            && ! ItemBorrowing::query()->where('attachment', $oldAttachmentPath)->exists()
+        ) {
+            $this->fileStorage->delete($oldAttachmentPath);
+        }
+        $itemBorrowing->load(['user', 'items.item', 'singleItem']);
+        $this->notifyAdmins($itemBorrowing);
     }
 
     private function lockItemsAndValidateAvailability(array $itemsData, mixed $existingItems = null): void
@@ -201,6 +230,43 @@ final class ItemBorrowingWorkflow
         if ($errors !== []) {
             throw ValidationException::withMessages($errors);
         }
+    }
+
+    private function resolveResubmissionSource(
+        ?int $sourceId,
+        User $user,
+        bool $hasNewAttachment,
+    ): ?ItemBorrowing {
+        if (! $sourceId) {
+            return null;
+        }
+
+        $source = ItemBorrowing::query()
+            ->lockForUpdate()
+            ->findOrFail($sourceId);
+
+        if (
+            $source->user_id !== $user->id
+            || $source->status !== ItemBorrowing::STATUS_REJECTED
+        ) {
+            throw ValidationException::withMessages([
+                'resubmitted_from_id' => 'Pengajuan sumber tidak valid untuk diajukan ulang.',
+            ]);
+        }
+
+        if (
+            ! $hasNewAttachment
+            && (
+                ! $source->attachment
+                || ! Storage::disk('public')->exists($source->attachment)
+            )
+        ) {
+            throw ValidationException::withMessages([
+                'attachment' => 'Lampiran wajib diunggah untuk pengajuan ulang ini.',
+            ]);
+        }
+
+        return $source;
     }
 
     private function notifyAdmins(ItemBorrowing $itemBorrowing): void

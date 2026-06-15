@@ -43,6 +43,7 @@ class BookingExport implements FromCollection, WithHeadings, WithMapping
     {
         $statusLabels = [
             'waiting' => 'Menunggu Persetujuan',
+            'needs_revision' => 'Perlu Direvisi',
             'approved' => 'Disetujui',
             'rejected' => 'Ditolak',
             'cancelled' => 'Dibatalkan',
@@ -67,7 +68,7 @@ class BookingExport implements FromCollection, WithHeadings, WithMapping
 
     protected function formatDateTime(?string $value): string
     {
-        if (!$value) {
+        if (! $value) {
             return '-';
         }
 

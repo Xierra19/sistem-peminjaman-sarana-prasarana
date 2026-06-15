@@ -40,15 +40,64 @@ class ItemBorrowingController extends Controller
 
     public function create()
     {
+        return Inertia::render('ItemBorrowings/Create', $this->itemFormProps());
+    }
+
+    public function resubmit(ItemBorrowing $itemBorrowing)
+    {
+        $this->authorize('resubmit', $itemBorrowing);
+        $itemBorrowing->load(['items.item', 'singleItem', 'logs.user']);
+
+        return Inertia::render('ItemBorrowings/Create', $this->itemFormProps($itemBorrowing));
+    }
+
+    private function itemFormProps(?ItemBorrowing $source = null): array
+    {
         $items = Item::query()
             ->select('id', 'code', 'name', 'category', 'quantity', 'is_available')
             ->orderBy('name')
             ->get();
 
-        return Inertia::render('ItemBorrowings/Create', [
+        return [
             'items' => $items,
             'minimumBorrowDate' => Carbon::now(config('app.business_timezone'))->addDays(7)->toDateString(),
+            'sourceItemBorrowingId' => $source?->id,
+            'initialData' => $source ? $this->itemBorrowingInitialData($source) : null,
+            'revisionNote' => $source?->logs
+                ->where('action', ItemBorrowing::STATUS_REJECTED)
+                ->last()
+                ?->description,
+            'existingAttachment' => $source?->attachment,
+        ];
+    }
+
+    private function itemBorrowingInitialData(ItemBorrowing $itemBorrowing): array
+    {
+        $formItems = $itemBorrowing->items->map(fn ($pivot) => [
+            'item_id' => $pivot->item_id,
+            'quantity' => $pivot->quantity,
+            'borrow_date' => $pivot->borrow_date->timezone(config('app.business_timezone'))->format('Y-m-d'),
+            'borrow_time' => $pivot->borrow_date->timezone(config('app.business_timezone'))->format('H:i'),
+            'return_date' => $pivot->return_date->timezone(config('app.business_timezone'))->format('Y-m-d'),
+            'return_time' => $pivot->return_date->timezone(config('app.business_timezone'))->format('H:i'),
         ]);
+
+        if ($itemBorrowing->singleItem && $formItems->isEmpty()) {
+            $formItems->push([
+                'item_id' => $itemBorrowing->singleItem->id,
+                'quantity' => $itemBorrowing->quantity,
+                'borrow_date' => $itemBorrowing->borrow_date->timezone(config('app.business_timezone'))->format('Y-m-d'),
+                'borrow_time' => $itemBorrowing->borrow_date->timezone(config('app.business_timezone'))->format('H:i'),
+                'return_date' => $itemBorrowing->return_date->timezone(config('app.business_timezone'))->format('Y-m-d'),
+                'return_time' => $itemBorrowing->return_date->timezone(config('app.business_timezone'))->format('H:i'),
+            ]);
+        }
+
+        return [
+            'title' => $itemBorrowing->title,
+            'description' => $itemBorrowing->description,
+            'items' => $formItems->values()->all(),
+        ];
     }
 
     public function edit(ItemBorrowing $itemBorrowing)
@@ -61,7 +110,7 @@ class ItemBorrowingController extends Controller
             ->get();
 
         // Legacy single to array for form
-        $formItems = $itemBorrowing->items->map(fn($pivot) => [
+        $formItems = $itemBorrowing->items->map(fn ($pivot) => [
             'id' => $pivot->id,
             'item_id' => $pivot->item_id,
             'quantity' => $pivot->quantity,
@@ -86,16 +135,24 @@ class ItemBorrowingController extends Controller
             'itemBorrowing' => $itemBorrowing,
             'items' => $items,
             'formItems' => $formItems,
-            'minimumBorrowDate' => Carbon::now(config('app.business_timezone'))->addDays(7)->toDateString(),
+            'minimumBorrowDate' => $itemBorrowing->created_at
+                ->copy()
+                ->setTimezone(config('app.business_timezone'))
+                ->startOfDay()
+                ->addDays(7)
+                ->max(Carbon::now(config('app.business_timezone'))->startOfDay())
+                ->toDateString(),
+            'revisionNote' => $itemBorrowing->logs
+                ->where('action', ItemBorrowing::STATUS_NEEDS_REVISION)
+                ->last()
+                ?->description,
         ]);
     }
-
 
     public function store(
         StoreMultipleItemBorrowingRequest $request,
         ItemBorrowingWorkflow $workflow,
-    )
-    {
+    ) {
         $validated = $request->validated();
         $workflow->create($validated, $request->file('attachment'), $request->user());
 
@@ -108,8 +165,7 @@ class ItemBorrowingController extends Controller
         UpdateMultipleItemBorrowingRequest $request,
         ItemBorrowing $itemBorrowing,
         ItemBorrowingWorkflow $workflow,
-    )
-    {
+    ) {
         $workflow->update(
             $request->validated(),
             $itemBorrowing,
@@ -121,7 +177,6 @@ class ItemBorrowingController extends Controller
             ->route('item-borrowings.index')
             ->with('success', 'Request peminjaman berhasil direvisi dan menunggu persetujuan ulang.');
     }
-
 
     public function show(ItemBorrowing $itemBorrowing)
     {
@@ -138,6 +193,7 @@ class ItemBorrowingController extends Controller
         $latestDecisionLog = $itemBorrowing->logs
             ->filter(fn (ItemBorrowingLog $log) => in_array($log->action, [
                 ItemBorrowing::STATUS_APPROVED,
+                ItemBorrowing::STATUS_NEEDS_REVISION,
                 ItemBorrowing::STATUS_REJECTED,
                 ItemBorrowing::STATUS_CANCELLED,
                 ItemBorrowing::STATUS_RETURNED,
@@ -150,14 +206,12 @@ class ItemBorrowingController extends Controller
         ]);
     }
 
-
     public function availability(
         Request $request,
         Item $item,
         ItemAvailabilityService $availabilityService,
         ItemBorrowingPeriod $period,
-    )
-    {
+    ) {
         if (! $item->is_available) {
             return response()->json([
                 'available' => false,
@@ -247,8 +301,7 @@ class ItemBorrowingController extends Controller
     public function cancel(
         ItemBorrowing $itemBorrowing,
         ItemBorrowingCancellationService $cancellationService,
-    )
-    {
+    ) {
         $this->authorize('cancel', $itemBorrowing);
 
         $result = $cancellationService->cancel($itemBorrowing, Auth::user());

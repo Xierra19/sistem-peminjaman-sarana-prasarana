@@ -53,7 +53,14 @@ class UpdateMultipleItemBorrowingRequest extends FormRequest
                     continue;
                 }
 
-                if ($start->toDateString() < Carbon::now($timezone)->addDays(7)->toDateString()) {
+                /** @var ItemBorrowing|null $itemBorrowing */
+                $itemBorrowing = $this->route('itemBorrowing');
+                $originalCutoff = $itemBorrowing?->created_at
+                    ? $itemBorrowing->created_at->copy()->setTimezone($timezone)->startOfDay()->addDays(7)
+                    : Carbon::now($timezone)->addDays(7)->startOfDay();
+                $minimumDate = $originalCutoff->max(Carbon::now($timezone)->startOfDay());
+
+                if ($start->toDateString() < $minimumDate->toDateString()) {
                     $validator->errors()->add("items.{$index}.borrow_date", 'Tanggal peminjaman minimal H-7 dari tanggal pengajuan.');
                 }
 

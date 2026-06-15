@@ -1,5 +1,6 @@
 export const itemBorrowingStatusLabels = Object.freeze({
   waiting: 'Menunggu Persetujuan',
+  needs_revision: 'Perlu Direvisi',
   approved: 'Disetujui',
   completed: 'Selesai',
   rejected: 'Ditolak',
@@ -9,6 +10,7 @@ export const itemBorrowingStatusLabels = Object.freeze({
 
 export const itemBorrowingStatusClasses = Object.freeze({
   waiting: 'border bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
+  needs_revision: 'border bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-800',
   approved: 'border bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800',
   completed: 'border bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800',
   rejected: 'border bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-800',
@@ -18,7 +20,9 @@ export const itemBorrowingStatusClasses = Object.freeze({
 
 export const itemBorrowingActionLabels = Object.freeze({
   requested: 'Diajukan',
+  revised: 'Revisi Dikirim',
   waiting: 'Menunggu Persetujuan',
+  needs_revision: 'Diminta Revisi',
   approved: 'Disetujui',
   completed: 'Selesai',
   rejected: 'Ditolak',

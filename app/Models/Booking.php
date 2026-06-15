@@ -45,6 +45,8 @@ class Booking extends Model
 
     public const STATUS_REQUESTED = 'requested';
 
+    public const STATUS_NEEDS_REVISION = 'needs_revision';
+
     public const STATUS_APPROVED = 'approved';
 
     public const STATUS_REJECTED = 'rejected';
@@ -57,11 +59,30 @@ class Booking extends Model
         self::STATUS_WAITING,
         self::STATUS_PENDING,
         self::STATUS_REQUESTED,
+        self::STATUS_NEEDS_REVISION,
+    ];
+
+    public const APPROVAL_PENDING_STATUSES = [
+        self::STATUS_WAITING,
+        self::STATUS_PENDING,
+        self::STATUS_REQUESTED,
+    ];
+
+    public const QUEUED_STATUSES = [
+        self::STATUS_WAITING,
+        self::STATUS_PENDING,
+        self::STATUS_REQUESTED,
+    ];
+
+    public const BLOCKING_STATUSES = [
+        self::STATUS_APPROVED,
     ];
 
     public const WAITING_STATUSES = [
         self::STATUS_WAITING,
         self::STATUS_PENDING,
+        self::STATUS_REQUESTED,
+        self::STATUS_NEEDS_REVISION,
     ];
 
     public const INACTIVE_STATUSES = [
@@ -77,6 +98,7 @@ class Booking extends Model
     protected $fillable = [
         'room_id',
         'user_id',
+        'resubmitted_from_id',
         'title',
         'description',
         'start_time',
@@ -126,6 +148,11 @@ class Booking extends Model
         return $this->belongsTo(Room::class);
     }
 
+    public function resubmittedFrom(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'resubmitted_from_id');
+    }
+
     /**
      * @return HasMany<LogHistory>
      */
@@ -147,6 +174,12 @@ class Booking extends Model
     public function isSameHoursDailySchedule(): bool
     {
         return $this->schedule_mode === self::MODE_SAME_HOURS_DAILY;
+    }
+
+    public function canBeResubmitted(): bool
+    {
+        return $this->status === self::STATUS_REJECTED
+            || ($this->status === self::STATUS_CANCELLED && filled($this->letter_number));
     }
 
     public function getScheduleModeLabelAttribute(): string
@@ -434,7 +467,7 @@ class Booking extends Model
         return $query
             ->where('room_id', $roomId)
             ->whereDate('start_time', $date)
-            ->whereIn('status', [self::STATUS_WAITING, self::STATUS_APPROVED])
+            ->whereIn('status', self::BLOCKING_STATUSES)
             ->where('start_time', '<', $end)
             ->where('end_time', '>', $start);
     }

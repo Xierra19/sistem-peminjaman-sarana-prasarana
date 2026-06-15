@@ -17,11 +17,12 @@ class ItemBorrowingApprovalController extends Controller
             ->orderByRaw("
                 CASE
                     WHEN status = 'waiting' THEN 1
-                    WHEN status = 'approved' THEN 2
-                    WHEN status = 'returned' THEN 3
-                    WHEN status = 'cancelled' THEN 4
-                    WHEN status = 'rejected' THEN 5
-                    ELSE 6
+                    WHEN status = 'needs_revision' THEN 2
+                    WHEN status = 'approved' THEN 3
+                    WHEN status = 'returned' THEN 4
+                    WHEN status = 'cancelled' THEN 5
+                    WHEN status = 'rejected' THEN 6
+                    ELSE 7
                 END
             ")
             ->orderBy('borrow_date')
@@ -70,7 +71,7 @@ class ItemBorrowingApprovalController extends Controller
 
         if ($result === AdminStatusTransitionResult::PendingRequired) {
             return back()
-                ->withErrors(['status' => 'Hanya permintaan yang masih menunggu yang dapat disetujui atau ditolak.'])
+                ->withErrors(['status' => 'Hanya permintaan yang masih menunggu yang dapat diproses oleh admin.'])
                 ->with('error', 'Aksi tidak valid untuk status saat ini.');
         }
 

@@ -232,7 +232,9 @@ const statusChartData = computed(() => {
   }
   
   bookings.forEach(b => {
-    const s = b.normalizedStatus || ''
+    const s = b.normalizedStatus === 'needs_revision'
+      ? 'waiting'
+      : (b.normalizedStatus || '')
     if (counts[s] !== undefined) {
       counts[s]++
     }

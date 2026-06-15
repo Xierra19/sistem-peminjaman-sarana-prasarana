@@ -13,7 +13,7 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class ReportController extends Controller
 {
-    private const STATUS_OPTIONS = ['waiting', 'approved', 'rejected', 'cancelled', 'expired'];
+    private const STATUS_OPTIONS = ['waiting', 'needs_revision', 'approved', 'rejected', 'cancelled', 'expired'];
 
     public function index(Request $request)
     {
@@ -40,7 +40,7 @@ class ReportController extends Controller
         $statusSummary = [
             'total' => $bookings->count(),
             'approved' => $bookings->where('status', 'approved')->count(),
-            'waiting' => $bookings->whereIn('status', ['waiting', 'pending'])->count(),
+            'waiting' => $bookings->whereIn('status', Booking::WAITING_STATUSES)->count(),
             'rejected' => $bookings->where('status', 'rejected')->count(),
             'cancelled' => $bookings->where('status', 'cancelled')->count(),
             'expired' => $bookings->where('status', 'expired')->count(),
@@ -60,7 +60,7 @@ class ReportController extends Controller
 
         $filters = $this->validatedFilters($request);
 
-        $fileName = 'booking-report-' . now()->format('Ymd_His') . '.xlsx';
+        $fileName = 'booking-report-'.now()->format('Ymd_His').'.xlsx';
 
         return Excel::download(new BookingReportExport($filters), $fileName);
     }
@@ -89,7 +89,7 @@ class ReportController extends Controller
             'generatedAt' => now(),
         ])->setPaper('a4', 'landscape');
 
-        $fileName = 'booking-report-' . now()->format('Ymd_His') . '.pdf';
+        $fileName = 'booking-report-'.now()->format('Ymd_His').'.pdf';
 
         return $pdf->download($fileName);
     }

@@ -154,7 +154,7 @@ const chartDateBasis = ref('application')
 const chartStatusKeys = ['approved', 'waiting', 'rejected', 'cancelled', 'expired']
 
 const normalizeChartStatus = (status) => (
-  ['pending', 'requested', 'waiting'].includes(status) ? 'waiting' : (status || '')
+  ['pending', 'requested', 'waiting', 'needs_revision'].includes(status) ? 'waiting' : (status || '')
 )
 
 const bookingScheduleDateKeys = (booking) => {

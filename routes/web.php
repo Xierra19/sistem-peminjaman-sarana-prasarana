@@ -1,9 +1,12 @@
 <?php
 
-use Illuminate\Foundation\Application;
-use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
-
+use App\Http\Controllers\Admin\BookingApprovalController;
+use App\Http\Controllers\Admin\BuildingController;
+use App\Http\Controllers\Admin\CampusController;
+use App\Http\Controllers\Admin\ItemBorrowingApprovalController;
+use App\Http\Controllers\Admin\ItemBorrowingReportController;
+use App\Http\Controllers\Admin\RoomController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\DashboardController;
@@ -12,14 +15,9 @@ use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\ItemBorrowingController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
-
-use App\Http\Controllers\Admin\BuildingController;
-use App\Http\Controllers\Admin\CampusController;
-use App\Http\Controllers\Admin\RoomController;
-use App\Http\Controllers\Admin\BookingApprovalController;
-use App\Http\Controllers\Admin\UserController as AdminUserController;
-use App\Http\Controllers\Admin\ItemBorrowingApprovalController;
-use App\Http\Controllers\Admin\ItemBorrowingReportController;
+use Illuminate\Foundation\Application;
+use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -41,6 +39,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/bookings/create', [BookingController::class, 'create'])->name('bookings.create');
     Route::post('/bookings', [BookingController::class, 'store'])->name('bookings.store');
     Route::get('/rooms/{room}/availability', [BookingController::class, 'availability'])->name('rooms.availability');
+    Route::get('/bookings/{booking}/edit', [BookingController::class, 'edit'])->name('bookings.edit');
+    Route::put('/bookings/{booking}', [BookingController::class, 'update'])->name('bookings.update');
+    Route::get('/bookings/{booking}/resubmit', [BookingController::class, 'resubmit'])->name('bookings.resubmit');
     Route::get('/bookings/{booking}', [BookingController::class, 'show'])->name('bookings.show');
     Route::get('/bookings/{booking}/attachment', [BookingController::class, 'downloadAttachment'])->name('bookings.attachment');
     Route::post('/bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
@@ -51,6 +52,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/item-borrowings/create', [ItemBorrowingController::class, 'create'])->name('item-borrowings.create');
     Route::post('/item-borrowings', [ItemBorrowingController::class, 'store'])->name('item-borrowings.store');
     Route::get('/items/{item}/availability', [ItemBorrowingController::class, 'availability'])->name('items.availability');
+    Route::get('/item-borrowings/{itemBorrowing}/resubmit', [ItemBorrowingController::class, 'resubmit'])->name('item-borrowings.resubmit');
     Route::get('/item-borrowings/{itemBorrowing}', [ItemBorrowingController::class, 'show'])->name('item-borrowings.show');
     Route::get('/item-borrowings/{itemBorrowing}/attachment', [ItemBorrowingController::class, 'downloadAttachment'])->name('item-borrowings.attachment');
     Route::get('/item-borrowings/{itemBorrowing}/signed-letter', [ItemBorrowingController::class, 'downloadSignedLetter'])->name('item-borrowings.signed-letter');

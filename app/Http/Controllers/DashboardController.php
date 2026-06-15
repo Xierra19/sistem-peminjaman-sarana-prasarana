@@ -49,7 +49,10 @@ class DashboardController extends Controller
                 $itemSummary = [
                     'total' => $itemBorrowings->count(),
                     'approved' => $itemBorrowings->where('effective_status', ItemBorrowing::STATUS_APPROVED)->count(),
-                    'waiting' => $itemBorrowings->where('effective_status', ItemBorrowing::STATUS_WAITING)->count(),
+                    'waiting' => $itemBorrowings->whereIn('effective_status', [
+                        ItemBorrowing::STATUS_WAITING,
+                        ItemBorrowing::STATUS_NEEDS_REVISION,
+                    ])->count(),
                     'rejected' => $itemBorrowings->where('effective_status', ItemBorrowing::STATUS_REJECTED)->count(),
                     'cancelled' => $itemBorrowings->where('effective_status', ItemBorrowing::STATUS_CANCELLED)->count(),
                     'completed' => $itemBorrowings->where('effective_status', ItemBorrowing::STATUS_COMPLETED)->count(),

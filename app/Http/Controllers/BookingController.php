@@ -3,21 +3,21 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreBookingRequest;
+use App\Http\Requests\UpdateBookingRequest;
 use App\Models\Booking;
 use App\Models\Campus;
 use App\Models\LogHistory;
-use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\Room;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-
-use Inertia\Inertia;
-use App\Services\BookingCreationWorkflow;
 use App\Services\BookingCancellationService;
+use App\Services\BookingCreationWorkflow;
 use App\Services\RoomAvailabilityService;
 use App\Support\CancellationResult;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Inertia\Inertia;
 
 class BookingController extends Controller
 {
@@ -38,6 +38,7 @@ class BookingController extends Controller
         $status = is_string($statusInput) && in_array($statusInput, [
             Booking::STATUS_WAITING,
             Booking::STATUS_APPROVED,
+            Booking::STATUS_NEEDS_REVISION,
             Booking::STATUS_REJECTED,
             Booking::STATUS_CANCELLED,
             Booking::STATUS_EXPIRED,
@@ -150,7 +151,33 @@ class BookingController extends Controller
      */
     public function create()
     {
+        return Inertia::render('Bookings/Create', $this->bookingFormProps());
+    }
 
+    public function edit(Booking $booking)
+    {
+        $this->authorize('edit', $booking);
+        $booking->load(['roomSchedules.room.building.campus', 'logs.user']);
+
+        return Inertia::render('Bookings/Create', $this->bookingFormProps(
+            $booking,
+            'revision',
+        ));
+    }
+
+    public function resubmit(Booking $booking)
+    {
+        $this->authorize('resubmit', $booking);
+        $booking->load(['roomSchedules.room.building.campus', 'logs.user']);
+
+        return Inertia::render('Bookings/Create', $this->bookingFormProps(
+            $booking,
+            'resubmission',
+        ));
+    }
+
+    private function bookingFormProps(?Booking $source = null, string $mode = 'create'): array
+    {
         $campuses = Campus::query()
             ->with(['buildings' => function ($query) {
                 $query->select('id', 'name', 'campus_id')
@@ -164,9 +191,86 @@ class BookingController extends Controller
             ->orderBy('name')
             ->get();
 
-        return Inertia::render('Bookings/Create', [
+        $minimumDate = Carbon::now(config('app.business_timezone'))->startOfDay();
+        if ($mode === 'revision' && $source?->created_at) {
+            $minimumDate = $minimumDate->max(
+                $source->created_at
+                    ->copy()
+                    ->setTimezone(config('app.business_timezone'))
+                    ->startOfDay()
+                    ->addDays(3),
+            );
+        } else {
+            $minimumDate->addDays(3);
+        }
+
+        return [
             'campuses' => $campuses,
-        ]);
+            'minimumBookingDate' => $minimumDate->toDateString(),
+            'formMode' => $mode,
+            'sourceBookingId' => $source?->id,
+            'initialData' => $source ? $this->bookingInitialData($source) : null,
+            'revisionNote' => $source ? $this->latestDecisionNote($source) : null,
+            'existingAttachment' => $source?->attachment,
+        ];
+    }
+
+    private function bookingInitialData(Booking $booking): array
+    {
+        $schedules = $booking->roomSchedules
+            ->groupBy(fn ($schedule) => implode('|', [
+                $schedule->room_id,
+                Carbon::parse($schedule->start_time)->format('H:i'),
+                Carbon::parse($schedule->end_time)->format('H:i'),
+            ]))
+            ->map(function ($rows): array {
+                $first = $rows->first();
+
+                return [
+                    'campus_id' => $first->room?->building?->campus_id,
+                    'building_id' => $first->room?->building_id,
+                    'room_id' => $first->room_id,
+                    'dates' => $rows
+                        ->map(fn ($row) => Carbon::parse($row->start_time)->toDateString())
+                        ->unique()
+                        ->sort()
+                        ->values()
+                        ->all(),
+                    'start_time' => Carbon::parse($first->start_time)->format('H:i'),
+                    'end_time' => Carbon::parse($first->end_time)->format('H:i'),
+                ];
+            })
+            ->values()
+            ->all();
+
+        if ($schedules === []) {
+            $schedules[] = [
+                'campus_id' => $booking->room?->building?->campus_id,
+                'building_id' => $booking->room?->building_id,
+                'room_id' => $booking->room_id,
+                'dates' => [Carbon::parse($booking->start_time)->toDateString()],
+                'start_time' => Carbon::parse($booking->start_time)->format('H:i'),
+                'end_time' => Carbon::parse($booking->end_time)->format('H:i'),
+            ];
+        }
+
+        return [
+            'title' => $booking->title,
+            'description' => $booking->description,
+            'schedules' => $schedules,
+        ];
+    }
+
+    private function latestDecisionNote(Booking $booking): ?string
+    {
+        return $booking->logs
+            ->whereIn('action', [
+                Booking::STATUS_NEEDS_REVISION,
+                Booking::STATUS_REJECTED,
+                Booking::STATUS_CANCELLED,
+            ])
+            ->last()
+            ?->description;
     }
 
     /**
@@ -177,6 +281,23 @@ class BookingController extends Controller
         $workflow->create($request->validated(), $request->file('attachment'), $request->user());
 
         return redirect()->route('bookings.index')->with('success', 'Booking berhasil dibuat dan menunggu persetujuan.');
+    }
+
+    public function update(
+        UpdateBookingRequest $request,
+        Booking $booking,
+        BookingCreationWorkflow $workflow,
+    ) {
+        $workflow->updateRevision(
+            $request->validated(),
+            $booking,
+            $request->file('attachment'),
+            $request->user(),
+        );
+
+        return redirect()
+            ->route('bookings.show', $booking)
+            ->with('success', 'Revisi booking berhasil dikirim dan menunggu persetujuan ulang.');
     }
 
     /**
@@ -307,9 +428,8 @@ class BookingController extends Controller
             'approvedAt' => $approvedAt,
         ])->setPaper('a4');
 
-        $filename = 'Surat-Peminjaman-Ruangan-' . $booking->id . '.pdf';
+        $filename = 'Surat-Peminjaman-Ruangan-'.$booking->id.'.pdf';
 
         return $pdf->download($filename);
     }
-
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreBookingRequest extends FormRequest
@@ -45,7 +46,7 @@ class StoreBookingRequest extends FormRequest
 
     public function rules(): array
     {
-        $minimumStartDate = now()->addDays(3)->startOfDay();
+        $minimumStartDate = $this->minimumStartDate();
 
         return [
             'title' => ['required', 'string', 'max:255'],
@@ -57,12 +58,13 @@ class StoreBookingRequest extends FormRequest
             'schedules.*.start_time' => ['required', 'date_format:H:i'],
             'schedules.*.end_time' => ['required', 'date_format:H:i', 'after:schedules.*.start_time'],
             'attachment' => ['nullable', 'file', 'mimes:pdf,jpg,png', 'max:2048'],
+            'resubmitted_from_id' => ['nullable', 'integer', 'exists:bookings,id'],
         ];
     }
 
     public function messages(): array
     {
-        $minimumStartDate = now()->addDays(3)->startOfDay()->format('d/m/Y');
+        $minimumStartDate = $this->minimumStartDate()->format('d/m/Y');
 
         return [
             'schedules.required' => 'Tambahkan minimal satu jadwal ruangan.',
@@ -70,5 +72,10 @@ class StoreBookingRequest extends FormRequest
             'schedules.*.dates.min' => 'Pilih minimal satu tanggal penggunaan.',
             'schedules.*.dates.*.after_or_equal' => 'Tanggal penggunaan minimal '.$minimumStartDate.' (H+3 dari hari ini).',
         ];
+    }
+
+    protected function minimumStartDate(): Carbon
+    {
+        return Carbon::now(config('app.business_timezone'))->addDays(3)->startOfDay();
     }
 }

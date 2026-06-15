@@ -53,6 +53,7 @@
     use Carbon\Carbon;
     $statusLabels = [
         'waiting' => 'Menunggu Persetujuan',
+        'needs_revision' => 'Perlu Direvisi',
         'approved' => 'Disetujui',
         'rejected' => 'Ditolak',
         'cancelled' => 'Dibatalkan',

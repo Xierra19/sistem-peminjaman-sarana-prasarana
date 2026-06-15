@@ -14,7 +14,7 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class ItemBorrowingReportController extends Controller
 {
-    private const STATUS_OPTIONS = ['waiting', 'approved', 'completed', 'rejected', 'cancelled'];
+    private const STATUS_OPTIONS = ['waiting', 'needs_revision', 'approved', 'completed', 'rejected', 'cancelled'];
 
     public function index(Request $request)
     {
@@ -35,7 +35,10 @@ class ItemBorrowingReportController extends Controller
         $statusSummary = [
             'total' => $itemBorrowings->count(),
             'approved' => $itemBorrowings->where('effective_status', 'approved')->count(),
-            'waiting' => $itemBorrowings->where('effective_status', 'waiting')->count(),
+            'waiting' => $itemBorrowings->whereIn('effective_status', [
+                ItemBorrowing::STATUS_WAITING,
+                ItemBorrowing::STATUS_NEEDS_REVISION,
+            ])->count(),
             'rejected' => $itemBorrowings->where('effective_status', 'rejected')->count(),
             'cancelled' => $itemBorrowings->where('effective_status', 'cancelled')->count(),
             'completed' => $itemBorrowings->where('effective_status', 'completed')->count(),
@@ -54,7 +57,7 @@ class ItemBorrowingReportController extends Controller
         $this->ensureItemAdmin($request);
 
         $filters = $this->validatedFilters($request);
-        $fileName = 'item-borrowing-report-' . now()->format('Ymd_His') . '.xlsx';
+        $fileName = 'item-borrowing-report-'.now()->format('Ymd_His').'.xlsx';
 
         return Excel::download(new ItemBorrowingReportExport($filters), $fileName);
     }
@@ -80,7 +83,7 @@ class ItemBorrowingReportController extends Controller
             'generatedAt' => now(),
         ])->setPaper('a4', 'landscape');
 
-        $fileName = 'item-borrowing-report-' . now()->format('Ymd_His') . '.pdf';
+        $fileName = 'item-borrowing-report-'.now()->format('Ymd_His').'.pdf';
 
         return $pdf->download($fileName);
     }

@@ -16,13 +16,30 @@ const props = defineProps({
     type: String,
     required: true,
   },
+  sourceItemBorrowingId: {
+    type: Number,
+    default: null,
+  },
+  initialData: {
+    type: Object,
+    default: null,
+  },
+  revisionNote: {
+    type: String,
+    default: null,
+  },
+  existingAttachment: {
+    type: String,
+    default: null,
+  },
 })
 
 const form = useForm({
-  title: '',
-  description: '',
+  title: props.initialData?.title ?? '',
+  description: props.initialData?.description ?? '',
   attachment: null,
-  items: [],
+  items: (props.initialData?.items ?? []).map((item) => ({ ...item })),
+  resubmitted_from_id: props.sourceItemBorrowingId,
 })
 
 const itemAvailabilities = ref({})
@@ -79,6 +96,11 @@ const onBorrowTimeChange = (index) => {
 const getMinBorrowDate = () => {
   return props.minimumBorrowDate
 }
+
+const isResubmission = computed(() => Boolean(props.sourceItemBorrowingId))
+const hasInvalidPrefilledDates = computed(() =>
+  form.items.some((item) => item.borrow_date && item.borrow_date < props.minimumBorrowDate),
+)
 
 const addItem = () => {
   form.items.push({
@@ -217,6 +239,7 @@ const initFlatpickr = (index) => {
       altInput: true,           // Tampilkan input alternatif ke pengguna
       altFormat: 'd-m-y',       // Format tampilan DD-MM-YY
       minDate: minDate,
+      defaultDate: form.items[index]?.borrow_date || null,
       onChange: (selectedDates, dateStr) => {
         form.items[index].borrow_date = dateStr
         // Update minDate untuk return date
@@ -233,6 +256,7 @@ const initFlatpickr = (index) => {
       altInput: true,           // Tampilkan input alternatif ke pengguna
       altFormat: 'd-m-y',      // Format tampilan DD-MM-YY
       minDate: minDate,
+      defaultDate: form.items[index]?.return_date || null,
       onChange: (selectedDates, dateStr) => {
         form.items[index].return_date = dateStr
         updateAvailability(index)
@@ -267,7 +291,13 @@ const submit = () => {
 }
 
 onMounted(() => {
-  addItem() // Start with 1 row
+  if (form.items.length === 0) {
+    addItem()
+    return
+  }
+
+  form.items.forEach((_, index) => initFlatpickr(index))
+  form.items.forEach((_, index) => updateAvailability(index))
 })
 
 onBeforeUnmount(() => {
@@ -281,15 +311,35 @@ onBeforeUnmount(() => {
 
 <template>
   <AuthenticatedLayout>
-    <Head title="Peminjaman Barang" />
+    <Head :title="isResubmission ? 'Ajukan Ulang Peminjaman Barang' : 'Peminjaman Barang'" />
 
     <div class="mx-auto max-w-5xl space-y-6 px-4 py-6 sm:px-0">
       <div class="card-surface space-y-6 p-5 sm:p-6 dark:bg-slate-800 dark:border-slate-700">
         <div class="border-b border-slate-200 pb-5 dark:border-slate-700">
-          <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Permintaan Peminjaman Barang</h1>
+          <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">
+            {{ isResubmission ? 'Ajukan Ulang Peminjaman Barang' : 'Permintaan Peminjaman Barang' }}
+          </h1>
           <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Pilih multiple barang untuk satu permintaan. Upload surat <span class="text-rose-500 font-medium">*</span>
+            {{ isResubmission
+              ? 'Data pengajuan yang ditolak sudah disalin. Jadwal tetap mengikuti H-7 dari pengajuan baru.'
+              : 'Pilih multiple barang untuk satu permintaan.' }}
+            Upload surat <span class="text-rose-500 font-medium">*</span>
           </p>
+        </div>
+
+        <div
+          v-if="revisionNote"
+          class="rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-800 dark:border-violet-900 dark:bg-violet-950/40 dark:text-violet-200"
+        >
+          <p class="font-semibold">Catatan admin</p>
+          <p class="mt-1">{{ revisionNote }}</p>
+        </div>
+
+        <div
+          v-if="hasInvalidPrefilledDates"
+          class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300"
+        >
+          Sebagian jadwal lama tidak lagi memenuhi H-7. Ganti tanggal sebelum mengirim pengajuan ulang.
         </div>
 
         <div class="grid gap-3 rounded-2xl bg-slate-50 p-4 text-xs text-slate-600 sm:grid-cols-3 dark:bg-slate-700/50 dark:text-slate-300">
@@ -482,19 +532,23 @@ onBeforeUnmount(() => {
             <label class="flex cursor-pointer items-center justify-between rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-6 transition hover:border-blue-400 hover:bg-blue-50/20 dark:border-slate-600 dark:bg-slate-700/50 dark:hover:border-slate-500 dark:hover:bg-slate-600/50">
               <div class="text-left">
                 <p class="font-medium text-slate-700 dark:text-slate-200">
-                  {{ form.attachment ? form.attachment.name : 'Upload surat (wajib)' }}
+                  {{ form.attachment
+                    ? form.attachment.name
+                    : existingAttachment
+                      ? 'Gunakan lampiran lama'
+                      : 'Upload surat (wajib)' }}
                 </p>
                 <p class="text-xs text-slate-500 mt-1 dark:text-slate-400">Wajib lampiran surat / dokumen resmi</p>
               </div>
               <span class="rounded-xl bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm dark:bg-slate-600 dark:text-slate-200">Pilih File</span>
-              <input class="hidden" type="file" accept=".pdf,.jpg,.jpeg,.png" @change="handleFileChange" required />
+              <input class="hidden" type="file" accept=".pdf,.jpg,.jpeg,.png" @change="handleFileChange" :required="!existingAttachment" />
             </label>
             <div v-if="form.errors.attachment" class="text-sm text-red-500">{{ form.errors.attachment }}</div>
           </div>
 
           <div class="flex flex-col gap-3 border-t border-slate-200 pt-6 sm:flex-row sm:justify-end dark:border-slate-700">
-            <button type="submit" :disabled="form.processing || hasAnyRowError || form.items.length === 0 || !form.attachment" class="inline-flex items-center justify-center rounded-2xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto">
-              {{ form.processing ? 'Menyimpan...' : 'Ajukan Peminjaman' }}
+            <button type="submit" :disabled="form.processing || hasAnyRowError || hasInvalidPrefilledDates || form.items.length === 0 || (!form.attachment && !existingAttachment)" class="inline-flex items-center justify-center rounded-2xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto">
+              {{ form.processing ? 'Menyimpan...' : isResubmission ? 'Ajukan Ulang' : 'Ajukan Peminjaman' }}
             </button>
           </div>
           <p v-if="formErrors.submit" class="text-sm text-red-500 text-center">{{ formErrors.submit }}</p>
