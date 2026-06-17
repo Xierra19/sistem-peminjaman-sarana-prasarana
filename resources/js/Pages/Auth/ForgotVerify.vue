@@ -6,8 +6,8 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import axios from 'axios';
-import { Head } from '@inertiajs/vue3';
-import { computed, onMounted, onUnmounted, reactive } from 'vue';
+import { Head, usePage } from '@inertiajs/vue3';
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue';
 
 const props = defineProps({
     email: {
@@ -49,6 +49,16 @@ const state = reactive({
 });
 
 let tickerId;
+let turnstileWidgetId = null;
+
+const page = usePage();
+const captchaContainer = ref(null);
+const captchaConfig = computed(() => page.props.security?.captcha ?? {
+    enabled: false,
+    site_key: null,
+});
+const captchaEnabled = computed(() => Boolean(captchaConfig.value.enabled));
+const captchaSiteKey = computed(() => captchaConfig.value.site_key);
 
 function deriveOtpSeconds(expiresAt) {
     if (!expiresAt) {
@@ -81,13 +91,77 @@ onMounted(() => {
             state.cooldownRemaining -= 1;
         }
     }, 1000);
+
+    renderCaptcha();
 });
 
 onUnmounted(() => {
     if (tickerId) {
         window.clearInterval(tickerId);
     }
+
+    if (turnstileWidgetId !== null && window.turnstile) {
+        window.turnstile.remove(turnstileWidgetId);
+    }
 });
+
+function loadTurnstileScript() {
+    if (window.turnstile) {
+        return Promise.resolve();
+    }
+
+    const existingScript = document.querySelector('script[data-turnstile]');
+    if (existingScript) {
+        return new Promise((resolve) => {
+            existingScript.addEventListener('load', resolve, { once: true });
+        });
+    }
+
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+        script.async = true;
+        script.defer = true;
+        script.dataset.turnstile = 'true';
+        script.addEventListener('load', resolve, { once: true });
+        script.addEventListener('error', reject, { once: true });
+        document.head.appendChild(script);
+    });
+}
+
+async function renderCaptcha() {
+    if (!captchaEnabled.value || !captchaSiteKey.value || !captchaContainer.value) {
+        return;
+    }
+
+    await nextTick();
+    await loadTurnstileScript();
+
+    if (turnstileWidgetId !== null || !window.turnstile || !captchaContainer.value) {
+        return;
+    }
+
+    turnstileWidgetId = window.turnstile.render(captchaContainer.value, {
+        sitekey: captchaSiteKey.value,
+        callback: (token) => {
+            state.captchaToken = token;
+        },
+        'expired-callback': () => {
+            state.captchaToken = '';
+        },
+        'error-callback': () => {
+            state.captchaToken = '';
+        },
+    });
+}
+
+function resetCaptcha() {
+    state.captchaToken = '';
+
+    if (turnstileWidgetId !== null && window.turnstile) {
+        window.turnstile.reset(turnstileWidgetId);
+    }
+}
 
 async function resetPassword() {
     if (!state.email) {
@@ -151,7 +225,7 @@ async function resend() {
         return;
     }
 
-    if (!state.captchaToken) {
+    if (captchaEnabled.value && !state.captchaToken) {
         state.error = 'Captcha belum tervalidasi.';
         return;
     }
@@ -161,10 +235,15 @@ async function resend() {
     state.message = '';
 
     try {
-        const response = await axios.post(route('api.auth.password.forgot'), {
+        const payload = {
             email: state.email,
-            captcha_token: state.captchaToken,
-        });
+        };
+
+        if (captchaEnabled.value) {
+            payload.captcha_token = state.captchaToken;
+        }
+
+        const response = await axios.post(route('api.auth.password.forgot'), payload);
 
         state.message = response.data?.message ?? 'Jika data valid, kami telah mengirim instruksi verifikasi.';
         state.cooldownRemaining = props.resendCooldownSeconds;
@@ -174,6 +253,7 @@ async function resend() {
         state.error = error.response?.data?.message ?? 'Terlalu banyak percobaan. Coba lagi nanti.';
     } finally {
         state.loadingResend = false;
+        resetCaptcha();
     }
 }
 </script>
@@ -257,17 +337,16 @@ async function resend() {
                 />
             </div>
 
-            <div>
-                <InputLabel for="captcha" value="Captcha token" />
-                <TextInput
+            <div v-if="captchaEnabled">
+                <InputLabel for="captcha" value="Verifikasi keamanan" />
+                <div
+                    v-if="captchaSiteKey"
                     id="captcha"
-                    v-model="state.captchaToken"
-                    type="text"
-                    class="mt-1 block h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100"
-                    placeholder="Diisi otomatis oleh widget CAPTCHA"
-                />
-                <p class="mt-1 text-xs text-gray-500">
-                    Permintaan kirim ulang memerlukan token CAPTCHA yang valid.
+                    ref="captchaContainer"
+                    class="mt-2 min-h-[65px]"
+                ></div>
+                <p v-else class="mt-1 text-sm text-red-600">
+                    CAPTCHA belum dikonfigurasi.
                 </p>
             </div>
 

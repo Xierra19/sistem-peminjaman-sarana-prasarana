@@ -258,7 +258,7 @@ final class ItemBorrowingWorkflow
             ! $hasNewAttachment
             && (
                 ! $source->attachment
-                || ! Storage::disk('public')->exists($source->attachment)
+                || ! Storage::disk(PublicFileStorage::DISK)->exists($source->attachment)
             )
         ) {
             throw ValidationException::withMessages([

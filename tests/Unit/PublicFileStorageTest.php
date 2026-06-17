@@ -12,7 +12,7 @@ class PublicFileStorageTest extends TestCase
 {
     public function test_it_deletes_a_new_file_when_the_operation_fails(): void
     {
-        Storage::fake('public');
+        Storage::fake('local');
         $service = app(PublicFileStorage::class);
 
         try {
@@ -20,7 +20,7 @@ class PublicFileStorageTest extends TestCase
                 UploadedFile::fake()->create('attachment.pdf', 10, 'application/pdf'),
                 'attachments',
                 function (string $path): void {
-                    Storage::disk('public')->assertExists($path);
+                    Storage::disk('local')->assertExists($path);
 
                     throw new RuntimeException('Persistence failed.');
                 },
@@ -31,12 +31,12 @@ class PublicFileStorageTest extends TestCase
             $this->assertSame('Persistence failed.', $exception->getMessage());
         }
 
-        Storage::disk('public')->assertDirectoryEmpty('attachments');
+        Storage::disk('local')->assertDirectoryEmpty('attachments');
     }
 
     public function test_it_keeps_a_new_file_when_the_operation_succeeds(): void
     {
-        Storage::fake('public');
+        Storage::fake('local');
         $service = app(PublicFileStorage::class);
 
         $path = $service->runWithStoredFile(
@@ -45,6 +45,6 @@ class PublicFileStorageTest extends TestCase
             fn (string $storedPath): string => $storedPath,
         );
 
-        Storage::disk('public')->assertExists($path);
+        Storage::disk('local')->assertExists($path);
     }
 }

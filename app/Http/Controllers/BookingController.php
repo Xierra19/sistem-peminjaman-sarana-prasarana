@@ -10,6 +10,7 @@ use App\Models\LogHistory;
 use App\Models\Room;
 use App\Services\BookingCancellationService;
 use App\Services\BookingCreationWorkflow;
+use App\Services\PublicFileStorage;
 use App\Services\RoomAvailabilityService;
 use App\Support\CancellationResult;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -378,11 +379,11 @@ class BookingController extends Controller
             abort(404, 'Lampiran tidak ditemukan.');
         }
 
-        if (! Storage::disk('public')->exists($booking->attachment)) {
+        if (! Storage::disk(PublicFileStorage::DISK)->exists($booking->attachment)) {
             abort(404, 'File lampiran tidak tersedia.');
         }
 
-        return response()->download(Storage::disk('public')->path($booking->attachment), basename($booking->attachment));
+        return response()->download(Storage::disk(PublicFileStorage::DISK)->path($booking->attachment), basename($booking->attachment));
     }
 
     public function cancel(Booking $booking, BookingCancellationService $cancellationService)

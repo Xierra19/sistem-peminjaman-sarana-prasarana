@@ -28,7 +28,7 @@ class ItemBorrowingScheduleTest extends TestCase
     public function test_user_can_submit_any_time_on_the_h_minus_seven_calendar_date(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-06-13 20:00', 'Asia/Jakarta')->utc());
-        Storage::fake('public');
+        Storage::fake('local');
         Notification::fake();
 
         $user = User::factory()->create();
@@ -60,7 +60,7 @@ class ItemBorrowingScheduleTest extends TestCase
     public function test_new_request_notifies_only_sarpras_admins(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-06-13 10:00', 'Asia/Jakarta')->utc());
-        Storage::fake('public');
+        Storage::fake('local');
         Notification::fake();
 
         $sarprasAdmin = User::factory()->create(['role' => User::ROLE_ADMIN_SARPRAS]);
@@ -88,7 +88,7 @@ class ItemBorrowingScheduleTest extends TestCase
     public function test_user_cannot_submit_after_the_h_minus_seven_calendar_date(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-06-14 00:01', 'Asia/Jakarta')->utc());
-        Storage::fake('public');
+        Storage::fake('local');
         Notification::fake();
 
         $user = User::factory()->create();
@@ -216,7 +216,7 @@ class ItemBorrowingScheduleTest extends TestCase
     public function test_store_rejects_a_request_when_locked_stock_is_insufficient(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-06-13 10:00', 'Asia/Jakarta')->utc());
-        Storage::fake('public');
+        Storage::fake('local');
         Notification::fake();
 
         $user = User::factory()->create();
@@ -241,7 +241,7 @@ class ItemBorrowingScheduleTest extends TestCase
         $response->assertRedirect(route('item-borrowings.create'));
         $response->assertSessionHasErrors('items.0.quantity');
         $this->assertDatabaseCount('item_borrowings', 1);
-        Storage::disk('public')->assertDirectoryEmpty('item-borrowing-attachments');
+        Storage::disk('local')->assertDirectoryEmpty('item-borrowing-attachments');
     }
 
     public function test_approved_borrowing_becomes_completed_after_its_latest_return_time(): void
@@ -400,14 +400,14 @@ class ItemBorrowingScheduleTest extends TestCase
     public function test_successful_update_replaces_attachment_after_commit(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-06-13 10:00', 'Asia/Jakarta')->utc());
-        Storage::fake('public');
+        Storage::fake('local');
 
         $user = User::factory()->create();
         $item = $this->createItem();
         $borrowing = $this->createBorrowing($user, $item, 'waiting');
         $borrowingItem = $borrowing->items()->firstOrFail();
         $oldPath = 'item-borrowing-attachments/old.pdf';
-        Storage::disk('public')->put($oldPath, 'old');
+        Storage::disk('local')->put($oldPath, 'old');
         $borrowing->update(['attachment' => $oldPath]);
 
         $response = $this->actingAs($user)->put(route('item-borrowings.update', $borrowing), [
@@ -429,14 +429,14 @@ class ItemBorrowingScheduleTest extends TestCase
 
         $newPath = $borrowing->fresh()->attachment;
         $this->assertNotSame($oldPath, $newPath);
-        Storage::disk('public')->assertMissing($oldPath);
-        Storage::disk('public')->assertExists($newPath);
+        Storage::disk('local')->assertMissing($oldPath);
+        Storage::disk('local')->assertExists($newPath);
     }
 
     public function test_failed_update_keeps_old_attachment_and_removes_new_upload(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-06-13 10:00', 'Asia/Jakarta')->utc());
-        Storage::fake('public');
+        Storage::fake('local');
 
         $user = User::factory()->create();
         $currentItem = $this->createItem();
@@ -445,7 +445,7 @@ class ItemBorrowingScheduleTest extends TestCase
         $borrowingItem = $borrowing->items()->firstOrFail();
         $this->createBorrowing(User::factory()->create(), $unavailableItem, 'waiting');
         $oldPath = 'item-borrowing-attachments/old.pdf';
-        Storage::disk('public')->put($oldPath, 'old');
+        Storage::disk('local')->put($oldPath, 'old');
         $borrowing->update(['attachment' => $oldPath]);
 
         $response = $this->actingAs($user)
@@ -467,8 +467,8 @@ class ItemBorrowingScheduleTest extends TestCase
         $response->assertRedirect(route('item-borrowings.edit', $borrowing));
         $response->assertSessionHasErrors('items.0.quantity');
         $this->assertSame($oldPath, $borrowing->fresh()->attachment);
-        Storage::disk('public')->assertExists($oldPath);
-        $this->assertSame([$oldPath], Storage::disk('public')->allFiles('item-borrowing-attachments'));
+        Storage::disk('local')->assertExists($oldPath);
+        $this->assertSame([$oldPath], Storage::disk('local')->allFiles('item-borrowing-attachments'));
     }
 
     private function createItem(int $quantity = 10): Item

@@ -2,72 +2,71 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Mail\OtpMail;
 use App\Models\User;
-use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class PasswordResetTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_reset_password_link_screen_can_be_rendered(): void
+    public function test_reset_password_request_screen_can_be_rendered(): void
     {
         $response = $this->get('/forgot-password');
 
         $response->assertStatus(200);
     }
 
-    public function test_reset_password_link_can_be_requested(): void
+    public function test_reset_password_verify_screen_can_be_rendered(): void
     {
-        Notification::fake();
+        $response = $this->get('/forgot-password/verify?email=user@example.com');
 
-        $user = User::factory()->create();
-
-        $this->post('/forgot-password', ['email' => $user->email]);
-
-        Notification::assertSentTo($user, ResetPassword::class);
+        $response->assertStatus(200);
     }
 
-    public function test_reset_password_screen_can_be_rendered(): void
+    public function test_reset_password_otp_can_be_requested(): void
     {
-        Notification::fake();
+        Mail::fake();
 
         $user = User::factory()->create();
 
-        $this->post('/forgot-password', ['email' => $user->email]);
+        $this->postJson(route('api.auth.password.forgot'), [
+            'email' => $user->email,
+        ])->assertOk();
 
-        Notification::assertSentTo($user, ResetPassword::class, function ($notification) {
-            $response = $this->get('/reset-password/'.$notification->token);
-
-            $response->assertStatus(200);
-
-            return true;
-        });
+        Mail::assertSent(OtpMail::class, fn (OtpMail $mail) => $mail->hasTo($user->email));
     }
 
-    public function test_password_can_be_reset_with_valid_token(): void
+    public function test_password_can_be_reset_with_valid_otp_code(): void
     {
-        Notification::fake();
+        Mail::fake();
 
         $user = User::factory()->create();
+        $otpCode = null;
 
-        $this->post('/forgot-password', ['email' => $user->email]);
+        $this->postJson(route('api.auth.password.forgot'), [
+            'email' => $user->email,
+        ])->assertOk();
 
-        Notification::assertSentTo($user, ResetPassword::class, function ($notification) use ($user) {
-            $response = $this->post('/reset-password', [
-                'token' => $notification->token,
-                'email' => $user->email,
-                'password' => 'password',
-                'password_confirmation' => 'password',
-            ]);
+        Mail::assertSent(OtpMail::class, function (OtpMail $mail) use ($user, &$otpCode): bool {
+            $otpCode = $mail->code;
 
-            $response
-                ->assertSessionHasNoErrors()
-                ->assertRedirect(route('login'));
-
-            return true;
+            return $mail->hasTo($user->email);
         });
+
+        $this->assertNotNull($otpCode);
+
+        $this->postJson(route('api.auth.password.reset-code'), [
+            'email' => $user->email,
+            'code' => $otpCode,
+            'new_password' => 'new-password',
+            'new_password_confirmation' => 'new-password',
+        ])->assertOk()
+            ->assertJsonPath('success', true);
+
+        $this->assertTrue(Hash::check('new-password', $user->fresh()->password));
     }
 }

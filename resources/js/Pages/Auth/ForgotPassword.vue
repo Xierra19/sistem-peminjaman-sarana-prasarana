@@ -1,6 +1,8 @@
 <script setup>
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { Mail, RefreshCcw, ShieldCheck } from 'lucide-vue-next';
+import axios from 'axios';
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue';
 
 const props = defineProps({
     status: {
@@ -9,31 +11,143 @@ const props = defineProps({
     },
 });
 
-const form = useForm({
+const form = reactive({
     email: '',
+    captchaToken: '',
+    processing: false,
+    message: '',
+    errors: {},
 });
+
+const page = usePage();
+const captchaContainer = ref(null);
+const captchaConfig = computed(() => page.props.security?.captcha ?? {
+    enabled: false,
+    site_key: null,
+});
+const captchaEnabled = computed(() => Boolean(captchaConfig.value.enabled));
+const captchaSiteKey = computed(() => captchaConfig.value.site_key);
+let turnstileWidgetId = null;
 
 const infoCards = [
     {
-        title: 'Tautan berlaku 15 menit',
-        description: 'Keamanan tinggi: tautan reset kedaluwarsa otomatis dan dapat diminta kembali kapan saja.',
+        title: 'Kode berlaku 10 menit',
+        description: 'Kode OTP kedaluwarsa otomatis dan dapat diminta ulang setelah cooldown.',
         icon: RefreshCcw,
     },
     {
         title: 'Email kampus terverifikasi',
-        description: 'Kami hanya memproses akun @student.esaunggul.ac.id untuk melindungi akses ruang.',
+        description: 'Kami mengirim instruksi hanya ke alamat email akun yang terdaftar.',
         icon: ShieldCheck,
     },
 ];
 
 const steps = [
     'Masukkan email kampus yang terdaftar.',
-    'Periksa inbox / folder spam untuk email dari UEU Booking.',
-    'Klik tautan reset dan buat kata sandi baru.',
+    'Periksa inbox / folder spam untuk kode OTP dari sistem.',
+    'Masukkan kode OTP dan buat kata sandi baru.',
 ];
 
-const submit = () => {
-    form.post(route('password.email'));
+onMounted(() => {
+    renderCaptcha();
+});
+
+onUnmounted(() => {
+    if (turnstileWidgetId !== null && window.turnstile) {
+        window.turnstile.remove(turnstileWidgetId);
+    }
+});
+
+function loadTurnstileScript() {
+    if (window.turnstile) {
+        return Promise.resolve();
+    }
+
+    const existingScript = document.querySelector('script[data-turnstile]');
+    if (existingScript) {
+        return new Promise((resolve) => {
+            existingScript.addEventListener('load', resolve, { once: true });
+        });
+    }
+
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+        script.async = true;
+        script.defer = true;
+        script.dataset.turnstile = 'true';
+        script.addEventListener('load', resolve, { once: true });
+        script.addEventListener('error', reject, { once: true });
+        document.head.appendChild(script);
+    });
+}
+
+async function renderCaptcha() {
+    if (!captchaEnabled.value || !captchaSiteKey.value || !captchaContainer.value) {
+        return;
+    }
+
+    await nextTick();
+    await loadTurnstileScript();
+
+    if (turnstileWidgetId !== null || !window.turnstile || !captchaContainer.value) {
+        return;
+    }
+
+    turnstileWidgetId = window.turnstile.render(captchaContainer.value, {
+        sitekey: captchaSiteKey.value,
+        callback: (token) => {
+            form.captchaToken = token;
+        },
+        'expired-callback': () => {
+            form.captchaToken = '';
+        },
+        'error-callback': () => {
+            form.captchaToken = '';
+        },
+    });
+}
+
+function resetCaptcha() {
+    form.captchaToken = '';
+
+    if (turnstileWidgetId !== null && window.turnstile) {
+        window.turnstile.reset(turnstileWidgetId);
+    }
+}
+
+const submit = async () => {
+    form.errors = {};
+    form.message = '';
+
+    if (captchaEnabled.value && !form.captchaToken) {
+        form.errors.captcha = 'Captcha belum tervalidasi.';
+        return;
+    }
+
+    form.processing = true;
+
+    try {
+        const payload = {
+            email: form.email,
+        };
+
+        if (captchaEnabled.value) {
+            payload.captcha_token = form.captchaToken;
+        }
+
+        await axios.post(route('api.auth.password.forgot'), payload);
+
+        router.get(route('password.verify'), {
+            email: form.email,
+        });
+    } catch (error) {
+        form.errors = error.response?.data?.errors ?? {};
+        form.errors.general = error.response?.data?.message ?? 'Permintaan belum dapat diproses. Coba lagi nanti.';
+        resetCaptcha();
+    } finally {
+        form.processing = false;
+    }
 };
 </script>
 
@@ -55,7 +169,7 @@ const submit = () => {
                             Reset kata sandi dengan aman
                         </h1>
                         <p class="mt-3 text-base text-indigo-100">
-                            Kami akan mengirim tautan reset unik ke email kampus Anda. Tautan tersebut hanya aktif selama beberapa menit untuk mencegah penyalahgunaan.
+                            Kami akan mengirim kode OTP ke email akun Anda. Gunakan kode tersebut untuk membuat kata sandi baru.
                         </p>
 
                         <div class="mt-10 space-y-4">
@@ -90,17 +204,24 @@ const submit = () => {
                     <section class="rounded-[32px] bg-white p-6 text-slate-900 shadow-2xl ring-1 ring-slate-100 transition-colors sm:p-8 lg:p-10 dark:bg-slate-900/95 dark:text-slate-100 dark:ring-white/10">
                         <div class="mb-8 space-y-2">
                             <p class="text-sm font-semibold uppercase tracking-[0.35em] text-indigo-500 dark:text-indigo-300">Lupa password</p>
-                            <h2 class="text-3xl font-semibold text-slate-900 dark:text-white">Kirim ulang tautan reset</h2>
+                            <h2 class="text-3xl font-semibold text-slate-900 dark:text-white">Kirim kode reset</h2>
                             <p class="text-sm text-slate-500 dark:text-slate-400">
-                                Masukkan email kampus Anda dan kami akan kirim instruksi untuk membuat kata sandi baru.
+                                Masukkan email akun Anda dan kami akan kirim kode OTP untuk verifikasi.
                             </p>
                         </div>
 
                         <div
-                            v-if="props.status"
+                            v-if="props.status || form.message"
                             class="mb-6 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-medium text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200"
                         >
-                            {{ props.status }}
+                            {{ props.status || form.message }}
+                        </div>
+
+                        <div
+                            v-if="form.errors.general"
+                            class="mb-6 rounded-2xl border border-rose-100 bg-rose-50 p-4 text-sm font-medium text-rose-700 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-200"
+                        >
+                            {{ form.errors.general }}
                         </div>
 
                         <form class="space-y-5" @submit.prevent="submit">
@@ -120,17 +241,36 @@ const submit = () => {
                                     />
                                 </div>
                                 <p v-if="form.errors.email" class="mt-2 text-sm text-rose-500">
-                                    {{ form.errors.email }}
+                                    {{ Array.isArray(form.errors.email) ? form.errors.email[0] : form.errors.email }}
+                                </p>
+                            </div>
+
+                            <div v-if="captchaEnabled">
+                                <label for="captcha" class="text-sm font-medium text-slate-700 dark:text-slate-300">Verifikasi keamanan</label>
+                                <div
+                                    v-if="captchaSiteKey"
+                                    id="captcha"
+                                    ref="captchaContainer"
+                                    class="mt-2 min-h-[65px]"
+                                ></div>
+                                <p v-else class="mt-2 text-sm text-rose-500">
+                                    CAPTCHA belum dikonfigurasi.
+                                </p>
+                                <p v-if="form.errors.captcha" class="mt-2 text-sm text-rose-500">
+                                    {{ form.errors.captcha }}
+                                </p>
+                                <p v-if="form.errors.captcha_token" class="mt-2 text-sm text-rose-500">
+                                    {{ Array.isArray(form.errors.captcha_token) ? form.errors.captcha_token[0] : form.errors.captcha_token }}
                                 </p>
                             </div>
 
                             <button
                                 type="submit"
-                                :disabled="form.processing"
+                                :disabled="form.processing || (captchaEnabled && !captchaSiteKey)"
                                 class="flex h-12 w-full items-center justify-center rounded-2xl bg-indigo-600 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition hover:bg-indigo-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-200 disabled:cursor-not-allowed disabled:opacity-60 dark:shadow-indigo-950/50 dark:focus-visible:ring-indigo-500/30"
                             >
-                                <span v-if="form.processing">Mengirim tautan…</span>
-                                <span v-else>Kirim Tautan Reset Password </span>
+                                <span v-if="form.processing">Mengirim kode...</span>
+                                <span v-else>Kirim Kode Reset</span>
                             </button>
                         </form>
 

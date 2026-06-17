@@ -3,10 +3,10 @@
 namespace App\Mail;
 
 use App\Models\OtpCode;
+use Carbon\CarbonInterface;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
-use Carbon\CarbonInterface;
 
 class OtpMail extends Mailable
 {
@@ -19,8 +19,7 @@ class OtpMail extends Mailable
         public readonly string $code,
         public readonly string $token,
         public readonly CarbonInterface $expiresAt
-    ) {
-    }
+    ) {}
 
     public function build(): self
     {
@@ -31,7 +30,7 @@ class OtpMail extends Mailable
         $frontendBase = rtrim(config('app.frontend_url', config('app.url')), '/');
         $path = $this->context === OtpCode::CONTEXT_REGISTRATION
             ? '/auth/register/verify'
-            : '/auth/password/verify';
+            : '/forgot-password/verify';
 
         $magicLink = sprintf(
             '%s%s?email=%s&token=%s&context=%s',

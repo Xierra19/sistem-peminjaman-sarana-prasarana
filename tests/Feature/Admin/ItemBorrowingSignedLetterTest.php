@@ -19,7 +19,7 @@ class ItemBorrowingSignedLetterTest extends TestCase
 
     public function test_admin_must_upload_signed_letter_when_approving_item_borrowing(): void
     {
-        Storage::fake('public');
+        Storage::fake('local');
 
         $admin = User::factory()->create([
             'role' => User::ROLE_ADMIN_SARPRAS,
@@ -46,7 +46,7 @@ class ItemBorrowingSignedLetterTest extends TestCase
 
     public function test_admin_can_approve_item_borrowing_with_signed_letter(): void
     {
-        Storage::fake('public');
+        Storage::fake('local');
         Notification::fake();
 
         $admin = User::factory()->create([
@@ -73,7 +73,7 @@ class ItemBorrowingSignedLetterTest extends TestCase
         $this->assertNotNull($itemBorrowing->approved_at);
         $this->assertNotNull($itemBorrowing->signed_letter);
         $this->assertNotNull($itemBorrowing->signed_letter_uploaded_at);
-        Storage::disk('public')->assertExists($itemBorrowing->signed_letter);
+        Storage::disk('local')->assertExists($itemBorrowing->signed_letter);
         Notification::assertSentTo(
             $owner,
             ItemBorrowingStatusUpdatedNotification::class,
@@ -82,7 +82,7 @@ class ItemBorrowingSignedLetterTest extends TestCase
 
     public function test_invalid_reapproval_removes_new_upload_without_changing_existing_data(): void
     {
-        Storage::fake('public');
+        Storage::fake('local');
         Notification::fake();
 
         $admin = User::factory()->create([
@@ -90,7 +90,7 @@ class ItemBorrowingSignedLetterTest extends TestCase
         ]);
         $itemBorrowing = $this->createItemBorrowing();
         $existingPath = 'item-borrowing-signed-letters/existing.pdf';
-        Storage::disk('public')->put($existingPath, 'existing-letter');
+        Storage::disk('local')->put($existingPath, 'existing-letter');
         $itemBorrowing->update([
             'status' => ItemBorrowing::STATUS_APPROVED,
             'signed_letter' => $existingPath,
@@ -112,10 +112,10 @@ class ItemBorrowingSignedLetterTest extends TestCase
         $response->assertSessionHasErrors('status');
         $this->assertSame(ItemBorrowing::STATUS_APPROVED, $itemBorrowing->fresh()->status);
         $this->assertSame($existingPath, $itemBorrowing->fresh()->signed_letter);
-        Storage::disk('public')->assertExists($existingPath);
+        Storage::disk('local')->assertExists($existingPath);
         $this->assertCount(
             1,
-            Storage::disk('public')->allFiles('item-borrowing-signed-letters'),
+            Storage::disk('local')->allFiles('item-borrowing-signed-letters'),
         );
         $this->assertDatabaseCount('item_borrowing_logs', 0);
         Notification::assertNothingSent();
@@ -123,7 +123,7 @@ class ItemBorrowingSignedLetterTest extends TestCase
 
     public function test_admin_can_reject_item_borrowing_without_signed_letter(): void
     {
-        Storage::fake('public');
+        Storage::fake('local');
 
         $admin = User::factory()->create([
             'role' => User::ROLE_ADMIN_SARPRAS,
@@ -151,13 +151,13 @@ class ItemBorrowingSignedLetterTest extends TestCase
 
     public function test_owner_can_download_signed_letter(): void
     {
-        Storage::fake('public');
+        Storage::fake('local');
 
         $owner = User::factory()->create();
         $itemBorrowing = $this->createItemBorrowing($owner);
 
         $path = 'item-borrowing-signed-letters/surat-ditandatangani.pdf';
-        Storage::disk('public')->put($path, 'signed-letter-content');
+        Storage::disk('local')->put($path, 'signed-letter-content');
 
         $itemBorrowing->update([
             'status' => 'approved',
@@ -173,7 +173,7 @@ class ItemBorrowingSignedLetterTest extends TestCase
 
     public function test_bap_admin_cannot_access_user_facing_item_borrowing_routes(): void
     {
-        Storage::fake('public');
+        Storage::fake('local');
 
         $bapAdmin = User::factory()->create([
             'role' => User::ROLE_ADMIN_BAP,
@@ -181,8 +181,8 @@ class ItemBorrowingSignedLetterTest extends TestCase
         $itemBorrowing = $this->createItemBorrowing();
         $attachment = 'item-borrowing-attachments/request.pdf';
         $signedLetter = 'item-borrowing-signed-letters/approval.pdf';
-        Storage::disk('public')->put($attachment, 'request');
-        Storage::disk('public')->put($signedLetter, 'approval');
+        Storage::disk('local')->put($attachment, 'request');
+        Storage::disk('local')->put($signedLetter, 'approval');
         $itemBorrowing->update([
             'status' => 'approved',
             'attachment' => $attachment,
@@ -202,7 +202,7 @@ class ItemBorrowingSignedLetterTest extends TestCase
 
     public function test_sarpras_admin_can_access_user_facing_item_borrowing_routes(): void
     {
-        Storage::fake('public');
+        Storage::fake('local');
 
         $sarprasAdmin = User::factory()->create([
             'role' => User::ROLE_ADMIN_SARPRAS,
@@ -210,8 +210,8 @@ class ItemBorrowingSignedLetterTest extends TestCase
         $itemBorrowing = $this->createItemBorrowing();
         $attachment = 'item-borrowing-attachments/request.pdf';
         $signedLetter = 'item-borrowing-signed-letters/approval.pdf';
-        Storage::disk('public')->put($attachment, 'request');
-        Storage::disk('public')->put($signedLetter, 'approval');
+        Storage::disk('local')->put($attachment, 'request');
+        Storage::disk('local')->put($signedLetter, 'approval');
         $itemBorrowing->update([
             'status' => 'approved',
             'attachment' => $attachment,

@@ -210,7 +210,7 @@ class RevisionAndResubmissionWorkflowTest extends TestCase
     {
         Carbon::setTestNow(Carbon::parse('2026-06-15 10:00', 'Asia/Jakarta'));
         Notification::fake();
-        Storage::fake('public');
+        Storage::fake('local');
 
         $owner = User::factory()->create();
         $admin = User::factory()->create(['role' => User::ROLE_ADMIN_SARPRAS]);
@@ -221,7 +221,7 @@ class RevisionAndResubmissionWorkflowTest extends TestCase
             ItemBorrowing::STATUS_REJECTED,
         );
         $attachment = 'item-borrowing-attachments/source.pdf';
-        Storage::disk('public')->put($attachment, 'source');
+        Storage::disk('local')->put($attachment, 'source');
         $source->update(['attachment' => $attachment]);
 
         $this->actingAs($owner)
@@ -248,7 +248,7 @@ class RevisionAndResubmissionWorkflowTest extends TestCase
         $this->assertSame(ItemBorrowing::STATUS_REJECTED, $source->fresh()->status);
         $this->assertSame(ItemBorrowing::STATUS_WAITING, $newBorrowing->status);
         $this->assertSame($attachment, $newBorrowing->attachment);
-        Storage::disk('public')->assertExists($attachment);
+        Storage::disk('local')->assertExists($attachment);
         Notification::assertSentTo($admin, ItemBorrowingRequestedNotification::class);
     }
 

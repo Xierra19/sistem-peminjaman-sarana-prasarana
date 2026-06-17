@@ -72,6 +72,13 @@
         .signature p {
             margin: 0;
         }
+
+        .signature-image {
+            display: block;
+            width: 180px;
+            height: auto;
+            margin: 10px 0 6px auto;
+        }
     </style>
 </head>
 <body>
@@ -80,6 +87,7 @@
     $approvalDate = $approvedAt
         ? $approvedAt->copy()->locale('id')
         : Carbon::parse($generatedAt)->locale('id');
+    $signaturePath = resource_path('images/signatures/ttd-bap.png');
 @endphp
     <div class="logo-wrapper">
         <img src="{{ public_path('images/LOGO_UEU_BY_ASU-06.png') }}" alt="Logo Universitas Esa Unggul">
@@ -148,8 +156,12 @@
     <div class="signature">
         <p>Disetujui pada {{ $approvalDate->translatedFormat('d F Y H:i') }} WIB</p>
         <p>Biro Administrasi Pembelajaran Kampus Bekasi</p>
-        <br><br>
-        <br><br>        
+        @if (is_file($signaturePath))
+            <img class="signature-image" src="{{ $signaturePath }}" alt="Tanda tangan BAP">
+        @else
+            <br><br>
+            <br><br>
+        @endif
         <p><strong>Biro Administrasi Pembelajaran Kampus Bekasi</strong></p>
     </div>
 </body>

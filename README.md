@@ -13,7 +13,7 @@ Web application for managing room bookings and item borrowing at Universitas Esa
 - Automatic completion of approved item borrowings after the latest return time.
 - Automatic expiration of unprocessed room bookings after the final booking day.
 - Signed-letter upload for approved item borrowings.
-- Email verification, password reset, and status notifications.
+- Email verification, OTP-based password reset, and status notifications.
 - Room and item reports with filters, charts, Excel export, and PDF export.
 - Responsive interface and dark mode.
 
@@ -171,7 +171,7 @@ After changing mail settings, clear the cached configuration:
 php artisan config:clear
 ```
 
-Keep a queue worker running because some notifications are queued:
+Password reset uses an email OTP flow. Keep SMTP configured correctly, and keep a queue worker running because some notifications are queued:
 
 ```bash
 php artisan queue:work
@@ -242,12 +242,16 @@ Before deployment:
 - Set `APP_DEBUG=false`.
 - Set the correct `APP_URL` and `FRONTEND_URL`.
 - Configure production database and mail credentials.
+- Use `.env.production.example` as the starting point for production environment values.
 - Run `php artisan migrate --force`.
-- Run `php artisan storage:link`.
 - Run `npm ci && npm run build`.
 - Keep `php artisan queue:work` running with a process manager.
 - Configure the Laravel scheduler.
+- Configure database and `storage/app/private` backups.
+- Configure `CAPTCHA_SITE_KEY` and `CAPTCHA_SECRET` if `CAPTCHA_ENABLED=true`.
 - Do not commit the `.env` file or real credentials.
+
+See [docs/deployment-droplet.md](docs/deployment-droplet.md) for a DigitalOcean Droplet runbook with Nginx, Supervisor, cron, monitoring, and backup examples.
 
 ## Project Structure
 

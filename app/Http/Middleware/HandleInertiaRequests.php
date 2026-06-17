@@ -33,7 +33,13 @@ class HandleInertiaRequests extends Middleware
             ],
             'flash' => [
                 'success' => fn () => $request->session()->pull('success'),
-                'error'   => fn () => $request->session()->pull('error'),
+                'error' => fn () => $request->session()->pull('error'),
+            ],
+            'security' => [
+                'captcha' => [
+                    'enabled' => (bool) config('services.captcha.enabled', false),
+                    'site_key' => config('services.captcha.site_key'),
+                ],
             ],
         ];
     }

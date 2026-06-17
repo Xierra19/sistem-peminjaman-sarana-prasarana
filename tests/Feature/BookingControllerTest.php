@@ -433,7 +433,7 @@ class BookingControllerTest extends TestCase
 
     public function test_store_rejects_entire_booking_when_one_room_conflicts_with_active_booking(): void
     {
-        Storage::fake('public');
+        Storage::fake('local');
 
         [$user, $rooms] = $this->createLocation(2);
         $date = now()->addDays(5)->toDateString();
@@ -464,12 +464,12 @@ class BookingControllerTest extends TestCase
         $response->assertSessionHasErrors('schedules.1.room_id');
         $this->assertDatabaseCount('bookings', 1);
         $this->assertDatabaseCount('booking_room_schedules', 1);
-        Storage::disk('public')->assertDirectoryEmpty('attachments');
+        Storage::disk('local')->assertDirectoryEmpty('attachments');
     }
 
     public function test_sarpras_admin_cannot_access_user_facing_booking_routes(): void
     {
-        Storage::fake('public');
+        Storage::fake('local');
 
         [$owner, $rooms] = $this->createLocation(1);
         $sarprasAdmin = User::factory()->create([
@@ -477,7 +477,7 @@ class BookingControllerTest extends TestCase
             'email_verified_at' => now(),
         ]);
         $attachment = 'attachments/booking.pdf';
-        Storage::disk('public')->put($attachment, 'booking');
+        Storage::disk('local')->put($attachment, 'booking');
         $booking = $this->createBooking($owner, $rooms[0], [
             'status' => 'approved',
             'attachment' => $attachment,
@@ -496,7 +496,7 @@ class BookingControllerTest extends TestCase
 
     public function test_bap_admin_can_access_user_facing_booking_routes(): void
     {
-        Storage::fake('public');
+        Storage::fake('local');
 
         [$owner, $rooms] = $this->createLocation(1);
         $bapAdmin = User::factory()->create([
@@ -504,7 +504,7 @@ class BookingControllerTest extends TestCase
             'email_verified_at' => now(),
         ]);
         $attachment = 'attachments/booking.pdf';
-        Storage::disk('public')->put($attachment, 'booking');
+        Storage::disk('local')->put($attachment, 'booking');
         $booking = $this->createBooking($owner, $rooms[0], [
             'attachment' => $attachment,
         ]);

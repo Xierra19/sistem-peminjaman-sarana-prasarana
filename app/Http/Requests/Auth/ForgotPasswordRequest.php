@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Auth;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class ForgotPasswordRequest extends FormRequest
 {
@@ -15,7 +16,11 @@ class ForgotPasswordRequest extends FormRequest
     {
         return [
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255'],
-            'captcha_token' => ['required', 'string'],
+            'captcha_token' => [
+                Rule::requiredIf((bool) config('services.captcha.enabled', false)),
+                'nullable',
+                'string',
+            ],
         ];
     }
 }

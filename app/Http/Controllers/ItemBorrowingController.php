@@ -11,6 +11,7 @@ use App\Services\ItemAvailabilityService;
 use App\Services\ItemBorrowingCancellationService;
 use App\Services\ItemBorrowingPeriod;
 use App\Services\ItemBorrowingWorkflow;
+use App\Services\PublicFileStorage;
 use App\Support\CancellationResult;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -270,12 +271,12 @@ class ItemBorrowingController extends Controller
             abort(404, 'Lampiran tidak ditemukan.');
         }
 
-        if (! Storage::disk('public')->exists($itemBorrowing->attachment)) {
+        if (! Storage::disk(PublicFileStorage::DISK)->exists($itemBorrowing->attachment)) {
             abort(404, 'File lampiran tidak tersedia.');
         }
 
         return response()->download(
-            Storage::disk('public')->path($itemBorrowing->attachment),
+            Storage::disk(PublicFileStorage::DISK)->path($itemBorrowing->attachment),
             basename($itemBorrowing->attachment)
         );
     }
@@ -288,12 +289,12 @@ class ItemBorrowingController extends Controller
             abort(404, 'Surat yang ditandatangani tidak ditemukan.');
         }
 
-        if (! Storage::disk('public')->exists($itemBorrowing->signed_letter)) {
+        if (! Storage::disk(PublicFileStorage::DISK)->exists($itemBorrowing->signed_letter)) {
             abort(404, 'File surat tidak tersedia.');
         }
 
         return response()->download(
-            Storage::disk('public')->path($itemBorrowing->signed_letter),
+            Storage::disk(PublicFileStorage::DISK)->path($itemBorrowing->signed_letter),
             basename($itemBorrowing->signed_letter)
         );
     }
