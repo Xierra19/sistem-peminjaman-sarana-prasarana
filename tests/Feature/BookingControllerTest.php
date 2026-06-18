@@ -158,6 +158,51 @@ class BookingControllerTest extends TestCase
         }
     }
 
+    public function test_waiting_filter_includes_legacy_approval_pending_statuses_but_excludes_revision(): void
+    {
+        [$user, $rooms] = $this->createLocation(1);
+
+        foreach (Booking::APPROVAL_PENDING_STATUSES as $status) {
+            $this->createBooking($user, $rooms[0], ['status' => $status]);
+        }
+
+        $this->createBooking($user, $rooms[0], [
+            'status' => Booking::STATUS_NEEDS_REVISION,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('bookings.index', ['status' => Booking::STATUS_WAITING]))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Bookings/Index')
+                ->where('filters.status', Booking::STATUS_WAITING)
+                ->where('bookings.total', count(Booking::APPROVAL_PENDING_STATUSES))
+            );
+    }
+
+    public function test_user_dashboard_separates_waiting_and_needs_revision_summaries(): void
+    {
+        [$user, $rooms] = $this->createLocation(1);
+
+        foreach (Booking::APPROVAL_PENDING_STATUSES as $status) {
+            $this->createBooking($user, $rooms[0], ['status' => $status]);
+        }
+
+        $this->createBooking($user, $rooms[0], [
+            'status' => Booking::STATUS_NEEDS_REVISION,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Dashboard')
+                ->where('bookingSummary.total', count(Booking::APPROVAL_PENDING_STATUSES) + 1)
+                ->where('bookingSummary.waiting', count(Booking::APPROVAL_PENDING_STATUSES))
+                ->where('bookingSummary.needs_revision', 1)
+            );
+    }
+
     public function test_availability_returns_only_selected_multiple_dates(): void
     {
         [$user, $rooms] = $this->createLocation(1);

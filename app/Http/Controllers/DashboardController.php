@@ -25,7 +25,7 @@ class DashboardController extends Controller
             ])
             ->orderByDesc('created_at');
 
-        $waitingStatuses = Booking::WAITING_STATUSES;
+        $waitingStatuses = Booking::APPROVAL_PENDING_STATUSES;
 
         if ($user?->isAdmin()) {
             $roomSummary = null;
@@ -38,6 +38,7 @@ class DashboardController extends Controller
                     'total' => $bookings->count(),
                     'approved' => $bookings->where('status', Booking::STATUS_APPROVED)->count(),
                     'waiting' => $bookings->whereIn('status', $waitingStatuses)->count(),
+                    'needs_revision' => $bookings->where('status', Booking::STATUS_NEEDS_REVISION)->count(),
                     'rejected' => $bookings->where('status', Booking::STATUS_REJECTED)->count(),
                     'cancelled' => $bookings->where('status', Booking::STATUS_CANCELLED)->count(),
                     'expired' => $bookings->where('status', Booking::STATUS_EXPIRED)->count(),
@@ -73,6 +74,7 @@ class DashboardController extends Controller
             'total' => $bookings->count(),
             'approved' => $bookings->where('status', Booking::STATUS_APPROVED)->count(),
             'waiting' => $bookings->whereIn('status', $waitingStatuses)->count(),
+            'needs_revision' => $bookings->where('status', Booking::STATUS_NEEDS_REVISION)->count(),
             'rejected' => $bookings->where('status', Booking::STATUS_REJECTED)->count(),
             'cancelled' => $bookings->where('status', Booking::STATUS_CANCELLED)->count(),
             'expired' => $bookings->where('status', Booking::STATUS_EXPIRED)->count(),

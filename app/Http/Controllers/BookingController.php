@@ -91,6 +91,12 @@ class BookingController extends Controller
 
         // Filter status
         $query->when($status, function ($q) use ($status) {
+            if ($status === Booking::STATUS_WAITING) {
+                $q->whereIn('bookings.status', Booking::APPROVAL_PENDING_STATUSES);
+
+                return;
+            }
+
             $q->where('bookings.status', $status);
         });
 

@@ -32,6 +32,7 @@ const props = defineProps({
       total: 0,
       approved: 0,
       waiting: 0,
+      needs_revision: 0,
       rejected: 0,
       cancelled: 0,
       expired: 0,
@@ -77,6 +78,7 @@ const bookingSummaryData = computed(() => ({
   total: props.bookingSummary?.total ?? 0,
   approved: props.bookingSummary?.approved ?? 0,
   waiting: props.bookingSummary?.waiting ?? 0,
+  needs_revision: props.bookingSummary?.needs_revision ?? 0,
   rejected: props.bookingSummary?.rejected ?? 0,
   cancelled: props.bookingSummary?.cancelled ?? 0,
   expired: props.bookingSummary?.expired ?? 0,
@@ -399,31 +401,63 @@ const {
           </div>
         </section>
 
-        <section class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-          <article class="rounded-2xl border border-blue-100 bg-blue-50 p-4 text-blue-900 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-100">
+        <section class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-7">
+          <Link
+            :href="route('bookings.index')"
+            class="rounded-2xl border border-blue-100 bg-blue-50 p-4 text-blue-900 transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-100 dark:hover:border-blue-600 dark:focus-visible:ring-offset-slate-900"
+            aria-label="Lihat semua pengajuan"
+          >
             <p class="text-xs font-semibold uppercase tracking-wide text-blue-500 dark:text-blue-300">Total Pengajuan</p>
             <p class="mt-2 text-3xl font-semibold">{{ bookingSummaryData.total }}</p>
-          </article>
-          <article class="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-100">
+          </Link>
+          <Link
+            :href="route('bookings.index', { status: 'approved' })"
+            class="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-emerald-800 transition hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-100 dark:hover:border-emerald-600 dark:focus-visible:ring-offset-slate-900"
+            aria-label="Lihat pengajuan yang disetujui"
+          >
             <p class="text-xs font-semibold uppercase tracking-wide text-emerald-500 dark:text-emerald-300">Disetujui</p>
             <p class="mt-2 text-3xl font-semibold">{{ bookingSummaryData.approved }}</p>
-          </article>
-          <article class="rounded-2xl border border-amber-100 bg-amber-50 p-4 text-amber-800 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-100">
+          </Link>
+          <Link
+            :href="route('bookings.index', { status: 'waiting' })"
+            class="rounded-2xl border border-amber-100 bg-amber-50 p-4 text-amber-800 transition hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-100 dark:hover:border-amber-600 dark:focus-visible:ring-offset-slate-900"
+            aria-label="Lihat pengajuan yang menunggu persetujuan"
+          >
             <p class="text-xs font-semibold uppercase tracking-wide text-amber-500 dark:text-amber-300">Menunggu</p>
             <p class="mt-2 text-3xl font-semibold">{{ bookingSummaryData.waiting }}</p>
-          </article>
-          <article class="rounded-2xl border border-rose-100 bg-rose-50 p-4 text-rose-800 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-100">
+          </Link>
+          <Link
+            :href="route('bookings.index', { status: 'needs_revision' })"
+            class="rounded-2xl border border-violet-100 bg-violet-50 p-4 text-violet-800 transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-100 dark:hover:border-violet-600 dark:focus-visible:ring-offset-slate-900"
+            aria-label="Lihat pengajuan yang perlu direvisi"
+          >
+            <p class="text-xs font-semibold uppercase tracking-wide text-violet-500 dark:text-violet-300">Perlu Direvisi</p>
+            <p class="mt-2 text-3xl font-semibold">{{ bookingSummaryData.needs_revision }}</p>
+          </Link>
+          <Link
+            :href="route('bookings.index', { status: 'rejected' })"
+            class="rounded-2xl border border-rose-100 bg-rose-50 p-4 text-rose-800 transition hover:-translate-y-0.5 hover:border-rose-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-100 dark:hover:border-rose-600 dark:focus-visible:ring-offset-slate-900"
+            aria-label="Lihat pengajuan yang ditolak"
+          >
             <p class="text-xs font-semibold uppercase tracking-wide text-rose-500 dark:text-rose-300">Ditolak</p>
             <p class="mt-2 text-3xl font-semibold">{{ bookingSummaryData.rejected }}</p>
-          </article>
-          <article class="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-slate-800 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-200">
+          </Link>
+          <Link
+            :href="route('bookings.index', { status: 'cancelled' })"
+            class="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-slate-800 transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-200 dark:hover:border-slate-500 dark:focus-visible:ring-offset-slate-900"
+            aria-label="Lihat pengajuan yang dibatalkan"
+          >
             <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Dibatalkan</p>
             <p class="mt-2 text-3xl font-semibold">{{ bookingSummaryData.cancelled }}</p>
-          </article>
-          <article class="rounded-2xl border border-orange-100 bg-orange-50 p-4 text-orange-800 dark:border-orange-800 dark:bg-orange-900/30 dark:text-orange-100">
+          </Link>
+          <Link
+            :href="route('bookings.index', { status: 'expired' })"
+            class="rounded-2xl border border-orange-100 bg-orange-50 p-4 text-orange-800 transition hover:-translate-y-0.5 hover:border-orange-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 dark:border-orange-800 dark:bg-orange-900/30 dark:text-orange-100 dark:hover:border-orange-600 dark:focus-visible:ring-offset-slate-900"
+            aria-label="Lihat pengajuan yang kedaluwarsa"
+          >
             <p class="text-xs font-semibold uppercase tracking-wide text-orange-500 dark:text-orange-300">Kedaluwarsa</p>
             <p class="mt-2 text-3xl font-semibold">{{ bookingSummaryData.expired }}</p>
-          </article>
+          </Link>
         </section>
 
         <section class="card-surface space-y-6 p-5 sm:p-6">
