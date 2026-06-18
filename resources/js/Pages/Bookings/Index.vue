@@ -41,6 +41,7 @@ const sortColumn = ref(props.filters.sort || 'created_at')
 const sortDirection = ref(props.filters.direction || 'desc')
 const rowsPerPage = 10
 const isLoading = ref(false)
+const activeStatusLabel = computed(() => getBookingStatusLabel(statusFilter.value) || 'Semua status')
 
 // Prevent race conditions with plain variable (not ref)
 let currentRequestId = 0
@@ -232,7 +233,7 @@ const changePage = (page) => {
         </div>
         <div class="rounded-2xl border border-blue-200 bg-white p-4 shadow-sm dark:border-blue-900 dark:bg-slate-800">
           <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-blue-600 dark:text-blue-300">Status Filter</p>
-          <p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{{ statusFilter || 'Semua status' }}</p>
+          <p class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{{ activeStatusLabel }}</p>
           <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Gunakan filter untuk fokus ke status tertentu.</p>
         </div>
       </div>
