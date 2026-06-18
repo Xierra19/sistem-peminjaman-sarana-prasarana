@@ -40,4 +40,32 @@ class RegistrationTest extends TestCase
 
         Notification::assertSentToTimes($user, VerifyEmail::class, 1);
     }
+
+    public function test_inactive_account_email_cannot_be_registered_again(): void
+    {
+        User::factory()->create([
+            'email' => 'blocked@student.esaunggul.ac.id',
+            'is_active' => false,
+            'deactivated_at' => now(),
+            'deactivation_reason' => 'Spam pengajuan.',
+        ]);
+
+        $response = $this->from('/register')->post('/register', [
+            'name' => 'Blocked User',
+            'phone' => '081234567890',
+            'email' => 'blocked@student.esaunggul.ac.id',
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
+        ]);
+
+        $response
+            ->assertRedirect('/register')
+            ->assertSessionHasErrors('email');
+
+        $this->assertSame(
+            1,
+            User::query()->where('email', 'blocked@student.esaunggul.ac.id')->count()
+        );
+        $this->assertGuest();
+    }
 }

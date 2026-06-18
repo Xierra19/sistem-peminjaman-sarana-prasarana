@@ -4,12 +4,10 @@ namespace App\Models;
 
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-
-use App\Models\Booking;
-use App\Models\ItemBorrowing;
 
 /**
  * @method bool isAdmin()
@@ -25,6 +23,10 @@ class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
+
+    protected $attributes = [
+        'is_active' => true,
+    ];
 
     public const ROLE_SUPER_ADMIN = 'super_admin';
 
@@ -46,6 +48,10 @@ class User extends Authenticatable implements MustVerifyEmail
         'email',
         'phone',
         'role',
+        'is_active',
+        'deactivated_at',
+        'deactivation_reason',
+        'deactivated_by',
         'password',
     ];
 
@@ -155,6 +161,21 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasAnyRole(self::itemAdminRoles());
     }
 
+    public function isActive(): bool
+    {
+        return (bool) $this->is_active;
+    }
+
+    public function deactivatedBy(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'deactivated_by');
+    }
+
+    public function accountStatusLogs(): HasMany
+    {
+        return $this->hasMany(UserAccountStatusLog::class);
+    }
+
     public function bookings(): HasMany
     {
         return $this->hasMany(Booking::class);
@@ -174,6 +195,8 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return [
             'email_verified_at' => 'datetime',
+            'is_active' => 'boolean',
+            'deactivated_at' => 'datetime',
             'password' => 'hashed',
         ];
     }

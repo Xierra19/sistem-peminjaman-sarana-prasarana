@@ -136,13 +136,72 @@ onBeforeUnmount(() => {
 })
 
 const itemBorrowings = computed(() => props.itemBorrowings ?? [])
+const selectedSummaryStatusGroup = ref([])
+
+const getBorrowingItems = (borrowing) => {
+  const multiItems = (borrowing.items ?? [])
+    .map((row) => ({
+      name: row.item?.name,
+      code: row.item?.code,
+      category: row.item?.category,
+      quantity: row.quantity,
+    }))
+    .filter((item) => item.name || item.code)
+
+  if (multiItems.length) {
+    return multiItems
+  }
+
+  const legacyItem = borrowing.single_item ?? borrowing.singleItem
+
+  if (!legacyItem) {
+    return []
+  }
+
+  return [{
+    name: legacyItem.name,
+    code: legacyItem.code,
+    category: legacyItem.category,
+    quantity: borrowing.quantity,
+  }]
+}
+
+const getItemNames = (borrowing) =>
+  getBorrowingItems(borrowing)
+    .map((item) => item.name)
+    .filter(Boolean)
+    .join(', ') || '-'
+
+const getItemDetails = (borrowing) =>
+  getBorrowingItems(borrowing)
+    .map((item) => {
+      const quantity = item.quantity ? `Qty ${item.quantity}` : ''
+
+      return quantity
+    })
+    .filter(Boolean)
+    .join('; ') || '-'
+
+const tableItemBorrowings = computed(() => {
+  if (!selectedSummaryStatusGroup.value.length) {
+    return itemBorrowings.value
+  }
+
+  return itemBorrowings.value.filter((borrowing) => {
+    const status = normalizeItemBorrowingStatus(
+      borrowing.effective_status ?? borrowing.status,
+    )
+
+    return selectedSummaryStatusGroup.value.includes(status)
+  })
+})
 
 const {
   sortedItems,
   toggleSort,
   sortDirection,
   ariaSortValue,
-} = useTableSort(itemBorrowings, {
+} = useTableSort(tableItemBorrowings, {
   accessors: {
     id: (row) => row.id ?? 0,
     created_at: (row) => (row.created_at ? new Date(row.created_at) : null),
@@ -157,7 +216,7 @@ const {
       const value = dates[dates.length - 1] ?? row.return_date
       return value ? new Date(value) : null
     },
-    item: (row) => row.item?.name ?? '',
+    item: (row) => getItemNames(row),
     title: (row) => row.title ?? '',
   },
 })
@@ -172,6 +231,20 @@ const {
 } = usePagination(sortedItems, { perPage: 10 })
 
 const perPageOptions = [10, 25, 50, 100]
+
+const isSummaryCardActive = (statuses = []) => {
+  if (!statuses.length) {
+    return !selectedSummaryStatusGroup.value.length
+  }
+
+  return statuses.length === selectedSummaryStatusGroup.value.length
+    && statuses.every((status) => selectedSummaryStatusGroup.value.includes(status))
+}
+
+const selectSummaryCard = (statuses = []) => {
+  selectedSummaryStatusGroup.value = [...statuses]
+  changePage(1)
+}
 
 const summary = computed(() => ({
   total: props.statusSummary?.total ?? itemBorrowings.value.length ?? 0,
@@ -197,6 +270,7 @@ const buildQuery = () => {
 }
 
 const applyFilters = () => {
+  selectedSummaryStatusGroup.value = []
   changePage(1)
   router.get(route('admin.item-borrowing-reports.index'), buildQuery(), {
     preserveState: true,
@@ -375,31 +449,61 @@ const chartOptions = computed(() => ({
       </div>
 
       <div class="grid grid-cols-2 gap-3 xl:grid-cols-5">
-        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+        <button
+          type="button"
+          class="rounded-2xl border bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-4 focus:ring-slate-200 dark:bg-slate-800 dark:focus:ring-slate-700"
+          :class="isSummaryCardActive([]) ? 'border-slate-500 ring-2 ring-slate-300 dark:border-slate-400 dark:ring-slate-600' : 'border-slate-200 dark:border-slate-700'"
+          :aria-pressed="isSummaryCardActive([])"
+          @click="selectSummaryCard([])"
+        >
           <p class="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Total Data</p>
           <p class="mt-3 text-3xl font-semibold text-slate-900 dark:text-slate-100">{{ summary.total }}</p>
-          <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Seluruh hasil sesuai filter aktif</p>
-        </div>
-        <div class="rounded-2xl border border-amber-200 bg-white p-4 shadow-sm dark:border-amber-800 dark:bg-slate-800">
+          <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Klik untuk menampilkan semua status</p>
+        </button>
+        <button
+          type="button"
+          class="rounded-2xl border bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-4 focus:ring-amber-100 dark:bg-slate-800 dark:focus:ring-amber-950"
+          :class="isSummaryCardActive(['waiting', 'needs_revision']) ? 'border-amber-500 ring-2 ring-amber-200 dark:border-amber-400 dark:ring-amber-900' : 'border-amber-200 dark:border-amber-800'"
+          :aria-pressed="isSummaryCardActive(['waiting', 'needs_revision'])"
+          @click="selectSummaryCard(['waiting', 'needs_revision'])"
+        >
           <p class="text-xs font-medium uppercase tracking-wide text-amber-500 dark:text-amber-400">Menunggu</p>
           <p class="mt-2 text-2xl font-semibold text-amber-600 dark:text-amber-400">{{ summary.waiting }}</p>
-          <p class="text-xs text-amber-500 dark:text-amber-400">Booking belum diputuskan</p>
-        </div>
-        <div class="rounded-2xl border border-emerald-200 bg-white p-4 shadow-sm dark:border-emerald-800 dark:bg-slate-800">
+          <p class="text-xs text-amber-500 dark:text-amber-400">Klik untuk melihat antrean review</p>
+        </button>
+        <button
+          type="button"
+          class="rounded-2xl border bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-4 focus:ring-emerald-100 dark:bg-slate-800 dark:focus:ring-emerald-950"
+          :class="isSummaryCardActive(['approved']) ? 'border-emerald-500 ring-2 ring-emerald-200 dark:border-emerald-400 dark:ring-emerald-900' : 'border-emerald-200 dark:border-emerald-800'"
+          :aria-pressed="isSummaryCardActive(['approved'])"
+          @click="selectSummaryCard(['approved'])"
+        >
           <p class="text-xs font-medium uppercase tracking-wide text-emerald-500 dark:text-emerald-400">Disetujui</p>
           <p class="mt-2 text-2xl font-semibold text-emerald-600 dark:text-emerald-400">{{ summary.approved }}</p>
-          <p class="text-xs text-emerald-500 dark:text-emerald-400">Booking aktif</p>
-        </div>
-        <div class="rounded-2xl border border-blue-200 bg-white p-4 shadow-sm dark:border-blue-800 dark:bg-slate-800">
+          <p class="text-xs text-emerald-500 dark:text-emerald-400">Klik untuk melihat data disetujui</p>
+        </button>
+        <button
+          type="button"
+          class="rounded-2xl border bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-4 focus:ring-blue-100 dark:bg-slate-800 dark:focus:ring-blue-950"
+          :class="isSummaryCardActive(['completed']) ? 'border-blue-500 ring-2 ring-blue-200 dark:border-blue-400 dark:ring-blue-900' : 'border-blue-200 dark:border-blue-800'"
+          :aria-pressed="isSummaryCardActive(['completed'])"
+          @click="selectSummaryCard(['completed'])"
+        >
           <p class="text-xs font-medium uppercase tracking-wide text-blue-500 dark:text-blue-400">Selesai</p>
           <p class="mt-2 text-2xl font-semibold text-blue-600 dark:text-blue-400">{{ summary.completed }}</p>
-          <p class="text-xs text-blue-500 dark:text-blue-400">Waktu peminjaman telah berakhir</p>
-        </div>
-        <div class="col-span-2 rounded-2xl border border-rose-200 bg-white p-4 shadow-sm dark:border-rose-800 dark:bg-slate-800 sm:col-span-1">
+          <p class="text-xs text-blue-500 dark:text-blue-400">Klik untuk melihat data selesai</p>
+        </button>
+        <button
+          type="button"
+          class="col-span-2 rounded-2xl border bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-4 focus:ring-rose-100 dark:bg-slate-800 dark:focus:ring-rose-950 sm:col-span-1"
+          :class="isSummaryCardActive(['rejected', 'cancelled']) ? 'border-rose-500 ring-2 ring-rose-200 dark:border-rose-400 dark:ring-rose-900' : 'border-rose-200 dark:border-rose-800'"
+          :aria-pressed="isSummaryCardActive(['rejected', 'cancelled'])"
+          @click="selectSummaryCard(['rejected', 'cancelled'])"
+        >
           <p class="text-xs font-medium uppercase tracking-wide text-rose-500 dark:text-rose-400">Ditolak / Batal</p>
           <p class="mt-2 text-2xl font-semibold text-rose-600 dark:text-rose-400">{{ summary.rejected + summary.cancelled }}</p>
-          <p class="text-xs text-rose-500 dark:text-rose-400">Termasuk pembatalan admin</p>
-        </div>
+          <p class="text-xs text-rose-500 dark:text-rose-400">Klik untuk melihat ditolak atau batal</p>
+        </button>
       </div>
 
       <!-- Charts Section -->
@@ -527,8 +631,8 @@ const chartOptions = computed(() => ({
                   <div class="text-xs text-gray-500 dark:text-slate-400">{{ borrowing.description || 'Tidak ada deskripsi.' }}</div>
                 </td>
                 <td class="mobile-report-span-2 px-5 py-4" data-title="Barang">
-                  <div class="font-medium text-gray-900 dark:text-slate-100">{{ borrowing.item?.name ?? '-' }}</div>
-                  <div class="text-xs text-gray-500 dark:text-slate-400">{{ borrowing.item?.code ?? '-' }} • {{ borrowing.item?.category ?? '-' }}</div>
+                  <div class="font-medium text-gray-900 dark:text-slate-100">{{ getItemNames(borrowing) }}</div>
+                  <div class="text-xs text-gray-500 dark:text-slate-400">{{ getItemDetails(borrowing) }}</div>
                 </td>
                 <td class="mobile-report-span-2 px-5 py-4" data-title="Periode">
                   <div>Pinjam: <span class="font-medium text-gray-900 dark:text-slate-100">{{ formatDateTime(borrowing.items?.map(item => item.borrow_date).filter(Boolean).sort()[0] ?? borrowing.borrow_date) }}</span></div>
@@ -543,9 +647,9 @@ const chartOptions = computed(() => ({
                   </span>
                 </td>
               </tr>
-              <tr v-if="!itemBorrowings.length">
+              <tr v-if="!tableItemBorrowings.length">
                 <td colspan="7" class="px-5 py-10 text-center text-sm text-gray-400 dark:text-slate-500">
-                  Belum ada data peminjaman barang.
+                  {{ selectedSummaryStatusGroup.length ? 'Tidak ada data untuk status yang dipilih.' : 'Belum ada data peminjaman barang.' }}
                 </td>
               </tr>
             </tbody>

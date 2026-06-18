@@ -42,6 +42,41 @@ class AuthenticationTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_inactive_users_cannot_authenticate(): void
+    {
+        $user = User::factory()->create([
+            'is_active' => false,
+            'deactivated_at' => now(),
+            'deactivation_reason' => 'Spam pengajuan.',
+        ]);
+
+        $response = $this->from('/login')->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+        $this->assertGuest();
+        $response
+            ->assertRedirect('/login')
+            ->assertSessionHasErrors([
+                'email' => 'Akun Anda telah dinonaktifkan. Hubungi administrator.',
+            ]);
+    }
+
+    public function test_inactive_authenticated_users_are_logged_out_on_their_next_request(): void
+    {
+        $user = User::factory()->create(['is_active' => false]);
+
+        $response = $this->actingAs($user)->get('/dashboard');
+
+        $this->assertGuest();
+        $response
+            ->assertRedirect(route('login'))
+            ->assertSessionHasErrors([
+                'email' => 'Akun Anda telah dinonaktifkan. Hubungi administrator.',
+            ]);
+    }
+
     public function test_users_can_logout(): void
     {
         $user = User::factory()->create();

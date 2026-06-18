@@ -14,7 +14,7 @@ import { useDateRangePickers } from '@/Composables/useDateRangePickers'
 import { usePagination } from '@/Composables/usePagination'
 import { useTableSort } from '@/Composables/useTableSort'
 import { Head, Link, router } from '@inertiajs/vue3'
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { formatDateTimeToDDMMYY } from '@/Composables/useDateFormatter'
 
 const props = defineProps({
@@ -33,11 +33,12 @@ const {
   appliedFilters,
   hasActiveFilters,
   activeFilterBadges,
-  applyFilters,
-  resetFilters,
+  applyFilters: applyBaseFilters,
+  resetFilters: resetBaseFilters,
 } = useAppliedFilters(bookingStatusLabels)
 
 const { startInput, endInput } = useDateRangePickers(filterForm)
+const summaryCardFilter = ref('')
 
 // ── All bookings (normalized) ──────────────────────────────────────────────────
 const allBookings = computed(() =>
@@ -48,7 +49,7 @@ const allBookings = computed(() =>
 )
 
 const summary = computed(() => {
-  const list = bookingsList.value
+  const list = allBookings.value
   return {
     total: list.length,
     waiting: list.filter((b) => ['waiting', 'needs_revision'].includes(b.normalizedStatus)).length,
@@ -76,6 +77,18 @@ const bookingsList = computed(() => {
 
   if (appliedFilters.status) {
     list = list.filter((b) => b.normalizedStatus === appliedFilters.status)
+  }
+
+  if (summaryCardFilter.value === 'waiting') {
+    list = list.filter((b) => ['waiting', 'needs_revision'].includes(b.normalizedStatus))
+  }
+
+  if (summaryCardFilter.value === 'approved') {
+    list = list.filter((b) => b.normalizedStatus === 'approved')
+  }
+
+  if (summaryCardFilter.value === 'final_other') {
+    list = list.filter((b) => ['rejected', 'cancelled', 'expired'].includes(b.normalizedStatus))
   }
 
   if (appliedFilters.start_date || appliedFilters.end_date) {
@@ -113,6 +126,33 @@ const {
 } = usePagination(sortedBookings)
 
 const perPageOptions = [5, 10, 25, 50]
+
+const isSummaryCardActive = (filter) => {
+  if (filter === '') {
+    return summaryCardFilter.value === '' && !appliedFilters.status
+  }
+
+  return summaryCardFilter.value === filter
+}
+
+const applySummaryCardFilter = (filter) => {
+  summaryCardFilter.value = filter
+  filterForm.status = ''
+  appliedFilters.status = ''
+  currentPage.value = 1
+}
+
+const applyFilters = () => {
+  summaryCardFilter.value = ''
+  applyBaseFilters()
+  currentPage.value = 1
+}
+
+const resetFilters = () => {
+  summaryCardFilter.value = ''
+  resetBaseFilters()
+  currentPage.value = 1
+}
 
 const jakartaDateKey = () => {
   const parts = new Intl.DateTimeFormat('en-US', {
@@ -156,32 +196,56 @@ onMounted(() => {
         <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Persetujuan Peminjaman Ruangan</h1>
         <p class="text-sm text-slate-500 dark:text-slate-400">Kelola permintaan peminjaman ruangan yang masuk.</p>
         <p class="text-xs text-slate-500 dark:text-slate-400">
-          {{ hasActiveFilters ? `Menampilkan ${summary.total} hasil sesuai filter aktif.` : `Menampilkan seluruh ${summary.total} pengajuan yang tersedia.` }}
+          {{ hasActiveFilters || summaryCardFilter ? `Menampilkan ${bookingsList.length} hasil sesuai filter aktif.` : `Menampilkan seluruh ${summary.total} pengajuan yang tersedia.` }}
         </p>
       </div>
 
       <!-- Summary cards -->
       <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+        <button
+          type="button"
+          class="rounded-2xl border bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-4 focus:ring-slate-200 dark:bg-slate-800 dark:focus:ring-slate-700"
+          :class="isSummaryCardActive('') ? 'border-slate-500 ring-2 ring-slate-300 dark:border-slate-400 dark:ring-slate-600' : 'border-slate-200 dark:border-slate-700'"
+          :aria-pressed="isSummaryCardActive('')"
+          @click="applySummaryCardFilter('')"
+        >
           <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Total Data</p>
           <p class="mt-3 text-3xl font-semibold text-slate-900 dark:text-white">{{ summary.total }}</p>
-          <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Jumlah pengajuan yang sedang tampil</p>
-        </div>
-        <div class="rounded-2xl border border-amber-200 bg-white p-4 shadow-sm dark:border-amber-800 dark:bg-amber-900/30">
+          <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Klik untuk menampilkan semua status</p>
+        </button>
+        <button
+          type="button"
+          class="rounded-2xl border bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-4 focus:ring-amber-100 dark:bg-amber-900/30 dark:focus:ring-amber-950"
+          :class="isSummaryCardActive('waiting') ? 'border-amber-500 ring-2 ring-amber-200 dark:border-amber-400 dark:ring-amber-900' : 'border-amber-200 dark:border-amber-800'"
+          :aria-pressed="isSummaryCardActive('waiting')"
+          @click="applySummaryCardFilter('waiting')"
+        >
           <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-amber-500 dark:text-amber-300">Menunggu</p>
           <p class="mt-3 text-3xl font-semibold text-amber-600 dark:text-amber-400">{{ summary.waiting }}</p>
-          <p class="mt-2 text-xs text-amber-500 dark:text-amber-400">Perlu ditinjau lebih dulu</p>
-        </div>
-        <div class="rounded-2xl border border-emerald-200 bg-white p-4 shadow-sm dark:border-emerald-800 dark:bg-emerald-900/30">
+          <p class="mt-2 text-xs text-amber-500 dark:text-amber-400">Klik untuk melihat antrean tinjauan</p>
+        </button>
+        <button
+          type="button"
+          class="rounded-2xl border bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-4 focus:ring-emerald-100 dark:bg-emerald-900/30 dark:focus:ring-emerald-950"
+          :class="isSummaryCardActive('approved') ? 'border-emerald-500 ring-2 ring-emerald-200 dark:border-emerald-400 dark:ring-emerald-900' : 'border-emerald-200 dark:border-emerald-800'"
+          :aria-pressed="isSummaryCardActive('approved')"
+          @click="applySummaryCardFilter('approved')"
+        >
           <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-500 dark:text-emerald-300">Disetujui</p>
           <p class="mt-3 text-3xl font-semibold text-emerald-600 dark:text-emerald-400">{{ summary.approved }}</p>
-          <p class="mt-2 text-xs text-emerald-500 dark:text-emerald-400">Sudah mendapat persetujuan</p>
-        </div>
-        <div class="rounded-2xl border border-rose-200 bg-white p-4 shadow-sm dark:border-rose-800 dark:bg-rose-900/30">
+          <p class="mt-2 text-xs text-emerald-500 dark:text-emerald-400">Klik untuk melihat data disetujui</p>
+        </button>
+        <button
+          type="button"
+          class="rounded-2xl border bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-4 focus:ring-rose-100 dark:bg-rose-900/30 dark:focus:ring-rose-950"
+          :class="isSummaryCardActive('final_other') ? 'border-rose-500 ring-2 ring-rose-200 dark:border-rose-400 dark:ring-rose-900' : 'border-rose-200 dark:border-rose-800'"
+          :aria-pressed="isSummaryCardActive('final_other')"
+          @click="applySummaryCardFilter('final_other')"
+        >
           <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-rose-500 dark:text-rose-300">Status Final Lain</p>
           <p class="mt-3 text-3xl font-semibold text-rose-600 dark:text-rose-400">{{ summary.rejected + summary.cancelled + summary.expired }}</p>
-          <p class="mt-2 text-xs text-rose-500 dark:text-rose-400">Ditolak, dibatalkan, atau kedaluwarsa</p>
-      </div>
+          <p class="mt-2 text-xs text-rose-500 dark:text-rose-400">Klik untuk melihat status final lain</p>
+        </button>
       </div>
 
       <!-- Filter panel -->

@@ -32,7 +32,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // Booking Routes
     Route::get('/bookings', [BookingController::class, 'index'])->name('bookings.index');
@@ -75,7 +74,9 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     });
 
     Route::middleware('role:super_admin')->group(function () {
-        Route::resource('users', AdminUserController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
+        Route::resource('users', AdminUserController::class)->only(['index', 'create', 'store', 'edit', 'update']);
+        Route::patch('users/{user}/deactivate', [AdminUserController::class, 'deactivate'])->name('users.deactivate');
+        Route::patch('users/{user}/activate', [AdminUserController::class, 'activate'])->name('users.activate');
     });
 
     Route::middleware('role:super_admin,admin_bap')->group(function () {

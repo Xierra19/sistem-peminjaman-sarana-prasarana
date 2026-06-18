@@ -150,6 +150,7 @@ watch(
 const bookings = computed(() => props.bookings ?? [])
 const selectedChartDate = ref(null)
 const selectedChartStatus = ref(null)
+const selectedSummaryStatusGroup = ref([])
 const chartDateBasis = ref('application')
 const chartStatusKeys = ['approved', 'waiting', 'rejected', 'cancelled', 'expired']
 
@@ -193,10 +194,13 @@ const bookingMatchesDate = (booking, dateKey, basis = chartDateBasis.value) => {
 const tableBookings = computed(() => {
   return bookings.value.filter((booking) => {
     const matchesDate = bookingMatchesDate(booking, selectedChartDate.value)
-    const matchesStatus = !selectedChartStatus.value
-      || normalizeChartStatus(booking.status) === selectedChartStatus.value
+    const normalizedStatus = normalizeChartStatus(booking.status)
+    const matchesChartStatus = !selectedChartStatus.value
+      || normalizedStatus === selectedChartStatus.value
+    const matchesSummaryStatus = !selectedSummaryStatusGroup.value.length
+      || selectedSummaryStatusGroup.value.includes(normalizedStatus)
 
-    return matchesDate && matchesStatus
+    return matchesDate && matchesChartStatus && matchesSummaryStatus
   })
 })
 
@@ -268,6 +272,7 @@ const buildQuery = () => {
 const applyFilters = () => {
   selectedChartDate.value = null
   selectedChartStatus.value = null
+  selectedSummaryStatusGroup.value = []
   changePage(1)
   router.get(route('admin.reports.index'), buildQuery(), {
     preserveState: true,
@@ -595,20 +600,51 @@ const selectChartDate = (dateKey) => {
 }
 
 const selectedChartStatusLabel = computed(() => (
-  selectedChartStatus.value
-    ? getBookingStatusLabel(selectedChartStatus.value)
-    : ''
+  selectedSummaryStatusGroup.value.length
+    ? 'Ditolak, Dibatalkan, atau Kedaluwarsa'
+    : selectedChartStatus.value
+      ? getBookingStatusLabel(selectedChartStatus.value)
+      : ''
 ))
 
 const clearSelectedChartStatus = () => {
   selectedChartStatus.value = null
+  selectedSummaryStatusGroup.value = []
   changePage(1)
 }
 
 const selectChartStatus = (status) => {
   if (!status) return
 
+  selectedSummaryStatusGroup.value = []
   selectedChartStatus.value = selectedChartStatus.value === status ? null : status
+  changePage(1)
+}
+
+const isSummaryCardActive = (filter) => {
+  if (filter === '') {
+    return !selectedChartStatus.value && !selectedSummaryStatusGroup.value.length
+  }
+
+  if (filter === 'final_other') {
+    return selectedSummaryStatusGroup.value.length > 0
+  }
+
+  return selectedChartStatus.value === filter && !selectedSummaryStatusGroup.value.length
+}
+
+const selectSummaryCard = (filter) => {
+  selectedSummaryStatusGroup.value = []
+
+  if (filter === '') {
+    selectedChartStatus.value = null
+  } else if (filter === 'final_other') {
+    selectedChartStatus.value = null
+    selectedSummaryStatusGroup.value = ['rejected', 'cancelled', 'expired']
+  } else {
+    selectedChartStatus.value = filter
+  }
+
   changePage(1)
 }
 
@@ -727,38 +763,62 @@ const trendChartOptions = computed(() => ({
       </div>
 
       <div class="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
-        <div class="rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:rounded-2xl sm:p-4">
+        <button
+          type="button"
+          class="rounded-xl border bg-white p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-4 focus:ring-slate-200 dark:bg-slate-800 dark:focus:ring-slate-700 sm:rounded-2xl sm:p-4"
+          :class="isSummaryCardActive('') ? 'border-slate-500 ring-2 ring-slate-300 dark:border-slate-400 dark:ring-slate-600' : 'border-slate-200 dark:border-slate-700'"
+          :aria-pressed="isSummaryCardActive('')"
+          @click="selectSummaryCard('')"
+        >
           <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 sm:text-[11px] sm:tracking-[0.2em]">Total Data</p>
           <div class="mt-2 flex items-end justify-between gap-2 sm:mt-3 sm:gap-3">
             <p class="text-2xl font-semibold text-slate-900 dark:text-slate-100 sm:text-3xl">{{ summary.total }}</p>
             <span class="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500 dark:bg-slate-700 dark:text-slate-300">Aktif</span>
           </div>
-          <p class="mt-2 hidden text-xs leading-relaxed text-slate-500 dark:text-slate-400 sm:block">Seluruh hasil sesuai filter aktif</p>
-        </div>
-        <div class="rounded-xl border border-amber-200 bg-white p-3 shadow-sm dark:border-amber-800 dark:bg-slate-800 sm:rounded-2xl sm:p-4">
+          <p class="mt-2 hidden text-xs leading-relaxed text-slate-500 dark:text-slate-400 sm:block">Klik untuk menampilkan semua status</p>
+        </button>
+        <button
+          type="button"
+          class="rounded-xl border bg-white p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-4 focus:ring-amber-100 dark:bg-slate-800 dark:focus:ring-amber-950 sm:rounded-2xl sm:p-4"
+          :class="isSummaryCardActive('waiting') ? 'border-amber-500 ring-2 ring-amber-200 dark:border-amber-400 dark:ring-amber-900' : 'border-amber-200 dark:border-amber-800'"
+          :aria-pressed="isSummaryCardActive('waiting')"
+          @click="selectSummaryCard('waiting')"
+        >
           <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-500 dark:text-amber-400 sm:text-[11px] sm:tracking-[0.2em]">Menunggu</p>
           <div class="mt-2 flex items-end justify-between gap-2 sm:mt-3 sm:gap-3">
             <p class="text-2xl font-semibold text-amber-600 dark:text-amber-400 sm:text-3xl">{{ summary.waiting }}</p>
             <span class="rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-medium text-amber-600 dark:bg-amber-900/20 dark:text-amber-300">Review</span>
           </div>
-          <p class="mt-2 hidden text-xs leading-relaxed text-amber-500 dark:text-amber-400 sm:block">Booking belum diputuskan</p>
-        </div>
-        <div class="rounded-xl border border-emerald-200 bg-white p-3 shadow-sm dark:border-emerald-800 dark:bg-slate-800 sm:rounded-2xl sm:p-4">
+          <p class="mt-2 hidden text-xs leading-relaxed text-amber-500 dark:text-amber-400 sm:block">Klik untuk melihat antrean review</p>
+        </button>
+        <button
+          type="button"
+          class="rounded-xl border bg-white p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-4 focus:ring-emerald-100 dark:bg-slate-800 dark:focus:ring-emerald-950 sm:rounded-2xl sm:p-4"
+          :class="isSummaryCardActive('approved') ? 'border-emerald-500 ring-2 ring-emerald-200 dark:border-emerald-400 dark:ring-emerald-900' : 'border-emerald-200 dark:border-emerald-800'"
+          :aria-pressed="isSummaryCardActive('approved')"
+          @click="selectSummaryCard('approved')"
+        >
           <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-500 dark:text-emerald-400 sm:text-[11px] sm:tracking-[0.2em]">Disetujui</p>
           <div class="mt-2 flex items-end justify-between gap-2 sm:mt-3 sm:gap-3">
             <p class="text-2xl font-semibold text-emerald-600 dark:text-emerald-400 sm:text-3xl">{{ summary.approved }}</p>
             <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-300">Aktif</span>
           </div>
-          <p class="mt-2 hidden text-xs leading-relaxed text-emerald-500 dark:text-emerald-400 sm:block">Booking aktif</p>
-        </div>
-        <div class="rounded-xl border border-rose-200 bg-white p-3 shadow-sm dark:border-rose-800 dark:bg-slate-800 sm:rounded-2xl sm:p-4">
+          <p class="mt-2 hidden text-xs leading-relaxed text-emerald-500 dark:text-emerald-400 sm:block">Klik untuk melihat data disetujui</p>
+        </button>
+        <button
+          type="button"
+          class="rounded-xl border bg-white p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-4 focus:ring-rose-100 dark:bg-slate-800 dark:focus:ring-rose-950 sm:rounded-2xl sm:p-4"
+          :class="isSummaryCardActive('final_other') ? 'border-rose-500 ring-2 ring-rose-200 dark:border-rose-400 dark:ring-rose-900' : 'border-rose-200 dark:border-rose-800'"
+          :aria-pressed="isSummaryCardActive('final_other')"
+          @click="selectSummaryCard('final_other')"
+        >
           <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-rose-500 dark:text-rose-400 sm:text-[11px] sm:tracking-[0.2em]">Status Final Lain</p>
           <div class="mt-2 flex items-end justify-between gap-2 sm:mt-3 sm:gap-3">
             <p class="text-2xl font-semibold text-rose-600 dark:text-rose-400 sm:text-3xl">{{ summary.rejected + summary.cancelled + summary.expired }}</p>
             <span class="rounded-full bg-rose-50 px-2.5 py-1 text-[11px] font-medium text-rose-600 dark:bg-rose-900/20 dark:text-rose-300">Selesai</span>
           </div>
-          <p class="mt-2 hidden text-xs leading-relaxed text-rose-500 dark:text-rose-400 sm:block">Ditolak, dibatalkan, atau kedaluwarsa</p>
-        </div>
+          <p class="mt-2 hidden text-xs leading-relaxed text-rose-500 dark:text-rose-400 sm:block">Klik untuk melihat status final lain</p>
+        </button>
       </div>
 
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -976,7 +1036,7 @@ const trendChartOptions = computed(() => ({
             <p v-if="selectedChartDate" class="mt-1 text-xs capitalize text-blue-600 dark:text-blue-400">
               Difilter berdasarkan {{ selectedDateLabel }}
             </p>
-            <div v-if="selectedChartStatus" class="mt-2 flex flex-wrap items-center gap-2">
+            <div v-if="selectedChartStatus || selectedSummaryStatusGroup.length" class="mt-2 flex flex-wrap items-center gap-2">
               <span class="inline-flex rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
                 Status: {{ selectedChartStatusLabel }}
               </span>
