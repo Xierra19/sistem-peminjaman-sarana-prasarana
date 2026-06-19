@@ -40,22 +40,6 @@ const formatDateTime = (value) => {
   })
 }
 
-const serializedScheduleTimeZone = 'UTC'
-
-const datePartsFormatter = new Intl.DateTimeFormat('en-CA', {
-  timeZone: serializedScheduleTimeZone,
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-})
-
-const timeFormatter = new Intl.DateTimeFormat('id-ID', {
-  timeZone: serializedScheduleTimeZone,
-  hour: '2-digit',
-  minute: '2-digit',
-  hourCycle: 'h23',
-})
-
 const fullDateFormatter = new Intl.DateTimeFormat('id-ID', {
   timeZone: 'UTC',
   day: 'numeric',
@@ -74,11 +58,23 @@ const monthFormatter = new Intl.DateTimeFormat('id-ID', {
   month: 'long',
 })
 
-const toDateKey = (value) => {
-  const parts = datePartsFormatter.formatToParts(new Date(value))
-  const part = (type) => parts.find((entry) => entry.type === type)?.value
+const scheduleDateTimeParts = (value) => {
+  if (!value) return null
 
-  return `${part('year')}-${part('month')}-${part('day')}`
+  const match = String(value).match(
+    /^(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2})(?::\d{2})?/,
+  )
+
+  if (!match) return null
+
+  return {
+    dateKey: `${match[1]}-${match[2]}-${match[3]}`,
+    clock: `${match[4]}.${match[5]}`,
+  }
+}
+
+const toDateKey = (value) => {
+  return scheduleDateTimeParts(value)?.dateKey ?? ''
 }
 
 const dateFromKey = (dateKey) => new Date(`${dateKey}T00:00:00Z`)
@@ -131,10 +127,14 @@ const groupedRoomSchedules = computed(() => {
 
   for (const schedule of props.booking.room_schedules ?? []) {
     const roomKey = String(schedule.room_id ?? schedule.room?.id ?? `schedule-${schedule.id}`)
-    const startDate = toDateKey(schedule.start_time)
-    const endDate = toDateKey(schedule.end_time)
-    const startClock = timeFormatter.format(new Date(schedule.start_time))
-    const endClock = timeFormatter.format(new Date(schedule.end_time))
+    const startParts = scheduleDateTimeParts(schedule.start_time)
+    const endParts = scheduleDateTimeParts(schedule.end_time)
+    const startDate = schedule.display_start_date ?? startParts?.dateKey
+    const endDate = schedule.display_end_date ?? endParts?.dateKey
+    const startClock = (schedule.display_start_time ?? startParts?.clock)?.replace(':', '.')
+    const endClock = (schedule.display_end_time ?? endParts?.clock)?.replace(':', '.')
+
+    if (!startDate || !endDate || !startClock || !endClock) continue
     const dayOffset = Math.round(
       (dateFromKey(endDate).getTime() - dateFromKey(startDate).getTime()) / 86400000,
     )

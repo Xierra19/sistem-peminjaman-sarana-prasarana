@@ -49,10 +49,10 @@ class ItemBorrowingController extends Controller
         $this->authorize('resubmit', $itemBorrowing);
         $itemBorrowing->load(['items.item', 'singleItem', 'logs.user']);
 
-        return Inertia::render('ItemBorrowings/Create', $this->itemFormProps($itemBorrowing));
+        return Inertia::render('ItemBorrowings/Create', $this->itemFormProps($itemBorrowing, 'resubmission'));
     }
 
-    private function itemFormProps(?ItemBorrowing $source = null): array
+    private function itemFormProps(?ItemBorrowing $source = null, string $formMode = 'create'): array
     {
         $items = Item::query()
             ->select('id', 'code', 'name', 'category', 'quantity', 'is_available')
@@ -62,10 +62,14 @@ class ItemBorrowingController extends Controller
         return [
             'items' => $items,
             'minimumBorrowDate' => Carbon::now(config('app.business_timezone'))->addDays(7)->toDateString(),
-            'sourceItemBorrowingId' => $source?->id,
+            'formMode' => $formMode,
+            'itemBorrowingId' => $formMode === 'revision' ? $source?->id : null,
+            'sourceItemBorrowingId' => $formMode === 'resubmission' ? $source?->id : null,
             'initialData' => $source ? $this->itemBorrowingInitialData($source) : null,
             'revisionNote' => $source?->logs
-                ->where('action', ItemBorrowing::STATUS_REJECTED)
+                ->where('action', $formMode === 'revision'
+                    ? ItemBorrowing::STATUS_NEEDS_REVISION
+                    : ItemBorrowing::STATUS_REJECTED)
                 ->last()
                 ?->description,
             'existingAttachment' => $source?->attachment,
@@ -74,25 +78,66 @@ class ItemBorrowingController extends Controller
 
     private function itemBorrowingInitialData(ItemBorrowing $itemBorrowing): array
     {
-        $formItems = $itemBorrowing->items->map(fn ($pivot) => [
-            'item_id' => $pivot->item_id,
-            'quantity' => $pivot->quantity,
-            'borrow_date' => $pivot->borrow_date->timezone(config('app.business_timezone'))->format('Y-m-d'),
-            'borrow_time' => $pivot->borrow_date->timezone(config('app.business_timezone'))->format('H:i'),
-            'return_date' => $pivot->return_date->timezone(config('app.business_timezone'))->format('Y-m-d'),
-            'return_time' => $pivot->return_date->timezone(config('app.business_timezone'))->format('H:i'),
-        ]);
+        $timezone = config('app.business_timezone');
+        $rows = $itemBorrowing->items->map(function ($pivot) use ($timezone): array {
+            $start = $pivot->borrow_date->timezone($timezone);
+            $end = $pivot->return_date->timezone($timezone);
 
-        if ($itemBorrowing->singleItem && $formItems->isEmpty()) {
-            $formItems->push([
+            return [
+                'id' => $pivot->id,
+                'item_id' => $pivot->item_id,
+                'quantity' => $pivot->quantity,
+                'borrow_date' => $start->format('Y-m-d'),
+                'borrow_time' => $start->format('H:i'),
+                'return_date' => $end->format('Y-m-d'),
+                'return_time' => $end->format('H:i'),
+            ];
+        });
+
+        if ($itemBorrowing->singleItem && $rows->isEmpty()) {
+            $rows->push([
                 'item_id' => $itemBorrowing->singleItem->id,
                 'quantity' => $itemBorrowing->quantity,
-                'borrow_date' => $itemBorrowing->borrow_date->timezone(config('app.business_timezone'))->format('Y-m-d'),
-                'borrow_time' => $itemBorrowing->borrow_date->timezone(config('app.business_timezone'))->format('H:i'),
-                'return_date' => $itemBorrowing->return_date->timezone(config('app.business_timezone'))->format('Y-m-d'),
-                'return_time' => $itemBorrowing->return_date->timezone(config('app.business_timezone'))->format('H:i'),
+                'borrow_date' => $itemBorrowing->borrow_date->timezone($timezone)->format('Y-m-d'),
+                'borrow_time' => $itemBorrowing->borrow_date->timezone($timezone)->format('H:i'),
+                'return_date' => $itemBorrowing->return_date->timezone($timezone)->format('Y-m-d'),
+                'return_time' => $itemBorrowing->return_date->timezone($timezone)->format('H:i'),
             ]);
         }
+
+        $sameDayCards = $rows
+            ->filter(fn (array $row) => $row['borrow_date'] === $row['return_date'])
+            ->groupBy(fn (array $row) => implode('|', [
+                $row['item_id'],
+                $row['quantity'],
+                $row['borrow_time'],
+                $row['return_time'],
+            ]))
+            ->map(function ($group): array {
+                $first = $group->first();
+
+                return [
+                    'item_id' => $first['item_id'],
+                    'quantity' => $first['quantity'],
+                    'dates' => $group->pluck('borrow_date')->unique()->sort()->values()->all(),
+                    'start_time' => $first['borrow_time'],
+                    'end_time' => $first['return_time'],
+                ];
+            });
+
+        $legacyRangeCards = $rows
+            ->reject(fn (array $row) => $row['borrow_date'] === $row['return_date'])
+            ->map(fn (array $row): array => [
+                'item_id' => $row['item_id'],
+                'quantity' => $row['quantity'],
+                'dates' => [$row['borrow_date']],
+                'start_time' => $row['borrow_time'],
+                'end_time' => $row['return_time'] > $row['borrow_time']
+                    ? $row['return_time']
+                    : '',
+            ]);
+
+        $formItems = $sameDayCards->concat($legacyRangeCards)->values();
 
         return [
             'title' => $itemBorrowing->title,
@@ -105,49 +150,16 @@ class ItemBorrowingController extends Controller
     {
         $this->authorize('edit', $itemBorrowing);
 
-        $items = Item::query()
-            ->select('id', 'code', 'name', 'category', 'quantity', 'is_available')
-            ->orderBy('name')
-            ->get();
+        $props = $this->itemFormProps($itemBorrowing, 'revision');
+        $props['minimumBorrowDate'] = $itemBorrowing->created_at
+            ->copy()
+            ->setTimezone(config('app.business_timezone'))
+            ->startOfDay()
+            ->addDays(7)
+            ->max(Carbon::now(config('app.business_timezone'))->startOfDay())
+            ->toDateString();
 
-        // Legacy single to array for form
-        $formItems = $itemBorrowing->items->map(fn ($pivot) => [
-            'id' => $pivot->id,
-            'item_id' => $pivot->item_id,
-            'quantity' => $pivot->quantity,
-            'borrow_date' => $pivot->borrow_date->timezone(config('app.business_timezone'))->format('Y-m-d'),
-            'borrow_time' => $pivot->borrow_date->timezone(config('app.business_timezone'))->format('H:i'),
-            'return_date' => $pivot->return_date->timezone(config('app.business_timezone'))->format('Y-m-d'),
-            'return_time' => $pivot->return_date->timezone(config('app.business_timezone'))->format('H:i'),
-        ]);
-
-        if ($itemBorrowing->singleItem && $formItems->isEmpty()) {
-            $formItems->push([
-                'item_id' => $itemBorrowing->singleItem->id,
-                'quantity' => $itemBorrowing->quantity,
-                'borrow_date' => $itemBorrowing->borrow_date->timezone(config('app.business_timezone'))->format('Y-m-d'),
-                'borrow_time' => $itemBorrowing->borrow_date->timezone(config('app.business_timezone'))->format('H:i'),
-                'return_date' => $itemBorrowing->return_date->timezone(config('app.business_timezone'))->format('Y-m-d'),
-                'return_time' => $itemBorrowing->return_date->timezone(config('app.business_timezone'))->format('H:i'),
-            ]);
-        }
-
-        return Inertia::render('ItemBorrowings/Edit', [
-            'itemBorrowing' => $itemBorrowing,
-            'items' => $items,
-            'formItems' => $formItems,
-            'minimumBorrowDate' => $itemBorrowing->created_at
-                ->copy()
-                ->setTimezone(config('app.business_timezone'))
-                ->startOfDay()
-                ->addDays(7)
-                ->max(Carbon::now(config('app.business_timezone'))->startOfDay())
-                ->toDateString(),
-            'revisionNote' => $itemBorrowing->logs
-                ->where('action', ItemBorrowing::STATUS_NEEDS_REVISION)
-                ->last()
-                ?->description,
-        ]);
+        return Inertia::render('ItemBorrowings/Create', $props);
     }
 
     public function store(
@@ -159,7 +171,7 @@ class ItemBorrowingController extends Controller
 
         return redirect()
             ->route('item-borrowings.index')
-            ->with('success', 'Permintaan peminjaman '.count($validated['items']).' jenis barang berhasil dibuat dan menunggu persetujuan.');
+            ->with('success', 'Permintaan peminjaman '.count($validated['items']).' kartu barang berhasil dibuat dan menunggu persetujuan.');
     }
 
     public function update(
@@ -225,12 +237,72 @@ class ItemBorrowingController extends Controller
         }
 
         $request->validate([
-            'borrow_date' => 'required|date_format:Y-m-d',
-            'borrow_time' => 'required|date_format:H:i',
-            'return_date' => 'required|date_format:Y-m-d',
-            'return_time' => 'required|date_format:H:i',
+            'dates' => 'nullable|array|max:20',
+            'dates.*' => 'date_format:Y-m-d|distinct',
+            'start_time' => 'nullable|date_format:H:i',
+            'end_time' => 'nullable|date_format:H:i',
+            'borrow_date' => 'nullable|date_format:Y-m-d',
+            'borrow_time' => 'nullable|date_format:H:i',
+            'return_date' => 'nullable|date_format:Y-m-d',
+            'return_time' => 'nullable|date_format:H:i',
             'exclude_item_borrowing_item_id' => 'nullable|integer',
+            'exclude_item_borrowing_id' => 'nullable|integer',
         ]);
+
+        $dates = collect($request->query('dates', []))
+            ->filter(fn ($date) => is_string($date) && $date !== '')
+            ->unique()
+            ->sort()
+            ->values();
+
+        if ($dates->isNotEmpty()) {
+            if (! $request->query('start_time') || ! $request->query('end_time')) {
+                return response()->json(['message' => 'Jam mulai dan jam selesai wajib dipilih.'], 422);
+            }
+
+            if ($request->query('end_time') <= $request->query('start_time')) {
+                return response()->json(['message' => 'Jam selesai harus setelah jam mulai.'], 422);
+            }
+
+            $dailyAvailability = $dates->map(function (string $date) use (
+                $request,
+                $item,
+                $availabilityService,
+                $period,
+            ): array {
+                [$start, $end] = $period->parse([
+                    'borrow_date' => $date,
+                    'borrow_time' => $request->query('start_time'),
+                    'return_date' => $date,
+                    'return_time' => $request->query('end_time'),
+                ]);
+
+                return [
+                    'date' => $date,
+                    ...$availabilityService->getAvailabilityForBorrowingUser(
+                        $item,
+                        $start,
+                        $end,
+                        $request->integer('exclude_item_borrowing_id') ?: null,
+                        (int) Auth::id(),
+                    ),
+                ];
+            })->all();
+
+            return response()->json([
+                'available' => collect($dailyAvailability)->every(fn (array $day) => $day['available']),
+                'daily_availability' => $dailyAvailability,
+            ]);
+        }
+
+        if (
+            ! $request->query('borrow_date')
+            || ! $request->query('borrow_time')
+            || ! $request->query('return_date')
+            || ! $request->query('return_time')
+        ) {
+            return response()->json(['message' => 'Rentang tanggal dan waktu wajib dilengkapi.'], 422);
+        }
 
         try {
             [$start, $end] = $period->parse([
@@ -245,22 +317,29 @@ class ItemBorrowingController extends Controller
             ], 422);
         }
 
-        if ($end->lt($start)) {
+        if ($end->lte($start)) {
             return response()->json([
                 'message' => 'Waktu kembali harus setelah waktu mulai.',
             ], 422);
         }
 
-        return response()->json(
-            $availabilityService->getAvailabilityForUser(
+        $availability = $request->integer('exclude_item_borrowing_id')
+            ? $availabilityService->getAvailabilityForBorrowingUser(
+                $item,
+                $start,
+                $end,
+                $request->integer('exclude_item_borrowing_id'),
+                (int) Auth::id(),
+            )
+            : $availabilityService->getAvailabilityForUser(
                 $item,
                 $start,
                 $end,
                 $request->integer('exclude_item_borrowing_item_id') ?: null,
                 (int) Auth::id(),
-            ),
-            200,
-        );
+            );
+
+        return response()->json($availability, 200);
     }
 
     public function downloadAttachment(ItemBorrowing $itemBorrowing)

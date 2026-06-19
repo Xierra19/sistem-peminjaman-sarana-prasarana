@@ -51,21 +51,30 @@ class ItemBorrowingStatusUpdatedNotification extends Notification implements Sho
         }
 
         if ($items->isNotEmpty()) {
-            $mail->line('Barang: '.$items->map(function ($borrowingItem) {
-                $item = $borrowingItem->item;
+            $itemGroups = $items->groupBy('item_id');
+            $mail->line('Barang: '.$itemGroups->map(function ($schedules) {
+                $borrowingItem = $schedules->first();
+                $item = $borrowingItem?->item;
 
                 if (! $item) {
                     return null;
                 }
 
-                return $item->name.' x'.$borrowingItem->quantity;
+                $quantities = $schedules
+                    ->pluck('quantity')
+                    ->map(fn ($quantity): int => (int) $quantity)
+                    ->unique()
+                    ->sort()
+                    ->implode('/');
+
+                return $item->name.' x'.$quantities.' per jadwal';
             })->filter()->implode(', '));
         } elseif ($borrowing->singleItem?->name) {
             $mail->line('Barang: '.$borrowing->singleItem->name);
         }
 
         if ($items->isNotEmpty()) {
-            $mail->line('Total jenis barang: '.$items->count());
+            $mail->line('Total jenis barang: '.$items->pluck('item_id')->unique()->count());
         } elseif ($borrowing->quantity) {
             $mail->line('Jumlah: '.$borrowing->quantity);
         }

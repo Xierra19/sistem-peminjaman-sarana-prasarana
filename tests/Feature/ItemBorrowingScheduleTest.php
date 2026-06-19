@@ -41,10 +41,9 @@ class ItemBorrowingScheduleTest extends TestCase
             'items' => [[
                 'item_id' => $item->id,
                 'quantity' => 2,
-                'borrow_date' => '2026-06-20',
-                'borrow_time' => '08:00',
-                'return_date' => '2026-06-20',
-                'return_time' => '10:00',
+                'dates' => ['2026-06-20'],
+                'start_time' => '08:00',
+                'end_time' => '10:00',
             ]],
         ]);
 
@@ -55,6 +54,210 @@ class ItemBorrowingScheduleTest extends TestCase
 
         $this->assertSame('2026-06-20 08:00', $detail->borrow_date->timezone('Asia/Jakarta')->format('Y-m-d H:i'));
         $this->assertSame('2026-06-20 10:00', $detail->return_date->timezone('Asia/Jakarta')->format('Y-m-d H:i'));
+    }
+
+    public function test_multi_date_card_expands_into_separate_item_schedules(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-06-13 10:00', 'Asia/Jakarta')->utc());
+        Storage::fake('local');
+        Notification::fake();
+
+        $user = User::factory()->create();
+        $item = $this->createItem();
+
+        $response = $this->actingAs($user)->post(route('item-borrowings.store'), [
+            'title' => 'Dokumentasi Multi Tanggal',
+            'attachment' => UploadedFile::fake()->create('surat.pdf', 100, 'application/pdf'),
+            'items' => [[
+                'item_id' => $item->id,
+                'quantity' => 4,
+                'dates' => ['2026-06-20', '2026-06-22', '2026-06-24'],
+                'start_time' => '08:00',
+                'end_time' => '10:00',
+            ]],
+        ]);
+
+        $response
+            ->assertRedirect(route('item-borrowings.index'))
+            ->assertSessionHasNoErrors();
+
+        $rows = ItemBorrowingItem::query()->orderBy('borrow_date')->get();
+
+        $this->assertCount(3, $rows);
+        $this->assertSame(
+            ['2026-06-20', '2026-06-22', '2026-06-24'],
+            $rows->map(fn (ItemBorrowingItem $row) => $row->borrow_date
+                ->timezone('Asia/Jakarta')
+                ->toDateString())->all(),
+        );
+        $this->assertSame([4, 4, 4], $rows->pluck('quantity')->all());
+    }
+
+    public function test_same_item_can_use_the_same_schedule_when_quantity_is_different(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-06-13 10:00', 'Asia/Jakarta')->utc());
+        Storage::fake('local');
+        Notification::fake();
+
+        $user = User::factory()->create();
+        $item = $this->createItem(quantity: 5);
+
+        $response = $this->actingAs($user)->post(route('item-borrowings.store'), [
+            'title' => 'Dua Kartu Barang Sama',
+            'attachment' => UploadedFile::fake()->create('surat.pdf', 100, 'application/pdf'),
+            'items' => [
+                [
+                    'item_id' => $item->id,
+                    'quantity' => 2,
+                    'dates' => ['2026-06-20'],
+                    'start_time' => '08:00',
+                    'end_time' => '10:00',
+                ],
+                [
+                    'item_id' => $item->id,
+                    'quantity' => 1,
+                    'dates' => ['2026-06-20'],
+                    'start_time' => '08:00',
+                    'end_time' => '10:00',
+                ],
+            ],
+        ]);
+
+        $response
+            ->assertRedirect(route('item-borrowings.index'))
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame([1, 2], ItemBorrowingItem::query()->orderBy('quantity')->pluck('quantity')->all());
+    }
+
+    public function test_identical_item_cards_are_rejected(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-06-13 10:00', 'Asia/Jakarta')->utc());
+        Storage::fake('local');
+        Notification::fake();
+
+        $user = User::factory()->create();
+        $item = $this->createItem();
+        $card = [
+            'item_id' => $item->id,
+            'quantity' => 2,
+            'dates' => ['2026-06-20'],
+            'start_time' => '08:00',
+            'end_time' => '10:00',
+        ];
+
+        $response = $this->actingAs($user)
+            ->from(route('item-borrowings.create'))
+            ->post(route('item-borrowings.store'), [
+                'title' => 'Jadwal Duplikat',
+                'attachment' => UploadedFile::fake()->create('surat.pdf', 100, 'application/pdf'),
+                'items' => [$card, $card],
+            ]);
+
+        $response->assertRedirect(route('item-borrowings.create'));
+        $response->assertSessionHasErrors('items.1.dates.0');
+        $this->assertDatabaseCount('item_borrowings', 0);
+    }
+
+    public function test_overlapping_cards_for_the_same_item_use_combined_stock(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-06-13 10:00', 'Asia/Jakarta')->utc());
+        Storage::fake('local');
+        Notification::fake();
+
+        $user = User::factory()->create();
+        $item = $this->createItem(quantity: 5);
+
+        $response = $this->actingAs($user)
+            ->from(route('item-borrowings.create'))
+            ->post(route('item-borrowings.store'), [
+                'title' => 'Stok Gabungan',
+                'attachment' => UploadedFile::fake()->create('surat.pdf', 100, 'application/pdf'),
+                'items' => [
+                    [
+                        'item_id' => $item->id,
+                        'quantity' => 3,
+                        'dates' => ['2026-06-20'],
+                        'start_time' => '08:00',
+                        'end_time' => '10:00',
+                    ],
+                    [
+                        'item_id' => $item->id,
+                        'quantity' => 3,
+                        'dates' => ['2026-06-20'],
+                        'start_time' => '09:00',
+                        'end_time' => '11:00',
+                    ],
+                ],
+            ]);
+
+        $response->assertRedirect(route('item-borrowings.create'));
+        $response->assertSessionHasErrors(['items.0.quantity', 'items.1.quantity']);
+        $this->assertDatabaseCount('item_borrowings', 0);
+    }
+
+    public function test_update_replaces_existing_schedule_with_multi_date_rows(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-06-13 10:00', 'Asia/Jakarta')->utc());
+        Storage::fake('local');
+        Notification::fake();
+
+        $user = User::factory()->create();
+        $item = $this->createItem();
+        $borrowing = $this->createBorrowing($user, $item, ItemBorrowing::STATUS_WAITING);
+
+        $response = $this->actingAs($user)->put(route('item-borrowings.update', $borrowing), [
+            'title' => 'Jadwal Diperbarui',
+            'items' => [[
+                'item_id' => $item->id,
+                'quantity' => 2,
+                'dates' => ['2026-06-20', '2026-06-22'],
+                'start_time' => '13:00',
+                'end_time' => '15:00',
+            ]],
+        ]);
+
+        $response
+            ->assertRedirect(route('item-borrowings.index'))
+            ->assertSessionHasNoErrors();
+
+        $rows = $borrowing->fresh()->items()->orderBy('borrow_date')->get();
+
+        $this->assertCount(2, $rows);
+        $this->assertSame([2, 2], $rows->pluck('quantity')->all());
+        $this->assertSame(
+            ['2026-06-20 13:00', '2026-06-22 13:00'],
+            $rows->map(fn (ItemBorrowingItem $row) => $row->borrow_date
+                ->timezone('Asia/Jakarta')
+                ->format('Y-m-d H:i'))->all(),
+        );
+    }
+
+    public function test_multi_date_availability_returns_stock_for_each_selected_date(): void
+    {
+        $user = User::factory()->create();
+        $item = $this->createItem(quantity: 5);
+        $this->createApprovedBorrowing(
+            $user,
+            $item,
+            '2026-06-20 08:00',
+            '2026-06-20 10:00',
+            3,
+        );
+
+        $response = $this->actingAs($user)->getJson(route('items.availability', [
+            'item' => $item,
+            'dates' => ['2026-06-20', '2026-06-22'],
+            'start_time' => '09:00',
+            'end_time' => '11:00',
+        ]));
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('daily_availability.0.date', '2026-06-20')
+            ->assertJsonPath('daily_availability.0.remaining_quantity', 2)
+            ->assertJsonPath('daily_availability.1.date', '2026-06-22')
+            ->assertJsonPath('daily_availability.1.remaining_quantity', 5);
     }
 
     public function test_new_request_notifies_only_sarpras_admins(): void
@@ -110,7 +313,7 @@ class ItemBorrowingScheduleTest extends TestCase
             ]);
 
         $response->assertRedirect(route('item-borrowings.create'));
-        $response->assertSessionHasErrors('items.0.borrow_date');
+        $response->assertSessionHasErrors('items.0.dates.0');
         $this->assertDatabaseCount('item_borrowings', 0);
     }
 

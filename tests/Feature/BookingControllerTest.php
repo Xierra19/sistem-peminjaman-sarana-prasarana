@@ -54,6 +54,31 @@ class BookingControllerTest extends TestCase
         $response->assertJsonPath('daily_bookings.0.date', $date);
     }
 
+    public function test_booking_letter_displays_approval_time_in_business_timezone(): void
+    {
+        [$user, $rooms] = $this->createLocation(1);
+        $booking = $this->createBooking($user, $rooms[0], [
+            'status' => Booking::STATUS_APPROVED,
+        ]);
+        $booking->roomSchedules()->create([
+            'room_id' => $rooms[0]->id,
+            'start_time' => '2026-06-25 07:00:00',
+            'end_time' => '2026-06-25 13:00:00',
+        ]);
+        $booking->load(['user', 'roomSchedules.room.building.campus']);
+
+        $html = view('pdf.booking-letter', [
+            'booking' => $booking,
+            'generatedAt' => Carbon::parse('2026-06-19 02:58:00', 'UTC'),
+            'approvedAt' => Carbon::parse('2026-06-19 02:58:00', 'UTC'),
+        ])->render();
+
+        $this->assertStringContainsString(
+            'Disetujui pada 19 Juni 2026 09:58 WIB',
+            $html,
+        );
+    }
+
     public function test_availability_excludes_booking_that_is_waiting_for_revision(): void
     {
         [$user, $rooms] = $this->createLocation(1);
@@ -359,6 +384,59 @@ class BookingControllerTest extends TestCase
         $response->assertRedirect(route('bookings.index'));
         $this->assertDatabaseCount('bookings', 1);
         $this->assertDatabaseCount('booking_room_schedules', 2);
+    }
+
+    public function test_store_returns_user_friendly_message_when_end_time_is_missing(): void
+    {
+        [$user, $rooms] = $this->createLocation(1);
+        $date = now()->addDays(5)->toDateString();
+
+        $response = $this->actingAs($user)
+            ->from(route('bookings.create'))
+            ->post(route('bookings.store'), [
+                'title' => 'Jadwal Belum Lengkap',
+                'schedules' => [[
+                    'room_id' => $rooms[0]->id,
+                    'dates' => [$date],
+                    'start_time' => '20:30',
+                    'end_time' => '',
+                ]],
+            ]);
+
+        $response
+            ->assertRedirect(route('bookings.create'))
+            ->assertSessionHasErrors([
+                'schedules.0.end_time' => 'Pilih jam selesai.',
+            ]);
+
+        $this->assertDatabaseCount('bookings', 0);
+    }
+
+    public function test_store_rejects_schedule_outside_operational_hours(): void
+    {
+        [$user, $rooms] = $this->createLocation(1);
+        $date = now()->addDays(5)->toDateString();
+
+        $response = $this->actingAs($user)
+            ->from(route('bookings.create'))
+            ->post(route('bookings.store'), [
+                'title' => 'Di Luar Jam Operasional',
+                'schedules' => [[
+                    'room_id' => $rooms[0]->id,
+                    'dates' => [$date],
+                    'start_time' => '21:00',
+                    'end_time' => '21:30',
+                ]],
+            ]);
+
+        $response
+            ->assertRedirect(route('bookings.create'))
+            ->assertSessionHasErrors([
+                'schedules.0.start_time' => 'Jam mulai paling akhir pukul 20:30.',
+                'schedules.0.end_time' => 'Jam selesai paling akhir pukul 21:00.',
+            ]);
+
+        $this->assertDatabaseCount('bookings', 0);
     }
 
     public function test_store_allows_overlapping_request_when_existing_booking_is_still_waiting(): void

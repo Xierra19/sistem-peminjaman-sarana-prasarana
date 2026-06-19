@@ -152,6 +152,11 @@ class BookingApprovalWorkflowTest extends TestCase
             'role' => User::ROLE_ADMIN_BAP,
         ]);
         $booking = $this->createBooking(User::factory()->create());
+        $booking->roomSchedules()->create([
+            'room_id' => $booking->room_id,
+            'start_time' => '2026-06-20 08:00:00',
+            'end_time' => '2026-06-20 10:00:00',
+        ]);
         $queuedConflict = $this->createBooking(User::factory()->create());
         $approvedConflict = $this->createBooking(User::factory()->create());
         $approvedConflict->update(['status' => Booking::STATUS_APPROVED]);
@@ -161,6 +166,9 @@ class BookingApprovalWorkflowTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Admin/Bookings/Show')
+                ->where('booking.room_schedules.0.display_start_date', '2026-06-20')
+                ->where('booking.room_schedules.0.display_start_time', '08:00')
+                ->where('booking.room_schedules.0.display_end_time', '10:00')
                 ->where('queuedConflicts.0.id', $queuedConflict->id)
                 ->where('approvedConflicts.0.id', $approvedConflict->id)
             );

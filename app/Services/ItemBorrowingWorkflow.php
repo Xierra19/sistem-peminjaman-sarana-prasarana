@@ -8,6 +8,7 @@ use App\Models\ItemBorrowingItem;
 use App\Models\ItemBorrowingLog;
 use App\Models\User;
 use App\Notifications\ItemBorrowingRequestedNotification;
+use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -37,7 +38,8 @@ final class ItemBorrowingWorkflow
                         $user,
                         $attachmentPath !== null,
                     );
-                    $this->lockItemsAndValidateAvailability($validated['items']);
+                    $expandedItems = $this->period->expand($validated['items']);
+                    $this->lockItemsAndValidateAvailability($expandedItems->all());
 
                     $borrowing = ItemBorrowing::create([
                         'title' => $validated['title'],
@@ -52,7 +54,7 @@ final class ItemBorrowingWorkflow
                         'return_date' => null,
                     ]);
 
-                    foreach (collect($validated['items'])->keyBy('item_id')->values() as $itemData) {
+                    foreach ($expandedItems as $itemData) {
                         [$borrowDate, $returnDate] = $this->period->parse($itemData);
 
                         ItemBorrowingItem::create([
@@ -70,7 +72,7 @@ final class ItemBorrowingWorkflow
                         'action' => 'requested',
                         'description' => $source
                             ? "Peminjaman barang diajukan ulang dari pengajuan #{$source->id}."
-                            : 'Peminjaman '.count($validated['items']).' jenis barang diajukan oleh pengguna.',
+                            : 'Peminjaman '.count($validated['items']).' kartu barang diajukan oleh pengguna.',
                     ]);
 
                     return $borrowing;
@@ -115,8 +117,9 @@ final class ItemBorrowingWorkflow
 
                     Gate::forUser($user)->authorize('update', $lockedBorrowing);
 
-                    $existingItems = $lockedBorrowing->items()->get()->keyBy('id');
-                    $this->lockItemsAndValidateAvailability($validated['items'], $existingItems);
+                    $existingItems = $lockedBorrowing->items()->get();
+                    $expandedItems = $this->period->expand($validated['items']);
+                    $this->lockItemsAndValidateAvailability($expandedItems->all(), $existingItems);
 
                     $wasRevisionRequested = $lockedBorrowing->status === ItemBorrowing::STATUS_NEEDS_REVISION;
                     $updateData = [
@@ -136,27 +139,16 @@ final class ItemBorrowingWorkflow
 
                     $lockedBorrowing->update($updateData);
 
-                    $existingIds = collect($validated['items'])->pluck('id')->filter()->all();
-                    $lockedBorrowing->items()
-                        ->whereNotIn('id', $existingIds)
-                        ->delete();
+                    $lockedBorrowing->items()->delete();
 
-                    foreach ($validated['items'] as $itemData) {
+                    foreach ($expandedItems as $itemData) {
                         [$borrowDate, $returnDate] = $this->period->parse($itemData);
-                        $itemValues = [
+                        $lockedBorrowing->items()->create([
                             'item_id' => $itemData['item_id'],
                             'quantity' => $itemData['quantity'],
                             'borrow_date' => $borrowDate,
                             'return_date' => $returnDate,
-                        ];
-
-                        if (isset($itemData['id'])) {
-                            $existingItems->get((int) $itemData['id'])->update($itemValues);
-
-                            continue;
-                        }
-
-                        $lockedBorrowing->items()->create($itemValues);
+                        ]);
                     }
 
                     ItemBorrowingLog::query()->create([
@@ -185,8 +177,19 @@ final class ItemBorrowingWorkflow
 
     private function lockItemsAndValidateAvailability(array $itemsData, mixed $existingItems = null): void
     {
+        $scheduledItems = collect($itemsData)
+            ->map(function (array $itemData): array {
+                [$borrowDate, $returnDate] = $this->period->parse($itemData);
+
+                return [
+                    ...$itemData,
+                    'parsed_borrow_date' => $borrowDate,
+                    'parsed_return_date' => $returnDate,
+                ];
+            });
+
         $items = Item::query()
-            ->whereIn('id', collect($itemsData)->pluck('item_id')->unique()->sort()->values())
+            ->whereIn('id', $scheduledItems->pluck('item_id')->unique()->sort()->values())
             ->orderBy('id')
             ->lockForUpdate()
             ->get()
@@ -194,37 +197,65 @@ final class ItemBorrowingWorkflow
 
         $errors = [];
 
-        foreach ($itemsData as $index => $itemData) {
-            $item = $items->get((int) $itemData['item_id']);
-
+        foreach ($scheduledItems->groupBy('item_id') as $itemId => $itemSchedules) {
+            $item = $items->get((int) $itemId);
             if (! $item?->is_available) {
-                $errors["items.{$index}.item_id"] = 'Barang sedang tidak tersedia untuk dipinjam.';
+                foreach ($itemSchedules as $index => $itemData) {
+                    $inputIndex = (int) ($itemData['input_index'] ?? $index);
+                    $errors["items.{$inputIndex}.item_id"] = 'Barang sedang tidak tersedia untuk dipinjam.';
+                }
 
                 continue;
             }
 
-            [$borrowDate, $returnDate] = $this->period->parse($itemData);
-            $exclude = isset($itemData['id'])
-                ? $existingItems?->get((int) $itemData['id'])
+            $exclude = $existingItems
+                ? collect($existingItems)
+                    ->where('item_id', (int) $itemId)
+                    ->pluck('id')
                 : null;
+            $boundaries = $itemSchedules
+                ->flatMap(fn (array $schedule): array => [
+                    $schedule['parsed_borrow_date']->timestamp,
+                    $schedule['parsed_return_date']->timestamp,
+                ])
+                ->unique()
+                ->sort()
+                ->values();
 
-            if ($this->availabilityService->hasEnoughStock(
-                $item,
-                $borrowDate,
-                $returnDate,
-                (int) $itemData['quantity'],
-                $exclude,
-            )) {
-                continue;
+            for ($boundaryIndex = 0; $boundaryIndex < $boundaries->count() - 1; $boundaryIndex++) {
+                $segmentStart = Carbon::createFromTimestampUTC($boundaries[$boundaryIndex]);
+                $segmentEnd = Carbon::createFromTimestampUTC($boundaries[$boundaryIndex + 1]);
+                $activeSchedules = $itemSchedules->filter(fn (array $schedule): bool => (
+                    $schedule['parsed_borrow_date']->lt($segmentEnd)
+                    && $schedule['parsed_return_date']->gt($segmentStart)
+                ));
+
+                if ($activeSchedules->isEmpty()) {
+                    continue;
+                }
+
+                $combinedQuantity = $activeSchedules
+                    ->sum(fn (array $schedule): int => (int) $schedule['quantity']);
+                $availability = $this->availabilityService->getAvailability(
+                    $item,
+                    $segmentStart,
+                    $segmentEnd,
+                    $exclude,
+                );
+
+                if ($availability['remaining_quantity'] >= $combinedQuantity) {
+                    continue;
+                }
+
+                foreach ($activeSchedules as $index => $schedule) {
+                    $inputIndex = (int) ($schedule['input_index'] ?? $index);
+                    $errors["items.{$inputIndex}.quantity"] = sprintf(
+                        'Stok tidak mencukupi. Total kebutuhan pada jadwal yang bertumpuk: %d, sisa tersedia: %d.',
+                        $combinedQuantity,
+                        $availability['remaining_quantity'],
+                    );
+                }
             }
-
-            $availability = $this->availabilityService->getAvailability(
-                $item,
-                $borrowDate,
-                $returnDate,
-                $exclude,
-            );
-            $errors["items.{$index}.quantity"] = 'Stok tidak mencukupi. Sisa tersedia: '.$availability['remaining_quantity'];
         }
 
         if ($errors !== []) {

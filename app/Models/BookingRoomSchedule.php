@@ -27,6 +27,10 @@ class BookingRoomSchedule extends Model
     protected $appends = [
         'schedule_summary',
         'schedule_short_summary',
+        'display_start_date',
+        'display_end_date',
+        'display_start_time',
+        'display_end_time',
     ];
 
     public function booking(): BelongsTo
@@ -79,6 +83,26 @@ class BookingRoomSchedule extends Model
             $start->format('H:i'),
             $end->format('H:i'),
         );
+    }
+
+    public function getDisplayStartDateAttribute(): string
+    {
+        return Carbon::parse($this->start_time)->toDateString();
+    }
+
+    public function getDisplayEndDateAttribute(): string
+    {
+        return Carbon::parse($this->end_time)->toDateString();
+    }
+
+    public function getDisplayStartTimeAttribute(): string
+    {
+        return Carbon::parse($this->start_time)->format('H:i');
+    }
+
+    public function getDisplayEndTimeAttribute(): string
+    {
+        return Carbon::parse($this->end_time)->format('H:i');
     }
 
     /**

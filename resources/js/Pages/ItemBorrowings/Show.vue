@@ -9,6 +9,7 @@ import {
   normalizeItemBorrowingStatus,
 } from '@/Composables/useItemBorrowingStatus'
 import { formatToDDMMYY, formatDateTimeToDDMMYY } from '@/Composables/useDateFormatter'
+import { groupItemBorrowingSchedules } from '@/Composables/useItemBorrowingSchedules'
 
 const props = defineProps({
   itemBorrowing: {
@@ -45,12 +46,19 @@ const borrowingItems = computed(() => {
 
   return []
 })
+const scheduleGroups = computed(() => groupItemBorrowingSchedules(borrowingItems.value))
 const decisionStatus = computed(() => props.latestDecisionLog?.action ?? '')
 const hasDecision = computed(() =>
   ['approved', 'needs_revision', 'rejected', 'cancelled', 'returned'].includes(decisionStatus.value),
 )
 const earliestBorrowDate = computed(() => borrowingItems.value[0]?.borrow_date ?? null)
-const latestReturnDate = computed(() => borrowingItems.value[borrowingItems.value.length - 1]?.return_date ?? null)
+const latestReturnDate = computed(() =>
+  borrowingItems.value
+    .map((item) => item.return_date)
+    .filter(Boolean)
+    .sort()
+    .at(-1) ?? null,
+)
 
 const decisionNote = computed(() => {
   const raw = props.latestDecisionLog?.description ?? ''
@@ -146,14 +154,19 @@ const cancelBorrowing = () => {
                   <div class="text-xs font-semibold uppercase text-gray-500 dark:text-slate-400">Barang</div>
                   <ul class="space-y-2">
                     <li
-                      v-for="borrowingItem in borrowingItems"
-                      :key="borrowingItem.id"
+                      v-for="schedule in scheduleGroups"
+                      :key="schedule.key"
                       class="rounded-lg border border-gray-100 px-3 py-2 text-sm text-gray-700 dark:border-slate-700 dark:text-slate-300"
                     >
-                      <div class="font-semibold text-gray-900 dark:text-white">{{ borrowingItem.item?.name ?? '-' }}</div>
+                      <div class="font-semibold text-gray-900 dark:text-white">{{ schedule.item?.name ?? '-' }}</div>
                       <div class="mt-1 text-xs text-gray-600 dark:text-slate-300">
-                        Jumlah {{ borrowingItem.quantity }} •
-                        {{ formatDateTime(borrowingItem.borrow_date) }} s/d {{ formatDateTime(borrowingItem.return_date) }}
+                        Jumlah {{ schedule.quantity }} •
+                        <template v-if="schedule.mode === 'dates'">
+                          {{ schedule.dates.map(formatDate).join(', ') }} • {{ schedule.start_time }}–{{ schedule.end_time }} WIB
+                        </template>
+                        <template v-else>
+                          {{ formatDateTime(schedule.borrow_date) }} s/d {{ formatDateTime(schedule.return_date) }}
+                        </template>
                       </div>
                     </li>
                   </ul>
@@ -177,7 +190,7 @@ const cancelBorrowing = () => {
                 </div>
                 <div>
                   <div class="text-xs font-semibold uppercase text-gray-500 dark:text-slate-400">Jenis Barang</div>
-                  <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ borrowingItems.length }}</p>
+                  <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ new Set(borrowingItems.map((item) => item.item_id)).size }}</p>
                 </div>
               </div>
             </div>

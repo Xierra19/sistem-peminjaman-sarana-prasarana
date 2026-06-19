@@ -11,6 +11,7 @@ import {
 import { usePagination } from '@/Composables/usePagination'
 import { useTableSort } from '@/Composables/useTableSort'
 import { formatDateTimeToDDMMYY } from '@/Composables/useDateFormatter'
+import { distinctItemNames, totalDistinctItemQuantity } from '@/Composables/useItemBorrowingSchedules'
 
 const props = defineProps({
   itemBorrowings: {
@@ -30,10 +31,7 @@ const activeStatusLabel = computed(() => getItemBorrowingStatusLabel(statusFilte
 const getItemNames = (borrowing) => {
   // Cek dulu apakah ada data multi-item
   if (borrowing.items && borrowing.items.length > 0) {
-    return borrowing.items
-      .map((pivot) => pivot.item?.name)
-      .filter(Boolean)
-      .join(', ')
+    return distinctItemNames(borrowing.items).join(', ')
   }
   // Fallback ke legacy singleItem
   return borrowing.single_item?.name ?? '-'
@@ -44,7 +42,7 @@ const getItemNames = (borrowing) => {
  */
 const getTotalQuantity = (borrowing) => {
   if (borrowing.items && borrowing.items.length > 0) {
-    return borrowing.items.reduce((sum, pivot) => sum + (pivot.quantity || 0), 0)
+    return totalDistinctItemQuantity(borrowing.items)
   }
   // Fallback ke legacy quantity
   return borrowing.quantity ?? 0

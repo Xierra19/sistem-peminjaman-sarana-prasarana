@@ -99,6 +99,7 @@ const timeSlots = (() => {
 
   return slots
 })()
+const startTimeSlots = timeSlots.slice(0, -1)
 
 const findById = (items, id) => items.find((item) => String(item.id) === String(id))
 
@@ -109,6 +110,8 @@ const roomsFor = (schedule) =>
   findById(buildingsFor(schedule), schedule.building_id)?.rooms ?? []
 
 const selectedRoom = (schedule) => findById(roomsFor(schedule), schedule.room_id)
+const isScheduleComplete = (schedule) =>
+  Boolean(schedule.room_id && schedule.dates.length && schedule.start_time && schedule.end_time)
 
 const availabilityFor = (schedule) =>
   availabilityByKey.value[schedule._key] ?? {
@@ -143,6 +146,9 @@ const selectedQueuedBookings = (schedule) =>
 
 const hasApprovedScheduleConflict = computed(() =>
   form.schedules.some((schedule) => selectedBlockingBookings(schedule).length > 0),
+)
+const hasIncompleteSchedule = computed(() =>
+  form.schedules.some((schedule) => !isScheduleComplete(schedule)),
 )
 
 const hasUncheckedCompleteSchedule = computed(() =>
@@ -352,17 +358,8 @@ const scheduleDatesError = (index) =>
 
 const fileName = computed(() => form.attachment?.name ?? '')
 const completedScheduleCount = computed(() =>
-  form.schedules.filter(
-    (schedule) =>
-      schedule.room_id &&
-      schedule.dates.length &&
-      schedule.start_time &&
-      schedule.end_time,
-  ).length,
+  form.schedules.filter(isScheduleComplete).length,
 )
-
-const isScheduleComplete = (schedule) =>
-  Boolean(schedule.room_id && schedule.dates.length && schedule.start_time && schedule.end_time)
 
 const selectedCampus = (schedule) => findById(props.campuses, schedule.campus_id)
 const selectedBuilding = (schedule) => findById(buildingsFor(schedule), schedule.building_id)
@@ -417,7 +414,11 @@ const onAttachmentChange = (event) => {
 }
 
 const submit = () => {
-  if (hasApprovedScheduleConflict.value || hasUncheckedCompleteSchedule.value) {
+  if (
+    hasIncompleteSchedule.value
+    || hasApprovedScheduleConflict.value
+    || hasUncheckedCompleteSchedule.value
+  ) {
     return
   }
 
@@ -691,7 +692,7 @@ onBeforeUnmount(() => {
                   @change="onStartTimeChange(schedule)"
                 >
                   <option value="">{{ availabilityFor(schedule).loading ? 'Memeriksa jadwal...' : 'Pilih jam mulai' }}</option>
-                  <option v-for="time in timeSlots" :key="time" :value="time" :disabled="isStartBlocked(schedule, time)">
+                  <option v-for="time in startTimeSlots" :key="time" :value="time" :disabled="isStartBlocked(schedule, time)">
                     {{ time }}{{ isStartBlocked(schedule, time) ? ' - terpakai' : '' }}
                   </option>
                 </select>
@@ -727,6 +728,12 @@ onBeforeUnmount(() => {
                 <div v-else-if="availabilityFor(schedule).message" class="rounded-xl bg-amber-100 px-3 py-2 text-sm font-medium text-amber-800 dark:bg-amber-950 dark:text-amber-300">
                   {{ availabilityFor(schedule).message }}
                 </div>
+                <div
+                  v-else-if="availabilityFor(schedule).loaded && selectedRoom(schedule) && !isScheduleComplete(schedule)"
+                  class="rounded-xl bg-slate-100 px-3 py-2 text-sm font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                >
+                  Lengkapi jam mulai dan jam selesai untuk memeriksa jadwal.
+                </div>
                 <div v-else-if="selectedBlockingBookings(schedule).length" class="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800 dark:border-rose-900 dark:bg-rose-950/50 dark:text-rose-300">
                   <p class="font-semibold">Jadwal yang dipilih bertabrakan dengan booking yang sudah disetujui:</p>
                   <p v-for="entry in groupedAvailability(selectedBlockingBookings(schedule))" :key="entry.date">
@@ -743,7 +750,7 @@ onBeforeUnmount(() => {
                   </p>
                   <p class="mt-1">Pengajuan tetap dapat dikirim. Admin akan menentukan pengajuan yang disetujui.</p>
                 </div>
-                <div v-else-if="availabilityFor(schedule).loaded && selectedRoom(schedule)" class="inline-flex items-center gap-2 rounded-xl bg-emerald-100 px-3 py-2 text-sm font-semibold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                <div v-else-if="availabilityFor(schedule).loaded && selectedRoom(schedule) && isScheduleComplete(schedule)" class="inline-flex items-center gap-2 rounded-xl bg-emerald-100 px-3 py-2 text-sm font-semibold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
                   <span class="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-600 text-xs text-white">✓</span>
                   Ruangan tersedia
                 </div>
@@ -782,6 +789,9 @@ onBeforeUnmount(() => {
               <p v-if="hasApprovedScheduleConflict" class="text-xs font-medium text-rose-600 dark:text-rose-400">
                 Ganti jadwal yang bentrok dengan booking yang sudah disetujui.
               </p>
+              <p v-else-if="hasIncompleteSchedule" class="text-xs font-medium text-amber-600 dark:text-amber-400">
+                Lengkapi ruangan, tanggal, jam mulai, dan jam selesai pada seluruh jadwal.
+              </p>
               <p v-else class="text-xs text-slate-500 dark:text-slate-400">Pastikan informasi kegiatan dan seluruh jadwal sudah benar.</p>
             </div>
             <div class="flex flex-col-reverse gap-2 sm:flex-row">
@@ -796,6 +806,7 @@ onBeforeUnmount(() => {
                 :disabled="
                   form.processing
                     || hasInvalidPrefilledDates
+                    || hasIncompleteSchedule
                     || hasApprovedScheduleConflict
                     || hasUncheckedCompleteSchedule
                 "
@@ -803,7 +814,9 @@ onBeforeUnmount(() => {
               >
                 {{ form.processing
                   ? 'Mengirim Pengajuan...'
-                  : hasUncheckedCompleteSchedule
+                  : hasIncompleteSchedule
+                    ? 'Lengkapi Jadwal'
+                    : hasUncheckedCompleteSchedule
                     ? 'Memeriksa Jadwal...'
                   : isRevision
                     ? 'Kirim Revisi'

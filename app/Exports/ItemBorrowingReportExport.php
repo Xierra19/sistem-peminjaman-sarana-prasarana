@@ -11,11 +11,9 @@ use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class ItemBorrowingReportExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize
+class ItemBorrowingReportExport implements FromCollection, ShouldAutoSize, WithHeadings, WithMapping
 {
-    public function __construct(private array $filters = [])
-    {
-    }
+    public function __construct(private array $filters = []) {}
 
     public function collection(): Collection
     {
@@ -56,10 +54,11 @@ class ItemBorrowingReportExport implements FromCollection, WithHeadings, WithMap
         $hasItems = $itemBorrowing->items && $itemBorrowing->items->isNotEmpty();
 
         if ($hasItems) {
-            $itemNames = $itemBorrowing->items->map(fn ($p) => $p->item?->name)->filter()->implode(', ');
-            $itemCodes = $itemBorrowing->items->map(fn ($p) => $p->item?->code)->filter()->implode(', ');
-            $itemCategories = $itemBorrowing->items->map(fn ($p) => $p->item?->category)->filter()->implode(', ');
-            $totalQuantity = $itemBorrowing->items->sum(fn ($p) => $p->quantity ?? 0);
+            $itemGroups = $itemBorrowing->items->groupBy('item_id');
+            $itemNames = $itemGroups->map(fn ($rows) => $rows->first()?->item?->name)->filter()->implode(', ');
+            $itemCodes = $itemGroups->map(fn ($rows) => $rows->first()?->item?->code)->filter()->implode(', ');
+            $itemCategories = $itemGroups->map(fn ($rows) => $rows->first()?->item?->category)->filter()->implode(', ');
+            $totalQuantity = $itemGroups->sum(fn ($rows) => $this->peakQuantity($rows));
             $borrowDates = $itemBorrowing->items->pluck('borrow_date')->filter()->sort()->values();
             $returnDates = $itemBorrowing->items->pluck('return_date')->filter()->sort()->values();
             $borrowDate = $borrowDates->first();
@@ -104,4 +103,25 @@ class ItemBorrowingReportExport implements FromCollection, WithHeadings, WithMap
         }
     }
 
+    private function peakQuantity(Collection $rows): int
+    {
+        $events = $rows
+            ->flatMap(fn ($row): array => [
+                ['time' => $row->borrow_date->timestamp, 'quantity' => (int) $row->quantity],
+                ['time' => $row->return_date->timestamp, 'quantity' => -((int) $row->quantity)],
+            ])
+            ->sort(fn (array $left, array $right): int => (
+                $left['time'] <=> $right['time']
+                ?: $left['quantity'] <=> $right['quantity']
+            ));
+        $activeQuantity = 0;
+        $peakQuantity = 0;
+
+        foreach ($events as $event) {
+            $activeQuantity += $event['quantity'];
+            $peakQuantity = max($peakQuantity, $activeQuantity);
+        }
+
+        return $peakQuantity;
+    }
 }

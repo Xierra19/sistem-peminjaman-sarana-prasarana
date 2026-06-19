@@ -16,6 +16,7 @@ import {
 import { usePagination } from '@/Composables/usePagination'
 import { useTableSort } from '@/Composables/useTableSort'
 import { formatDateTimeToDDMMYY, formatToDDMMYY } from '@/Composables/useDateFormatter'
+import { distinctItemNames, totalDistinctItemQuantity } from '@/Composables/useItemBorrowingSchedules'
 
 const props = defineProps({
   itemBorrowings: {
@@ -41,28 +42,28 @@ const summaryCardFilter = ref('')
 // ── Helpers ───────────────────────────────────────────────────────────
 const getItemNames = (borrowing) => {
   if (borrowing.items && borrowing.items.length > 0) {
-    return borrowing.items.map((pivot) => pivot.item?.name).filter(Boolean).join(', ')
+    return distinctItemNames(borrowing.items).join(', ')
   }
   return borrowing.singleItem?.name ?? '-'
 }
 
 const getItemCodes = (borrowing) => {
   if (borrowing.items && borrowing.items.length > 0) {
-    return borrowing.items.map((pivot) => pivot.item?.code).filter(Boolean).join(', ')
+    return [...new Set(borrowing.items.map((pivot) => pivot.item?.code).filter(Boolean))].join(', ')
   }
   return borrowing.singleItem?.code ?? '-'
 }
 
 const getItemCategories = (borrowing) => {
   if (borrowing.items && borrowing.items.length > 0) {
-    return borrowing.items.map((pivot) => pivot.item?.category).filter(Boolean).join(', ')
+    return [...new Set(borrowing.items.map((pivot) => pivot.item?.category).filter(Boolean))].join(', ')
   }
   return borrowing.singleItem?.category ?? '-'
 }
 
 const getTotalQuantity = (borrowing) => {
   if (borrowing.items && borrowing.items.length > 0) {
-    return borrowing.items.reduce((sum, pivot) => sum + (pivot.quantity || 0), 0)
+    return totalDistinctItemQuantity(borrowing.items)
   }
   return borrowing.quantity ?? 0
 }

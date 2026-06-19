@@ -633,3 +633,16 @@ html.dark .flatpickr-calendar .flatpickr-time .flatpickr-time-separator {
 .swal2-container {
   z-index: 2147483647 !important;
 }
+
+html.dark .item-borrowing-form select {
+  color-scheme: dark;
+}
+
+html.dark .item-borrowing-form select option {
+  background-color: #0f172a;
+  color: #f8fafc;
+}
+
+html.dark .item-borrowing-form select option:disabled {
+  color: #64748b;
+}

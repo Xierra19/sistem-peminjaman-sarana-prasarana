@@ -32,6 +32,27 @@ class ItemAvailabilityService
         return $this->getAvailability($item, $borrowDate, $returnDate, $excludeRecord);
     }
 
+    public function getAvailabilityForBorrowingUser(
+        Item $item,
+        Carbon $borrowDate,
+        Carbon $returnDate,
+        ?int $excludeItemBorrowingId,
+        int $userId,
+    ): array {
+        $excludeIds = $excludeItemBorrowingId
+            ? ItemBorrowingItem::query()
+                ->where('item_borrowing_id', $excludeItemBorrowingId)
+                ->where('item_id', $item->id)
+                ->whereHas('borrowing', function ($query) use ($userId): void {
+                    $query->where('user_id', $userId)
+                        ->whereIn('status', ItemBorrowing::EDITABLE_STATUSES);
+                })
+                ->pluck('id')
+            : collect();
+
+        return $this->getAvailability($item, $borrowDate, $returnDate, $excludeIds);
+    }
+
     /**
      * Get availability for item - support both legacy ItemBorrowing & new ItemBorrowingItem
      */
@@ -99,11 +120,17 @@ class ItemAvailabilityService
                 $q->select(DB::raw(1))
                     ->from('item_borrowings')
                     ->whereColumn('item_borrowings.id', 'item_borrowing_items.item_borrowing_id')
-                  ->whereNotIn('item_borrowings.status', ItemBorrowing::NON_BLOCKING_STATUSES);
+                    ->whereNotIn('item_borrowings.status', ItemBorrowing::NON_BLOCKING_STATUSES);
             });
 
         // Exclude logic
-        if ($excludeRecord) {
+        if ($excludeRecord instanceof \Illuminate\Support\Collection || is_array($excludeRecord)) {
+            $excludeIds = collect($excludeRecord)->map(fn ($value) => (int) $value)->filter()->all();
+
+            if ($excludeIds !== []) {
+                $pivotQuery->whereNotIn('id', $excludeIds);
+            }
+        } elseif ($excludeRecord) {
             if ($excludeRecord instanceof ItemBorrowing) {
                 $legacyQuery->whereKeyNot($excludeRecord->id);
             } elseif (method_exists($excludeRecord, 'borrowing') || method_exists($excludeRecord, 'borrowing_id')) {

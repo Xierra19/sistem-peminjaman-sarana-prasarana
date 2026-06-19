@@ -87,10 +87,31 @@
             @php
                 $hasItems = $borrowing->items && $borrowing->items->isNotEmpty();
                 if ($hasItems) {
-                    $itemNames = $borrowing->items->map(fn ($p) => $p->item?->name)->filter()->implode(', ');
-                    $itemCodes = $borrowing->items->map(fn ($p) => $p->item?->code)->filter()->implode(', ');
-                    $itemCategories = $borrowing->items->map(fn ($p) => $p->item?->category)->filter()->implode(', ');
-                    $totalQuantity = $borrowing->items->sum(fn ($p) => $p->quantity ?? 0);
+                    $itemGroups = $borrowing->items->groupBy('item_id');
+                    $itemNames = $itemGroups->map(fn ($rows) => $rows->first()?->item?->name)->filter()->implode(', ');
+                    $itemCodes = $itemGroups->map(fn ($rows) => $rows->first()?->item?->code)->filter()->implode(', ');
+                    $itemCategories = $itemGroups->map(fn ($rows) => $rows->first()?->item?->category)->filter()->implode(', ');
+                    $totalQuantity = $itemGroups
+                        ->sum(function ($rows) {
+                            $events = $rows
+                                ->flatMap(fn ($row) => [
+                                    ['time' => $row->borrow_date->timestamp, 'quantity' => (int) $row->quantity],
+                                    ['time' => $row->return_date->timestamp, 'quantity' => -((int) $row->quantity)],
+                                ])
+                                ->sort(fn ($left, $right) => (
+                                    $left['time'] <=> $right['time']
+                                    ?: $left['quantity'] <=> $right['quantity']
+                                ));
+                            $activeQuantity = 0;
+                            $peakQuantity = 0;
+
+                            foreach ($events as $event) {
+                                $activeQuantity += $event['quantity'];
+                                $peakQuantity = max($peakQuantity, $activeQuantity);
+                            }
+
+                            return $peakQuantity;
+                        });
                     $borrowDates = $borrowing->items->pluck('borrow_date')->filter()->sort()->values();
                     $returnDates = $borrowing->items->pluck('return_date')->filter()->sort()->values();
                     $borrowDate = $borrowDates->first();

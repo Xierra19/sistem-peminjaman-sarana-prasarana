@@ -1,329 +1,457 @@
-
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
-import { Head, useForm } from '@inertiajs/vue3'
-import { computed, ref, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import { Head, Link, useForm } from '@inertiajs/vue3'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import flatpickr from 'flatpickr'
 import 'flatpickr/dist/flatpickr.css'
-import { formatToDDMMYY } from '@/Composables/useDateFormatter'
+import { Indonesian } from 'flatpickr/dist/l10n/id'
 
 const props = defineProps({
-  items: {
-    type: Array,
-    default: () => [],
-  },
-  minimumBorrowDate: {
-    type: String,
-    required: true,
-  },
-  sourceItemBorrowingId: {
-    type: Number,
-    default: null,
-  },
-  initialData: {
-    type: Object,
-    default: null,
-  },
-  revisionNote: {
-    type: String,
-    default: null,
-  },
-  existingAttachment: {
-    type: String,
-    default: null,
-  },
+  items: { type: Array, default: () => [] },
+  minimumBorrowDate: { type: String, required: true },
+  formMode: { type: String, default: 'create' },
+  itemBorrowingId: { type: Number, default: null },
+  sourceItemBorrowingId: { type: Number, default: null },
+  initialData: { type: Object, default: null },
+  revisionNote: { type: String, default: null },
+  existingAttachment: { type: String, default: null },
+})
+
+let nextCardKey = 1
+
+const createCard = (data = {}) => ({
+  _key: nextCardKey++,
+  item_id: data.item_id ?? '',
+  quantity: Number(data.quantity ?? 1),
+  dates: [...(data.dates ?? [])],
+  start_time: data.start_time ?? '',
+  end_time: data.end_time ?? '',
 })
 
 const form = useForm({
   title: props.initialData?.title ?? '',
   description: props.initialData?.description ?? '',
   attachment: null,
-  items: (props.initialData?.items ?? []).map((item) => ({ ...item })),
-  resubmitted_from_id: props.sourceItemBorrowingId,
+  items: props.initialData?.items?.length
+    ? props.initialData.items.map(createCard)
+    : [createCard()],
+  resubmitted_from_id: props.formMode === 'resubmission' ? props.sourceItemBorrowingId : null,
 })
 
-const itemAvailabilities = ref({})
-const isLoadingAvailability = ref({})
-const formErrors = ref({})
-const datePickers = ref({}) // Menyimpan instance flatpickr
+const availabilityByKey = ref({})
+const pickerInstances = new Map()
+const requestIds = new Map()
 
-const generateTimeSlots = (startHour = 7, endHour = 21, stepMinutes = 30) => {
+const isRevision = computed(() => props.formMode === 'revision')
+const isResubmission = computed(() => props.formMode === 'resubmission')
+const pageTitle = computed(() => {
+  if (isRevision.value) return 'Perbaiki Peminjaman Barang'
+  if (isResubmission.value) return 'Ajukan Ulang Peminjaman Barang'
+  return 'Ajukan Peminjaman Barang'
+})
+
+const timeSlots = (() => {
   const slots = []
 
-  for (let hour = startHour; hour <= endHour; hour++) {
-    for (let minute = 0; minute < 60; minute += stepMinutes) {
-      if (hour === endHour && minute > 0) break
-
+  for (let hour = 7; hour <= 21; hour++) {
+    for (let minute = 0; minute < 60; minute += 30) {
+      if (hour === 21 && minute > 0) break
       slots.push(`${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`)
     }
   }
 
   return slots
+})()
+const sameDayStartSlots = timeSlots.slice(0, -1)
+
+const selectedItem = (card) =>
+  props.items.find((item) => String(item.id) === String(card.item_id))
+
+const sortedDates = (card) => [...card.dates].sort()
+
+const isCardComplete = (card) => {
+  if (!card.item_id || Number(card.quantity) < 1) return false
+
+  return Boolean(card.dates.length && card.start_time && card.end_time)
 }
 
-const timeSlots = generateTimeSlots()
-
-const borrowTimeSlots = (row) => {
-  if (!row.borrow_time || timeSlots.includes(row.borrow_time)) return timeSlots
-  return [...timeSlots, row.borrow_time].sort()
-}
-
-const availableReturnTimeSlots = (row) => {
-  const slots = !row.return_time || timeSlots.includes(row.return_time)
-    ? timeSlots
-    : [...timeSlots, row.return_time].sort()
-
-  if (!row.borrow_date || !row.return_date || !row.borrow_time) return slots
-  if (row.return_date > row.borrow_date) return slots
-
-  return slots.filter((slot) => slot > row.borrow_time)
-}
-
-const onBorrowTimeChange = (index) => {
-  const row = form.items[index]
-
-  if (
-    row.return_date === row.borrow_date &&
-    row.return_time &&
-    row.return_time <= row.borrow_time
-  ) {
-    row.return_time = ''
+const availabilityFor = (card) =>
+  availabilityByKey.value[card._key] ?? {
+    loading: false,
+    loaded: false,
+    message: '',
+    daily: [],
   }
 
-  updateAvailability(index)
+const cardsOverlapOnDate = (left, right, date) =>
+  String(left.item_id) === String(right.item_id)
+  && left.dates.includes(date)
+  && right.dates.includes(date)
+  && left.start_time < right.end_time
+  && left.end_time > right.start_time
+
+const siblingDemand = (card, date) =>
+{
+  const siblings = form.items
+    .filter((other) =>
+      other._key !== card._key
+      && isCardComplete(other)
+      && cardsOverlapOnDate(card, other, date),
+    )
+  const boundaries = [
+    card.start_time,
+    card.end_time,
+    ...siblings.flatMap((other) => [other.start_time, other.end_time]),
+  ].filter((value, index, values) =>
+    value >= card.start_time
+    && value <= card.end_time
+    && values.indexOf(value) === index,
+  ).sort()
+
+  let maximumDemand = 0
+
+  for (let index = 0; index < boundaries.length - 1; index++) {
+    const segmentStart = boundaries[index]
+    const segmentEnd = boundaries[index + 1]
+    const demand = siblings
+      .filter((other) => other.start_time < segmentEnd && other.end_time > segmentStart)
+      .reduce((total, other) => total + Number(other.quantity || 0), 0)
+
+    maximumDemand = Math.max(maximumDemand, demand)
+  }
+
+  return maximumDemand
 }
 
-const getMinBorrowDate = () => {
-  return props.minimumBorrowDate
+const adjustedDailyAvailability = (card) =>
+  availabilityFor(card).daily.map((day) => {
+    const requestedElsewhere = siblingDemand(card, day.date)
+
+    return {
+      ...day,
+      requested_elsewhere: requestedElsewhere,
+      adjusted_remaining_quantity: Math.max(
+        0,
+        Number(day.remaining_quantity ?? 0) - requestedElsewhere,
+      ),
+    }
+  })
+
+const remainingQuantities = (card) =>
+  adjustedDailyAvailability(card).map((day) => day.adjusted_remaining_quantity)
+
+const minimumRemaining = (card) => {
+  const quantities = remainingQuantities(card)
+  return quantities.length ? Math.min(...quantities) : null
 }
 
-const isResubmission = computed(() => Boolean(props.sourceItemBorrowingId))
+const hasEnoughStock = (card) =>
+  isCardComplete(card)
+  && availabilityFor(card).loaded
+  && minimumRemaining(card) !== null
+  && Number(card.quantity) <= minimumRemaining(card)
+
+const shortageDates = (card) =>
+  adjustedDailyAvailability(card).filter(
+    (day) => Number(card.quantity) > day.adjusted_remaining_quantity,
+  )
+
+const duplicateCardIndexes = computed(() => {
+  const seen = new Map()
+  const duplicates = new Set()
+
+  form.items.forEach((card, index) => {
+    if (!isCardComplete(card)) return
+
+    const signature = [
+      card.item_id,
+      Number(card.quantity),
+      sortedDates(card).join(','),
+      card.start_time,
+      card.end_time,
+    ].join('|')
+    const previousIndex = seen.get(signature)
+
+    if (previousIndex !== undefined) {
+      duplicates.add(previousIndex)
+      duplicates.add(index)
+    } else {
+      seen.set(signature, index)
+    }
+  })
+
+  return duplicates
+})
+const hasDuplicateCards = computed(() => duplicateCardIndexes.value.size > 0)
+
+const hasIncompleteCard = computed(() => form.items.some((card) => !isCardComplete(card)))
+const hasLoadingAvailability = computed(() =>
+  form.items.some((card) => availabilityFor(card).loading),
+)
+const hasUncheckedCard = computed(() =>
+  form.items.some((card) =>
+    isCardComplete(card)
+    && !availabilityFor(card).loaded
+    && !availabilityFor(card).message,
+  ),
+)
+const hasStockShortage = computed(() =>
+  form.items.some((card) =>
+    isCardComplete(card)
+    && availabilityFor(card).loaded
+    && !hasEnoughStock(card),
+  ),
+)
+const completedCardCount = computed(() =>
+  form.items.filter((card, index) =>
+    isCardComplete(card)
+    && hasEnoughStock(card)
+    && !duplicateCardIndexes.value.has(index),
+  ).length,
+)
 const hasInvalidPrefilledDates = computed(() =>
-  form.items.some((item) => item.borrow_date && item.borrow_date < props.minimumBorrowDate),
+  form.items.some((card) =>
+    card.dates.filter(Boolean).some((date) => date < props.minimumBorrowDate),
+  ),
 )
 
-const addItem = () => {
-  form.items.push({
-    item_id: '',
-    quantity: 1,
-    borrow_date: '', // Tidak mengisi otomatis agar user memilih sendiri
-    borrow_time: '',
-    return_date: '', // Tidak mengisi otomatis agar user memilih sendiri
-    return_time: '',
-  })
-  const newIndex = form.items.length - 1
-  initFlatpickr(newIndex)
-}
-
-const removeItem = (index) => {
-  // Hapus instance flatpickr sebelum menghapus item
-  if (datePickers.value[index]) {
-    datePickers.value[index].borrow?.destroy()
-    datePickers.value[index].return?.destroy()
-    delete datePickers.value[index]
+const resetAvailability = (card) => {
+  requestIds.set(card._key, (requestIds.get(card._key) ?? 0) + 1)
+  availabilityByKey.value[card._key] = {
+    loading: false,
+    loaded: false,
+    message: '',
+    daily: [],
   }
-  
-  form.items.splice(index, 1)
-  // Clear availability
-  delete itemAvailabilities.value[index]
-  delete isLoadingAvailability.value[index]
-  
-  // Re-index datePickers
-  const newDatePickers = {}
-  Object.keys(datePickers.value).forEach(key => {
-    const idx = parseInt(key)
-    if (idx > index) {
-      newDatePickers[idx - 1] = datePickers.value[idx]
-    } else if (idx < index) {
-      newDatePickers[idx] = datePickers.value[idx]
-    }
-  })
-  datePickers.value = newDatePickers
 }
 
-const getItemById = (itemId) => props.items.find(i => String(i.id) === String(itemId)) || null
+const loadAvailability = async (card) => {
+  resetAvailability(card)
+  if (!isCardComplete(card)) return
 
-// Debounce sederhana untuk mencegah terlalu banyak request
-let availabilityTimeouts = {}
-const updateAvailability = async (index) => {
-  // Clear timeout sebelumnya
-  if (availabilityTimeouts[index]) {
-    clearTimeout(availabilityTimeouts[index])
+  const requestId = (requestIds.get(card._key) ?? 0) + 1
+  requestIds.set(card._key, requestId)
+  availabilityByKey.value[card._key] = {
+    loading: true,
+    loaded: false,
+    message: '',
+    daily: [],
   }
-  
-  availabilityTimeouts[index] = setTimeout(async () => {
-    const itemRow = form.items[index]
-    if (!itemRow.item_id || !itemRow.borrow_date || !itemRow.borrow_time || !itemRow.return_date || !itemRow.return_time) {
-      // Reset availability jika tanggal belum lengkap
-      delete itemAvailabilities.value[index]
-      return
+
+  const query = {
+    item: card.item_id,
+    dates: sortedDates(card),
+    start_time: card.start_time,
+    end_time: card.end_time,
+  }
+
+  if (isRevision.value) query.exclude_item_borrowing_id = props.itemBorrowingId
+
+  try {
+    const response = await fetch(route('items.availability', query), {
+      headers: { Accept: 'application/json' },
+    })
+
+    if (!response.ok) throw new Error('Availability request failed')
+    const data = await response.json()
+    if (requestIds.get(card._key) !== requestId) return
+
+    availabilityByKey.value[card._key] = {
+      loading: false,
+      loaded: true,
+      message: data.message ?? '',
+      daily: data.daily_availability ?? [],
     }
+  } catch {
+    if (requestIds.get(card._key) !== requestId) return
 
-    // Basic date format validation
-    const borrowDate = new Date(`${itemRow.borrow_date}T${itemRow.borrow_time}`)
-    const returnDate = new Date(`${itemRow.return_date}T${itemRow.return_time}`)
-    if (isNaN(borrowDate.getTime()) || isNaN(returnDate.getTime()) || returnDate <= borrowDate) {
-      delete itemAvailabilities.value[index]
-      return
+    availabilityByKey.value[card._key] = {
+      loading: false,
+      loaded: false,
+      message: 'Ketersediaan stok belum dapat diperiksa. Coba ubah jadwal atau muat ulang halaman.',
+      daily: [],
     }
-
-    const item = getItemById(itemRow.item_id)
-    if (!item) return
-
-    isLoadingAvailability.value[index] = true
-
-    try {
-      const response = await fetch(route('items.availability', {
-        item: itemRow.item_id,
-        borrow_date: itemRow.borrow_date,
-        borrow_time: itemRow.borrow_time,
-        return_date: itemRow.return_date,
-        return_time: itemRow.return_time,
-      }), {
-        headers: { Accept: 'application/json' },
-      })
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(`HTTP ${response.status}: ${errorText}`)
-      }
-
-      const data = await response.json()
-      itemAvailabilities.value[index] = data
-    } catch (error) {
-      console.error(`Availability fetch failed for item ${itemRow.item_id} (${itemRow.borrow_date} to ${itemRow.return_date}):`, error)
-      itemAvailabilities.value[index] = { 
-        remaining_quantity: 0,
-        total_quantity: item?.quantity || 0,
-        reserved_quantity: 'Error'
-      }
-    } finally {
-      isLoadingAvailability.value[index] = false
-    }
-  }, 300) // Debounce 300ms
+  }
 }
 
-const isRowValid = (index) => {
-  const row = form.items[index]
-  const avail = itemAvailabilities.value[index] || {}
-  return row.item_id && row.quantity > 0 && row.borrow_date && row.borrow_time && row.return_date && row.return_time && row.quantity <= (avail.remaining_quantity || 0)
+const addCard = () => form.items.push(createCard())
+
+const removeCard = (index) => {
+  if (form.items.length === 1) return
+  const [removed] = form.items.splice(index, 1)
+
+  for (const [key, picker] of pickerInstances.entries()) {
+    if (key.startsWith(`${removed._key}:`)) {
+      picker.destroy()
+      pickerInstances.delete(key)
+    }
+  }
+
+  requestIds.delete(removed._key)
+  delete availabilityByKey.value[removed._key]
 }
 
-const hasAnyRowError = computed(() => form.items.some((_, index) => !isRowValid(index)))
+const onStartTimeChange = (card) => {
+  if (card.end_time && card.end_time <= card.start_time) card.end_time = ''
 
-watch(() => form.items, () => {
-  formErrors.value = {}
-}, { deep: true })
+  loadAvailability(card)
+}
 
-// Inisialisasi Flatpickr setelah DOM update
-const initFlatpickr = (index) => {
-  nextTick(() => {
-    const borrowInput = document.querySelector(`#borrow_date_${index}`)
-    const returnInput = document.querySelector(`#return_date_${index}`)
-    
-    if (!borrowInput || !returnInput) return
-    
-    // Destroy existing instances if any
-    if (datePickers.value[index]?.borrow) {
-      datePickers.value[index].borrow.destroy()
-    }
-    if (datePickers.value[index]?.return) {
-      datePickers.value[index].return.destroy()
-    }
-    
-    const minDate = getMinBorrowDate()
-    
-    // Inisialisasi Flatpickr untuk tanggal pinjam
-    const borrowPicker = flatpickr(borrowInput, {
-      dateFormat: 'Y-m-d',      // Nilai untuk backend (ISO)
-      altInput: true,           // Tampilkan input alternatif ke pengguna
-      altFormat: 'd-m-y',       // Format tampilan DD-MM-YY
-      minDate: minDate,
-      defaultDate: form.items[index]?.borrow_date || null,
-      onChange: (selectedDates, dateStr) => {
-        form.items[index].borrow_date = dateStr
-        // Update minDate untuk return date
-        if (datePickers.value[index]?.return) {
-          datePickers.value[index].return.set('minDate', dateStr || minDate)
-        }
-        updateAvailability(index)
-      }
-    })
-    
-    // Inisialisasi Flatpickr untuk tanggal kembali
-    const returnPicker = flatpickr(returnInput, {
-      dateFormat: 'Y-m-d',      // Nilai untuk backend (ISO)
-      altInput: true,           // Tampilkan input alternatif ke pengguna
-      altFormat: 'd-m-y',      // Format tampilan DD-MM-YY
-      minDate: minDate,
-      defaultDate: form.items[index]?.return_date || null,
-      onChange: (selectedDates, dateStr) => {
-        form.items[index].return_date = dateStr
-        updateAvailability(index)
-      }
-    })
-    
-    datePickers.value[index] = {
-      borrow: borrowPicker,
-      return: returnPicker
-    }
+const pickerRef = (element, card) => {
+  const key = `${card._key}:dates`
+  const existing = pickerInstances.get(key)
+
+  if (!element) {
+    existing?.destroy()
+    pickerInstances.delete(key)
+    return
+  }
+
+  if (existing) return
+
+  const picker = flatpickr(element, {
+    mode: 'multiple',
+    dateFormat: 'Y-m-d',
+    altInput: true,
+    altFormat: 'j F Y',
+    conjunction: ', ',
+    locale: Indonesian,
+    minDate: props.minimumBorrowDate,
+    defaultDate: card.dates,
+    disableMobile: true,
+    onChange: (_dates, dateString) => {
+      card.dates = dateString ? dateString.split(', ').sort() : []
+      loadAvailability(card)
+    },
   })
+
+  picker.altInput?.classList.add(
+    'min-h-12',
+    'w-full',
+    'rounded-xl',
+    'border',
+    'border-slate-200',
+    'bg-slate-50',
+    'px-3',
+    'text-sm',
+    'text-slate-900',
+    'transition',
+    'focus:border-blue-500',
+    'focus:bg-white',
+    'focus:ring-4',
+    'focus:ring-blue-500/10',
+    'dark:border-slate-600',
+    'dark:bg-slate-900/40',
+    'dark:text-white',
+    'dark:focus:bg-slate-900',
+  )
+
+  pickerInstances.set(key, picker)
 }
 
-const handleFileChange = (e) => {
-  const file = e.target.files[0]
-  form.attachment = file || null
+const errorFor = (index, field) => form.errors[`items.${index}.${field}`]
+const datesError = (index) =>
+  errorFor(index, 'dates')
+  ?? Object.entries(form.errors).find(([key]) => key.startsWith(`items.${index}.dates.`))?.[1]
+
+const formatDate = (value) => {
+  if (!value) return 'Tanggal belum dipilih'
+
+  return new Intl.DateTimeFormat('id-ID', {
+    weekday: 'short',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(new Date(`${value}T00:00:00`))
 }
 
-const formatDate = (date) => formatToDDMMYY(date)
+const scheduleSummary = (card) => {
+  if (!card.dates.length) return 'Tanggal belum dipilih'
+  return card.dates.length === 1
+    ? formatDate(card.dates[0])
+    : `${card.dates.length} tanggal terpilih`
+}
+
+const timeSummary = (card) => {
+  return card.start_time && card.end_time
+    ? `${card.start_time}–${card.end_time} WIB`
+    : 'Jam belum lengkap'
+}
+
+const cardStatus = (card, index) => {
+  if (!isCardComplete(card)) return 'Belum lengkap'
+  if (duplicateCardIndexes.value.has(index)) return 'Duplikat'
+  if (availabilityFor(card).loading) return 'Memeriksa stok'
+  if (availabilityFor(card).message) return 'Perlu diperiksa'
+  if (hasEnoughStock(card)) return 'Tersedia'
+  return 'Stok tidak cukup'
+}
+
+const cardStatusClasses = (card, index) => {
+  if (duplicateCardIndexes.value.has(index)) {
+    return 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300'
+  }
+  if (availabilityFor(card).loaded && !hasEnoughStock(card)) {
+    return 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300'
+  }
+  if (hasEnoughStock(card)) {
+    return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
+  }
+  return 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
+}
+
+const handleFileChange = (event) => {
+  form.attachment = event.target.files?.[0] ?? null
+}
 
 const submit = () => {
-  if (form.items.length === 0) {
-    formErrors.value.items = 'Minimal 1 barang harus dipilih.'
+  if (
+    hasIncompleteCard.value
+    || hasLoadingAvailability.value
+    || hasUncheckedCard.value
+    || hasStockShortage.value
+    || hasDuplicateCards.value
+    || hasInvalidPrefilledDates.value
+  ) return
+
+  if (isRevision.value) {
+    form
+      .transform((data) => ({ ...data, _method: 'put' }))
+      .post(route('item-borrowings.update', props.itemBorrowingId), {
+        forceFormData: true,
+        preserveScroll: true,
+      })
     return
   }
-  if (hasAnyRowError.value) {
-    formErrors.value.submit = 'Periksa ketersediaan semua barang.'
-    return
-  }
-  form.clearErrors()
-  form.post(route('item-borrowings.store'))
+
+  form.post(route('item-borrowings.store'), {
+    forceFormData: true,
+    preserveScroll: true,
+  })
 }
 
 onMounted(() => {
-  if (form.items.length === 0) {
-    addItem()
-    return
+  for (const card of form.items) {
+    if (isCardComplete(card)) loadAvailability(card)
   }
-
-  form.items.forEach((_, index) => initFlatpickr(index))
-  form.items.forEach((_, index) => updateAvailability(index))
 })
 
 onBeforeUnmount(() => {
-  // Cleanup semua instance flatpickr
-  Object.values(datePickers.value).forEach(pickers => {
-    pickers.borrow?.destroy()
-    pickers.return?.destroy()
-  })
+  pickerInstances.forEach((picker) => picker.destroy())
+  pickerInstances.clear()
 })
 </script>
 
 <template>
   <AuthenticatedLayout>
-    <Head :title="isResubmission ? 'Ajukan Ulang Peminjaman Barang' : 'Peminjaman Barang'" />
+    <Head :title="pageTitle" />
 
-    <div class="mx-auto max-w-5xl space-y-6 px-4 py-6 sm:px-0">
-      <div class="card-surface space-y-6 p-5 sm:p-6 dark:bg-slate-800 dark:border-slate-700">
+    <div class="item-borrowing-form mx-auto max-w-6xl space-y-6 pb-24">
+      <section class="space-y-5 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:p-6">
         <div class="border-b border-slate-200 pb-5 dark:border-slate-700">
-          <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">
-            {{ isResubmission ? 'Ajukan Ulang Peminjaman Barang' : 'Permintaan Peminjaman Barang' }}
-          </h1>
+          <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">{{ pageTitle }}</h1>
           <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            {{ isResubmission
-              ? 'Data pengajuan yang ditolak sudah disalin. Jadwal tetap mengikuti H-7 dari pengajuan baru.'
-              : 'Pilih multiple barang untuk satu permintaan.' }}
-            Upload surat <span class="text-rose-500 font-medium">*</span>
+            Setiap tanggal memakai jam mulai dan selesai yang sama. Peminjaman menginap atau rentang terus-menerus tidak tersedia.
           </p>
         </div>
 
@@ -339,221 +467,279 @@ onBeforeUnmount(() => {
           v-if="hasInvalidPrefilledDates"
           class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300"
         >
-          Sebagian jadwal lama tidak lagi memenuhi H-7. Ganti tanggal sebelum mengirim pengajuan ulang.
+          Sebagian jadwal lama tidak lagi memenuhi batas minimum {{ minimumBorrowDate }}. Ganti tanggal sebelum mengirim.
         </div>
+      </section>
 
-        <div class="grid gap-3 rounded-2xl bg-slate-50 p-4 text-xs text-slate-600 sm:grid-cols-3 dark:bg-slate-700/50 dark:text-slate-300">
-          <div class="flex items-start gap-3">
-            <span class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">1</span>
+      <form class="space-y-6" @submit.prevent="submit">
+        <section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+          <header class="flex items-center gap-4 border-b border-slate-100 px-5 py-5 dark:border-slate-700 sm:px-7">
+            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-600 font-bold text-white">1</span>
             <div>
-              <p class="font-semibold text-slate-800 dark:text-slate-200">Tambah Barang</p>
-              <p>Pilih barang, jumlah, tanggal, dan jam.</p>
+              <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Informasi Kegiatan</h2>
+              <p class="text-sm text-slate-500 dark:text-slate-400">Berlaku untuk seluruh barang dalam pengajuan.</p>
             </div>
+          </header>
+          <div class="grid gap-6 p-5 sm:p-7">
+            <label class="space-y-2">
+              <span class="text-sm font-semibold text-slate-700 dark:text-slate-200">Judul Kegiatan <span class="text-rose-500">*</span></span>
+              <input
+                v-model="form.title"
+                type="text"
+                maxlength="255"
+                class="min-h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-900/40 dark:text-white"
+                placeholder="Contoh: Dokumentasi kegiatan seminar"
+              />
+              <span v-if="form.errors.title" class="text-sm font-medium text-rose-600">{{ form.errors.title }}</span>
+            </label>
+            <label class="space-y-2">
+              <span class="text-sm font-semibold text-slate-700 dark:text-slate-200">Deskripsi</span>
+              <textarea
+                v-model="form.description"
+                rows="3"
+                class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-900/40 dark:text-white"
+                placeholder="Tuliskan keperluan dan catatan tambahan."
+              />
+              <span v-if="form.errors.description" class="text-sm font-medium text-rose-600">{{ form.errors.description }}</span>
+            </label>
           </div>
-          <div class="flex items-start gap-3">
-            <span class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">2</span>
-            <div>
-              <p class="font-semibold text-slate-800 dark:text-slate-200">Detail Permintaan</p>
-              <p>Judul & deskripsi kegiatan.</p>
+        </section>
+
+        <section class="space-y-4">
+          <div class="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+            <div class="flex items-center gap-4">
+              <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-600 font-bold text-white">2</span>
+              <div>
+                <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Barang dan Jadwal</h2>
+                <p class="text-sm text-slate-500 dark:text-slate-400">Satu kartu dapat memakai barang dan jam yang sama pada beberapa tanggal.</p>
+              </div>
             </div>
+            <button
+              type="button"
+              class="inline-flex min-h-11 items-center justify-center rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white hover:bg-blue-700"
+              @click="addCard"
+            >
+              + Tambah Barang
+            </button>
           </div>
-          <div class="flex items-start gap-3">
-            <span class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">3</span>
-            <div>
-              <p class="font-semibold text-slate-800 dark:text-slate-200">Upload Surat <span class="text-rose-500">*</span></p>
-              <p>Surat /wajib lampiran.</p>
-            </div>
-          </div>
-        </div>
 
-        <form @submit.prevent="submit" class="space-y-8">
-            <!-- Title -->
-            <div class="space-y-2">
-              <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Judul Kegiatan <span class="text-rose-500">*</span></label>
-              <input v-model="form.title" type="text" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-400" placeholder="Contoh: Rapat koordinasi proyek" />
-              <div v-if="form.errors.title" class="text-sm text-red-500">{{ form.errors.title }}</div>
-            </div>
+          <p v-if="form.errors.items" class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700 dark:border-rose-900 dark:bg-rose-950/50 dark:text-rose-300">
+            {{ form.errors.items }}
+          </p>
 
-          <!-- Multi Items Rows -->
-          <div>
-            <div class="flex items-center justify-between mb-4">
-              <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Daftar Barang</h3>
-              <button type="button" @click="addItem" class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
-                + Tambah Barang
-              </button>
-            </div>
-
-            <div v-if="form.items.length === 0" class="text-center py-12 text-slate-500 dark:text-slate-400">
-              Belum ada barang. Klik "Tambah Barang" untuk mulai.
-            </div>
-
-            <div v-else class="space-y-4">
-              <div v-for="(itemRow, index) in form.items" :key="index" class="border border-slate-200 rounded-2xl p-6 space-y-4 hover:border-blue-300 dark:border-slate-600 dark:bg-slate-800">
-                <div class="flex items-center justify-between">
-                  <h4 class="font-semibold text-slate-900 dark:text-white">Barang #{{ index + 1 }}</h4>
-                  <button type="button" @click="removeItem(index)" class="text-rose-500 hover:text-rose-600 text-sm font-medium">Hapus</button>
-                </div>
-
-                <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  <!-- Item Select -->
-                  <div class="space-y-2">
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Barang</label>
-                    <select v-model="itemRow.item_id" @change="updateAvailability(index)" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white">
-                      <option value="">Pilih barang</option>
-                      <option
-                        v-for="item in props.items"
-                        :key="item.id"
-                        :value="item.id"
-                        :disabled="!item.is_available || form.items.some((row, i) => i !== index && String(row.item_id) === String(item.id))"
-                      >
-                        {{ item.name }} - Stok {{ item.quantity }}
-                      </option>
-                    </select>
+          <article
+            v-for="(card, index) in form.items"
+            :key="card._key"
+            class="overflow-hidden rounded-3xl border bg-white shadow-sm dark:bg-slate-800"
+            :class="hasEnoughStock(card)
+              ? 'border-emerald-200 dark:border-emerald-900/70'
+              : availabilityFor(card).loaded && !hasEnoughStock(card)
+                ? 'border-rose-300 dark:border-rose-900/70'
+                : 'border-slate-200 dark:border-slate-700'"
+          >
+            <header class="flex flex-col gap-4 border-b border-slate-100 bg-slate-50/70 px-5 py-5 dark:border-slate-700 dark:bg-slate-900/30 sm:flex-row sm:items-center sm:justify-between sm:px-7">
+              <div class="flex items-center gap-4">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-sm font-bold text-blue-700 dark:bg-blue-950 dark:text-blue-300">{{ index + 1 }}</span>
+                <div>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <h3 class="font-semibold text-slate-900 dark:text-white">Barang {{ index + 1 }}</h3>
+                    <span class="rounded-full px-2.5 py-1 text-[11px] font-semibold" :class="cardStatusClasses(card, index)">
+                      {{ cardStatus(card, index) }}
+                    </span>
                   </div>
-
-                  <!-- Quantity -->
-                  <div class="space-y-2">
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Jumlah</label>
-                    <input 
-                      v-model.number="itemRow.quantity" 
-                      type="number" 
-                      min="1" 
-                      @input="updateAvailability(index)"
-                      class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white" 
-                    />
-                  </div>
-
-                  <!-- Borrow Date -->
-                  <div class="space-y-2">
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Tanggal Mulai</label>
-                    <input 
-                      :id="`borrow_date_${index}`"
-                      type="text" 
-                      placeholder="Pilih tanggal mulai"
-                      class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-400" 
-                      readonly
-                    />
-                  </div>
-
-                  <div class="space-y-2">
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Jam Mulai</label>
-                    <select
-                      v-model="itemRow.borrow_time"
-                      @change="onBorrowTimeChange(index)"
-                      class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
-                    >
-                      <option value="">Pilih jam mulai</option>
-                      <option v-for="slot in borrowTimeSlots(itemRow)" :key="`borrow-${index}-${slot}`" :value="slot">
-                        {{ slot }}
-                      </option>
-                    </select>
-                    <div v-if="form.errors[`items.${index}.borrow_time`]" class="text-xs text-rose-500">{{ form.errors[`items.${index}.borrow_time`] }}</div>
-                  </div>
-
-                  <!-- Return Date -->
-                  <div class="space-y-2">
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Tanggal Selesai</label>
-                    <input 
-                      :id="`return_date_${index}`"
-                      type="text" 
-                      placeholder="Pilih tanggal selesai"
-                      class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-400" 
-                      readonly
-                    />
-                  </div>
-
-                  <div class="space-y-2">
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Jam Selesai</label>
-                    <select
-                      v-model="itemRow.return_time"
-                      @change="updateAvailability(index)"
-                      class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
-                    >
-                      <option value="">Pilih jam selesai</option>
-                      <option
-                        v-for="slot in availableReturnTimeSlots(itemRow)"
-                        :key="`return-${index}-${slot}`"
-                        :value="slot"
-                      >
-                        {{ slot }}
-                      </option>
-                    </select>
-                    <div v-if="form.errors[`items.${index}.return_time`]" class="text-xs text-rose-500">{{ form.errors[`items.${index}.return_time`] }}</div>
-                  </div>
-                </div>
-                <p class="text-xs text-slate-500 dark:text-slate-400">Pengajuan paling lambat dilakukan pada H-7 berdasarkan tanggal kalender.</p>
-                <div v-if="form.errors[`items.${index}.borrow_date`]" class="text-xs text-rose-500">{{ form.errors[`items.${index}.borrow_date`] }}</div>
-                <div v-if="form.errors[`items.${index}.return_date`]" class="text-xs text-rose-500">{{ form.errors[`items.${index}.return_date`] }}</div>
-
-                <!-- Availability Card (same style) -->
-                <div v-if="itemRow.item_id" class="rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-700/50">
-
-                  <div class="flex items-center justify-between mb-3">
-                    <p class="font-semibold text-slate-700 dark:text-slate-200">Ketersediaan {{ getItemById(itemRow.item_id)?.name }}</p>
-                    <span v-if="isLoadingAvailability[index]" class="text-xs text-blue-500">Memuat...</span>
-                  </div>
-                  <div v-if="itemAvailabilities[index]" class="grid gap-3 sm:grid-cols-3">
-                    <div class="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-600 dark:text-slate-200">
-                      <div class="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-400">Total</div>
-                      <div class="mt-1 text-2xl font-semibold text-slate-900 dark:text-white">{{ itemAvailabilities[index].total_quantity }}</div>
-                    </div>
-                    <div class="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-600 dark:text-slate-200">
-                      <div class="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-400">Dipakai</div>
-                      <div class="mt-1 text-2xl font-semibold text-slate-900 dark:text-white">{{ itemAvailabilities[index].reserved_quantity }}</div>
-                    </div>
-                    <div class="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-600 dark:text-slate-200">
-                      <div class="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-400">Tersisa</div>
-                      <div class="mt-1 text-2xl font-semibold" :class="itemRow.quantity > itemAvailabilities[index].remaining_quantity ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'">
-                        {{ itemAvailabilities[index].remaining_quantity }}
-                      </div>
-                    </div>
-                  </div>
-                  <p v-else class="text-sm text-slate-500 dark:text-slate-400">Pilih tanggal untuk melihat ketersediaan.</p>
-                  <p v-if="itemRow.quantity > (itemAvailabilities[index]?.remaining_quantity || 0)" class="mt-2 text-xs text-rose-500 font-medium dark:text-rose-400">
-                    ⚠️ Jumlah melebihi stok tersedia
+                  <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    {{ selectedItem(card)?.name ?? 'Barang belum dipilih' }}
+                    <template v-if="card.item_id"> · {{ card.quantity || 0 }} unit</template>
                   </p>
                 </div>
               </div>
-            </div>
-            <div v-if="formErrors.items" class="text-sm text-red-500 mt-2">{{ formErrors.items }}</div>
-          </div>
+              <button
+                v-if="form.items.length > 1"
+                type="button"
+                class="text-sm font-semibold text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300"
+                @click="removeCard(index)"
+              >
+                Hapus
+              </button>
+            </header>
 
-            <!-- Description -->
-            <div class="space-y-2">
-              <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Deskripsi</label>
-              <textarea v-model="form.description" rows="3" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-400" placeholder="Tuliskan detail kegiatan, kebutuhan fasilitas, atau catatan lainnya"></textarea>
-              <div v-if="form.errors.description" class="text-sm text-red-500">{{ form.errors.description }}</div>
+            <div class="grid gap-6 p-5 sm:grid-cols-2 sm:p-7 lg:grid-cols-3">
+              <label class="space-y-2">
+                <span class="text-sm font-semibold text-slate-700 dark:text-slate-200">Barang</span>
+                <select
+                  v-model="card.item_id"
+                  class="min-h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-900/60 dark:text-white dark:focus:bg-slate-900"
+                  @change="loadAvailability(card)"
+                >
+                  <option value="">Pilih barang</option>
+                  <option
+                    v-for="item in items"
+                    :key="item.id"
+                    :value="item.id"
+                    :disabled="!item.is_available"
+                  >
+                    {{ item.name }} · Stok {{ item.quantity }}{{ item.is_available ? '' : ' (tidak tersedia)' }}
+                  </option>
+                </select>
+                <span v-if="errorFor(index, 'item_id')" class="text-sm font-medium text-rose-600">{{ errorFor(index, 'item_id') }}</span>
+              </label>
+
+              <label class="space-y-2">
+                <span class="text-sm font-semibold text-slate-700 dark:text-slate-200">Jumlah</span>
+                <input
+                  v-model.number="card.quantity"
+                  type="number"
+                  min="1"
+                  :max="selectedItem(card)?.quantity"
+                  class="min-h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-slate-600 dark:bg-slate-900/60 dark:text-white dark:focus:bg-slate-900"
+                  @input="loadAvailability(card)"
+                />
+                <span v-if="errorFor(index, 'quantity')" class="text-sm font-medium text-rose-600">{{ errorFor(index, 'quantity') }}</span>
+              </label>
+
+              <label class="space-y-2">
+                <span class="text-sm font-semibold text-slate-700 dark:text-slate-200">Tanggal Peminjaman</span>
+                <input
+                  :ref="(element) => pickerRef(element, card)"
+                  type="text"
+                  placeholder="Pilih satu atau beberapa tanggal"
+                />
+                <span v-if="datesError(index)" class="text-sm font-medium text-rose-600">{{ datesError(index) }}</span>
+                <span class="text-xs text-slate-500 dark:text-slate-400">Minimal H-7: {{ minimumBorrowDate }}</span>
+              </label>
+
+              <label class="space-y-2">
+                <span class="text-sm font-semibold text-slate-700 dark:text-slate-200">Jam Mulai</span>
+                <select
+                  v-model="card.start_time"
+                  :disabled="!card.item_id || !card.dates.length"
+                  class="min-h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 disabled:cursor-not-allowed disabled:opacity-45 dark:border-slate-600 dark:bg-slate-900/60 dark:text-white dark:focus:bg-slate-900"
+                  @change="onStartTimeChange(card)"
+                >
+                  <option value="">Pilih jam mulai</option>
+                  <option v-for="slot in sameDayStartSlots" :key="slot" :value="slot">{{ slot }}</option>
+                </select>
+                <span v-if="errorFor(index, 'start_time')" class="text-sm font-medium text-rose-600">{{ errorFor(index, 'start_time') }}</span>
+              </label>
+
+              <label class="space-y-2">
+                <span class="text-sm font-semibold text-slate-700 dark:text-slate-200">Jam Selesai</span>
+                <select
+                  v-model="card.end_time"
+                  :disabled="!card.start_time"
+                  class="min-h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 disabled:cursor-not-allowed disabled:opacity-45 dark:border-slate-600 dark:bg-slate-900/60 dark:text-white dark:focus:bg-slate-900"
+                  @change="loadAvailability(card)"
+                >
+                  <option value="">Pilih jam selesai</option>
+                  <option v-for="slot in timeSlots.filter((value) => value > card.start_time)" :key="slot" :value="slot">{{ slot }}</option>
+                </select>
+                <span v-if="errorFor(index, 'end_time')" class="text-sm font-medium text-rose-600">{{ errorFor(index, 'end_time') }}</span>
+              </label>
             </div>
 
-          <!-- Mandatory Attachment * -->
-          <div class="space-y-3">
-            <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Lampiran Surat <span class="text-rose-500">*</span></label>
-            <p class="text-xs text-slate-500 mb-2 dark:text-slate-400">PDF, JPG, PNG (max 2MB) - Wajib untuk verifikasi</p>
-            <label class="flex cursor-pointer items-center justify-between rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-6 transition hover:border-blue-400 hover:bg-blue-50/20 dark:border-slate-600 dark:bg-slate-700/50 dark:hover:border-slate-500 dark:hover:bg-slate-600/50">
-              <div class="text-left">
-                <p class="font-medium text-slate-700 dark:text-slate-200">
-                  {{ form.attachment
-                    ? form.attachment.name
-                    : existingAttachment
-                      ? 'Gunakan lampiran lama'
-                      : 'Upload surat (wajib)' }}
-                </p>
-                <p class="text-xs text-slate-500 mt-1 dark:text-slate-400">Wajib lampiran surat / dokumen resmi</p>
+            <p
+              v-if="duplicateCardIndexes.has(index)"
+              class="mx-5 mb-5 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700 dark:border-rose-900 dark:bg-rose-950/60 dark:text-rose-300 sm:mx-7"
+            >
+              Jadwal ini identik dengan kartu lain. Ubah barang, jumlah, tanggal, atau jam.
+            </p>
+
+            <footer class="border-t border-slate-100 bg-slate-50/60 px-5 py-4 dark:border-slate-700 dark:bg-slate-900/20 sm:px-7">
+              <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div class="grid gap-1 text-sm">
+                  <p class="font-semibold text-slate-800 dark:text-slate-200">{{ scheduleSummary(card) }}</p>
+                  <p class="text-slate-500 dark:text-slate-400">{{ timeSummary(card) }} · {{ card.quantity || 0 }} unit</p>
+                </div>
+
+                <div v-if="availabilityFor(card).loading" class="text-sm font-medium text-blue-600 dark:text-blue-300">Memeriksa ketersediaan stok...</div>
+                <div v-else-if="availabilityFor(card).message" class="rounded-xl border border-amber-200 bg-amber-100 px-3 py-2 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/60 dark:text-amber-300">
+                  {{ availabilityFor(card).message }}
+                </div>
+                <div v-else-if="!isCardComplete(card)" class="text-xs text-slate-400 dark:text-slate-500">Lengkapi barang dan jadwal untuk memeriksa stok.</div>
+                <div v-else-if="hasEnoughStock(card)" class="rounded-xl bg-emerald-100 px-3 py-2 text-sm font-semibold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                  ✓ Stok tersedia · minimum tersisa {{ minimumRemaining(card) }}
+                </div>
+                <div v-else class="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/60 dark:text-rose-300">
+                  <p class="font-semibold">Stok tidak mencukupi.</p>
+                  <p v-for="day in shortageDates(card)" :key="day.date">
+                    {{ formatDate(day.date) }}: tersedia {{ day.adjusted_remaining_quantity }} dari kebutuhan {{ card.quantity }}
+                    <template v-if="day.requested_elsewhere"> setelah {{ day.requested_elsewhere }} unit pada kartu lain.</template>
+                  </p>
+                </div>
               </div>
-              <span class="rounded-xl bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm dark:bg-slate-600 dark:text-slate-200">Pilih File</span>
-              <input class="hidden" type="file" accept=".pdf,.jpg,.jpeg,.png" @change="handleFileChange" :required="!existingAttachment" />
-            </label>
-            <div v-if="form.errors.attachment" class="text-sm text-red-500">{{ form.errors.attachment }}</div>
-          </div>
+            </footer>
+          </article>
+        </section>
 
-          <div class="flex flex-col gap-3 border-t border-slate-200 pt-6 sm:flex-row sm:justify-end dark:border-slate-700">
-            <button type="submit" :disabled="form.processing || hasAnyRowError || hasInvalidPrefilledDates || form.items.length === 0 || (!form.attachment && !existingAttachment)" class="inline-flex items-center justify-center rounded-2xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto">
-              {{ form.processing ? 'Menyimpan...' : isResubmission ? 'Ajukan Ulang' : 'Ajukan Peminjaman' }}
-            </button>
+        <section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+          <header class="flex items-center gap-4 border-b border-slate-100 px-5 py-5 dark:border-slate-700 sm:px-7">
+            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-600 font-bold text-white">3</span>
+            <div>
+              <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Lampiran Surat</h2>
+              <p class="text-sm text-slate-500 dark:text-slate-400">PDF/JPG/PNG maksimal 2 MB.</p>
+            </div>
+          </header>
+          <div class="p-5 sm:p-7">
+            <label class="flex cursor-pointer items-center justify-between rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 px-5 py-6 dark:border-slate-600 dark:bg-slate-900/30">
+              <div>
+                <p class="font-semibold text-slate-800 dark:text-slate-200">
+                  {{ form.attachment?.name ?? (existingAttachment ? 'Gunakan lampiran lama' : 'Pilih lampiran wajib') }}
+                </p>
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Klik untuk memilih dokumen pendukung.</p>
+              </div>
+              <span class="rounded-xl bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm dark:bg-slate-700 dark:text-slate-200">Pilih File</span>
+              <input type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png" @change="handleFileChange" />
+            </label>
+            <p v-if="form.errors.attachment" class="mt-3 text-sm font-medium text-rose-600">{{ form.errors.attachment }}</p>
           </div>
-          <p v-if="formErrors.submit" class="text-sm text-red-500 text-center">{{ formErrors.submit }}</p>
-        </form>
-      </div>
+        </section>
+
+        <div class="sticky bottom-4 z-20 rounded-2xl border border-slate-200 bg-white/90 p-3 shadow-2xl backdrop-blur-xl dark:border-slate-700 dark:bg-slate-800/90 sm:p-4">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div class="text-sm">
+              <p class="font-semibold text-slate-900 dark:text-white">{{ completedCardCount }} dari {{ form.items.length }} barang siap diajukan</p>
+              <p v-if="hasDuplicateCards" class="text-xs font-medium text-rose-600 dark:text-rose-400">Hapus atau ubah kartu dengan jadwal identik.</p>
+              <p v-else-if="hasStockShortage" class="text-xs font-medium text-rose-600 dark:text-rose-400">Kurangi jumlah atau ganti jadwal yang stoknya tidak mencukupi.</p>
+              <p v-else-if="hasIncompleteCard" class="text-xs font-medium text-amber-600 dark:text-amber-400">Lengkapi seluruh kartu barang dan jadwal.</p>
+              <p v-else class="text-xs text-slate-500 dark:text-slate-400">Pastikan seluruh informasi sudah benar.</p>
+            </div>
+            <div class="flex flex-col-reverse gap-2 sm:flex-row">
+              <Link
+                :href="isRevision ? route('item-borrowings.show', itemBorrowingId) : route('item-borrowings.index')"
+                class="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-300 px-5 text-sm font-semibold text-slate-700 dark:border-slate-600 dark:text-slate-200"
+              >
+                Batal
+              </Link>
+              <button
+                type="submit"
+                :disabled="
+                  form.processing
+                    || hasIncompleteCard
+                    || hasLoadingAvailability
+                    || hasUncheckedCard
+                    || hasStockShortage
+                    || hasDuplicateCards
+                    || hasInvalidPrefilledDates
+                    || (!form.attachment && !existingAttachment)
+                "
+                class="inline-flex min-h-11 items-center justify-center rounded-xl bg-blue-600 px-6 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {{ form.processing
+                  ? 'Mengirim...'
+                  : hasIncompleteCard
+                    ? 'Lengkapi Jadwal'
+                    : hasLoadingAvailability || hasUncheckedCard
+                      ? 'Memeriksa Stok...'
+                      : isRevision
+                        ? 'Kirim Revisi'
+                        : isResubmission
+                          ? 'Ajukan Ulang'
+                          : 'Ajukan Peminjaman' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </form>
     </div>
   </AuthenticatedLayout>
 </template>

@@ -29,29 +29,39 @@ class ItemBorrowingRequestedNotification extends Notification
         $borrowing = $this->itemBorrowing;
         $items = $borrowing->items instanceof Collection ? $borrowing->items : collect();
 
-        $mail = (new MailMessage())
-            ->subject('Pengajuan Peminjaman Barang Baru: ' . $borrowing->title)
+        $mail = (new MailMessage)
+            ->subject('Pengajuan Peminjaman Barang Baru: '.$borrowing->title)
             ->greeting('Halo Tim Sarpras,')
             ->line('Ada pengajuan peminjaman barang baru yang menunggu tindak lanjut Sarpras.')
-            ->line('Pemohon: ' . $borrowing->user?->name . ' (' . $borrowing->user?->email . ')');
+            ->line('Pemohon: '.$borrowing->user?->name.' ('.$borrowing->user?->email.')');
 
         // Tampilkan daftar barang (schema baru - multiple items)
         if ($items->isNotEmpty()) {
-            $mail->line('Barang: ' . $items->map(function ($borrowingItem) {
-                $item = $borrowingItem->item;
+            $itemGroups = $items->groupBy('item_id');
+            $mail->line('Barang: '.$itemGroups->map(function ($schedules) {
+                $borrowingItem = $schedules->first();
+                $item = $borrowingItem?->item;
 
                 if (! $item) {
                     return null;
                 }
 
-                return $item->name . ' (' . $item->code . ') x' . $borrowingItem->quantity;
+                $quantities = $schedules
+                    ->pluck('quantity')
+                    ->map(fn ($quantity): int => (int) $quantity)
+                    ->unique()
+                    ->sort()
+                    ->implode('/');
+
+                return $item->name.' ('.$item->code.') x'.$quantities.' per jadwal';
             })->filter()->implode(', '));
 
-            $mail->line('Total jenis barang: ' . $items->count());
+            $mail->line('Total jenis barang: '.$itemGroups->count());
+            $mail->line('Total jadwal: '.$items->count());
         } elseif ($borrowing->singleItem?->name) {
             // Fallback ke schema lama (legacy)
-            $mail->line('Barang: ' . $borrowing->singleItem->name . ' (' . $borrowing->singleItem->code . ')');
-            $mail->line('Jumlah: ' . $borrowing->quantity);
+            $mail->line('Barang: '.$borrowing->singleItem->name.' ('.$borrowing->singleItem->code.')');
+            $mail->line('Jumlah: '.$borrowing->quantity);
         }
 
         // Periode peminjaman
@@ -59,23 +69,23 @@ class ItemBorrowingRequestedNotification extends Notification
         $endDate = $items->map->return_date->filter()->sortDesc()->first() ?? $borrowing->return_date;
 
         if ($startDate && $endDate) {
-            $mail->line('Periode: ' . $startDate->timezone(config('app.business_timezone'))->format('d M Y H:i') . ' - ' . $endDate->timezone(config('app.business_timezone'))->format('d M Y H:i') . ' WIB');
+            $mail->line('Periode: '.$startDate->timezone(config('app.business_timezone'))->format('d M Y H:i').' - '.$endDate->timezone(config('app.business_timezone'))->format('d M Y H:i').' WIB');
         }
 
         if ($borrowing->description) {
-            $mail->line('Keperluan: ' . Str::limit($borrowing->description, 200));
+            $mail->line('Keperluan: '.Str::limit($borrowing->description, 200));
         }
 
-         $fromAddress = config('mail.from.address');
-         $fromName = 'Sistem Peminjaman Sarana dan Prasarana';
+        $fromAddress = config('mail.from.address');
+        $fromName = 'Sistem Peminjaman Sarana dan Prasarana';
 
-         if ($fromAddress) {
-             $mail->from($fromAddress, $fromName);
-         }
+        if ($fromAddress) {
+            $mail->from($fromAddress, $fromName);
+        }
 
-         return $mail
-             ->salutation("Hormat kami,\nTim Sistem Peminjaman Sarana dan Prasarana")
-             ->action('Tinjau Pengajuan', route('admin.item-borrowings.show', $borrowing))
-             ->line('Terima kasih telah mengelola permintaan inventaris barang dengan tertib.');
+        return $mail
+            ->salutation("Hormat kami,\nTim Sistem Peminjaman Sarana dan Prasarana")
+            ->action('Tinjau Pengajuan', route('admin.item-borrowings.show', $borrowing))
+            ->line('Terima kasih telah mengelola permintaan inventaris barang dengan tertib.');
     }
 }

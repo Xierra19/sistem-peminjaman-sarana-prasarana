@@ -84,9 +84,10 @@
 <body>
 @php
     use Carbon\Carbon;
+    $businessTimezone = config('app.business_timezone', 'Asia/Jakarta');
     $approvalDate = $approvedAt
-        ? $approvedAt->copy()->locale('id')
-        : Carbon::parse($generatedAt)->locale('id');
+        ? $approvedAt->copy()->setTimezone($businessTimezone)->locale('id')
+        : Carbon::parse($generatedAt)->setTimezone($businessTimezone)->locale('id');
     $signaturePath = resource_path('images/signatures/ttd-bap.png');
 @endphp
     <div class="logo-wrapper">
