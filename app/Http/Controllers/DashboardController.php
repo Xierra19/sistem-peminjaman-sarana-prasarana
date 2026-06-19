@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Booking;
 use App\Models\Campus;
+use App\Models\Item;
 use App\Models\ItemBorrowing;
 use App\Models\Room;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
@@ -70,7 +72,7 @@ class DashboardController extends Controller
             ->where('user_id', $user?->id)
             ->get();
 
-        $statusSummary = [
+        $roomSummary = [
             'total' => $bookings->count(),
             'approved' => $bookings->where('status', Booking::STATUS_APPROVED)->count(),
             'waiting' => $bookings->whereIn('status', $waitingStatuses)->count(),
@@ -78,6 +80,34 @@ class DashboardController extends Controller
             'rejected' => $bookings->where('status', Booking::STATUS_REJECTED)->count(),
             'cancelled' => $bookings->where('status', Booking::STATUS_CANCELLED)->count(),
             'expired' => $bookings->where('status', Booking::STATUS_EXPIRED)->count(),
+        ];
+
+        $itemBorrowings = ItemBorrowing::query()
+            ->with([
+                'items.item:id,code,name,category',
+                'singleItem:id,code,name,category',
+            ])
+            ->where('user_id', $user?->id)
+            ->orderByDesc('created_at')
+            ->get();
+
+        $itemSummary = [
+            'total' => $itemBorrowings->count(),
+            'approved' => $itemBorrowings->where('effective_status', ItemBorrowing::STATUS_APPROVED)->count(),
+            'waiting' => $itemBorrowings->where('effective_status', ItemBorrowing::STATUS_WAITING)->count(),
+            'needs_revision' => $itemBorrowings->where('effective_status', ItemBorrowing::STATUS_NEEDS_REVISION)->count(),
+            'rejected' => $itemBorrowings->where('effective_status', ItemBorrowing::STATUS_REJECTED)->count(),
+            'cancelled' => $itemBorrowings->where('effective_status', ItemBorrowing::STATUS_CANCELLED)->count(),
+            'completed' => $itemBorrowings->where('effective_status', ItemBorrowing::STATUS_COMPLETED)->count(),
+        ];
+
+        $combinedSummary = [
+            'total' => $roomSummary['total'] + $itemSummary['total'],
+            'approved' => $roomSummary['approved'] + $itemSummary['approved'],
+            'waiting' => $roomSummary['waiting'] + $itemSummary['waiting'],
+            'needs_revision' => $roomSummary['needs_revision'] + $itemSummary['needs_revision'],
+            'rejected' => $roomSummary['rejected'] + $itemSummary['rejected'],
+            'cancelled' => $roomSummary['cancelled'] + $itemSummary['cancelled'],
         ];
 
         $rooms = Room::query()
@@ -99,11 +129,119 @@ class DashboardController extends Controller
             ])
             ->get();
 
+        $items = Item::query()
+            ->select(['id', 'code', 'name', 'category', 'quantity', 'is_available'])
+            ->orderBy('name')
+            ->get();
+
+        $requestHistory = $bookings
+            ->map(fn (Booking $booking): array => [
+                'key' => 'room-'.$booking->id,
+                'type' => 'room',
+                'id' => $booking->id,
+                'title' => $booking->title,
+                'resource_name' => $booking->room_summary,
+                'schedule' => $booking->schedule_short_summary,
+                'quantity' => null,
+                'status' => $booking->status,
+                'created_at' => $booking->created_at?->toIso8601String(),
+            ])
+            ->concat($itemBorrowings->map(function (ItemBorrowing $borrowing): array {
+                $itemNames = $borrowing->items
+                    ->pluck('item.name')
+                    ->filter()
+                    ->unique()
+                    ->values();
+
+                if ($itemNames->isEmpty() && $borrowing->singleItem) {
+                    $itemNames->push($borrowing->singleItem->name);
+                }
+
+                $borrowDates = $borrowing->items->pluck('borrow_date')->filter();
+                $returnDates = $borrowing->items->pluck('return_date')->filter();
+                $firstBorrow = $borrowDates->min() ?? $borrowing->borrow_date;
+                $lastReturn = $returnDates->max() ?? $borrowing->return_date;
+
+                return [
+                    'key' => 'item-'.$borrowing->id,
+                    'type' => 'item',
+                    'id' => $borrowing->id,
+                    'title' => $borrowing->title,
+                    'resource_name' => $itemNames->join(', ') ?: '-',
+                    'schedule' => $this->formatItemSchedule($firstBorrow, $lastReturn),
+                    'quantity' => $this->itemBorrowingQuantity($borrowing),
+                    'status' => $borrowing->effective_status,
+                    'created_at' => $borrowing->created_at?->toIso8601String(),
+                ];
+            }))
+            ->sortByDesc('created_at')
+            ->values();
+
+        $businessTimezone = config('app.business_timezone');
+
         return Inertia::render('Dashboard', [
             'rooms' => $rooms,
             'campuses' => $campuses,
-            'recentBookings' => $bookings->take(5)->values(),
-            'bookingSummary' => $statusSummary,
+            'items' => $items,
+            'itemCategories' => $items->pluck('category')->filter()->unique()->sort()->values(),
+            'roomSummary' => $roomSummary,
+            'itemSummary' => $itemSummary,
+            'combinedSummary' => $combinedSummary,
+            'requestHistory' => $requestHistory,
+            'minimumBookingDate' => Carbon::now($businessTimezone)->addDays(3)->toDateString(),
+            'minimumBorrowDate' => Carbon::now($businessTimezone)->addDays(7)->toDateString(),
         ]);
+    }
+
+    private function formatItemSchedule(mixed $start, mixed $end): ?string
+    {
+        if (! $start) {
+            return null;
+        }
+
+        $timezone = config('app.business_timezone');
+        $startDate = Carbon::parse($start)->setTimezone($timezone);
+        $endDate = $end ? Carbon::parse($end)->setTimezone($timezone) : null;
+
+        if (! $endDate) {
+            return $startDate->translatedFormat('d M Y, H:i');
+        }
+
+        if ($startDate->isSameDay($endDate)) {
+            return $startDate->translatedFormat('d M Y, H:i').' - '.$endDate->format('H:i');
+        }
+
+        return $startDate->translatedFormat('d M Y, H:i').' - '.$endDate->translatedFormat('d M Y, H:i');
+    }
+
+    private function itemBorrowingQuantity(ItemBorrowing $borrowing): int
+    {
+        if ($borrowing->items->isEmpty()) {
+            return (int) $borrowing->quantity;
+        }
+
+        return $borrowing->items
+            ->groupBy('item_id')
+            ->sum(function ($rows): int {
+                $events = $rows
+                    ->flatMap(fn ($row) => [
+                        ['time' => $row->borrow_date->getTimestamp(), 'quantity' => (int) $row->quantity],
+                        ['time' => $row->return_date->getTimestamp(), 'quantity' => -((int) $row->quantity)],
+                    ])
+                    ->sortBy([
+                        ['time', 'asc'],
+                        ['quantity', 'asc'],
+                    ]);
+
+                $active = 0;
+                $peak = 0;
+
+                foreach ($events as $event) {
+                    $active += $event['quantity'];
+                    $peak = max($peak, $active);
+                }
+
+                return $peak;
+            });
     }
 }

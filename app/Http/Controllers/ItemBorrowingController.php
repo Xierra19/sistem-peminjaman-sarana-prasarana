@@ -39,9 +39,30 @@ class ItemBorrowingController extends Controller
         ]);
     }
 
-    public function create()
+    public function create(Request $request)
     {
-        return Inertia::render('ItemBorrowings/Create', $this->itemFormProps());
+        $item = Item::query()->find($request->integer('item_id'));
+        $date = $request->string('date')->toString();
+        $startTime = $request->string('start_time')->toString();
+        $endTime = $request->string('end_time')->toString();
+        $date = preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) ? $date : null;
+        $startTime = preg_match('/^(?:0[7-9]|1\d|2[01]):(?:00|30)$/', $startTime) ? $startTime : '';
+        $endTime = preg_match('/^(?:0[7-9]|1\d|2[01]):(?:00|30)$/', $endTime) ? $endTime : '';
+        $prefill = $item ? [
+            'title' => '',
+            'description' => '',
+            'items' => [[
+                'item_id' => $item->id,
+                'quantity' => max(1, min($request->integer('quantity', 1), (int) $item->quantity)),
+                'dates' => $date ? [$date] : [],
+                'start_time' => $startTime,
+                'end_time' => $endTime,
+            ]],
+        ] : null;
+
+        return Inertia::render('ItemBorrowings/Create', $this->itemFormProps(
+            initialData: $prefill,
+        ));
     }
 
     public function resubmit(ItemBorrowing $itemBorrowing)
@@ -52,8 +73,11 @@ class ItemBorrowingController extends Controller
         return Inertia::render('ItemBorrowings/Create', $this->itemFormProps($itemBorrowing, 'resubmission'));
     }
 
-    private function itemFormProps(?ItemBorrowing $source = null, string $formMode = 'create'): array
-    {
+    private function itemFormProps(
+        ?ItemBorrowing $source = null,
+        string $formMode = 'create',
+        ?array $initialData = null,
+    ): array {
         $items = Item::query()
             ->select('id', 'code', 'name', 'category', 'quantity', 'is_available')
             ->orderBy('name')
@@ -65,7 +89,7 @@ class ItemBorrowingController extends Controller
             'formMode' => $formMode,
             'itemBorrowingId' => $formMode === 'revision' ? $source?->id : null,
             'sourceItemBorrowingId' => $formMode === 'resubmission' ? $source?->id : null,
-            'initialData' => $source ? $this->itemBorrowingInitialData($source) : null,
+            'initialData' => $source ? $this->itemBorrowingInitialData($source) : $initialData,
             'revisionNote' => $source?->logs
                 ->where('action', $formMode === 'revision'
                     ? ItemBorrowing::STATUS_NEEDS_REVISION

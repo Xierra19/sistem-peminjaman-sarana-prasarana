@@ -156,9 +156,34 @@ class BookingController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function create()
+    public function create(Request $request)
     {
-        return Inertia::render('Bookings/Create', $this->bookingFormProps());
+        $room = Room::query()
+            ->with('building:id,campus_id')
+            ->find($request->integer('room_id'));
+        $date = $request->string('date')->toString();
+        $startTime = $request->string('start_time')->toString();
+        $endTime = $request->string('end_time')->toString();
+        $date = preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) ? $date : null;
+        $startTime = preg_match('/^(?:0[7-9]|1\d|2[01]):(?:00|30)$/', $startTime) ? $startTime : '';
+        $endTime = preg_match('/^(?:0[7-9]|1\d|2[01]):(?:00|30)$/', $endTime) ? $endTime : '';
+
+        $prefill = $room ? [
+            'title' => '',
+            'description' => '',
+            'schedules' => [[
+                'campus_id' => $room->building?->campus_id,
+                'building_id' => $room->building_id,
+                'room_id' => $room->id,
+                'dates' => $date ? [$date] : [],
+                'start_time' => $startTime,
+                'end_time' => $endTime,
+            ]],
+        ] : null;
+
+        return Inertia::render('Bookings/Create', $this->bookingFormProps(
+            initialData: $prefill,
+        ));
     }
 
     public function edit(Booking $booking)
@@ -183,8 +208,11 @@ class BookingController extends Controller
         ));
     }
 
-    private function bookingFormProps(?Booking $source = null, string $mode = 'create'): array
-    {
+    private function bookingFormProps(
+        ?Booking $source = null,
+        string $mode = 'create',
+        ?array $initialData = null,
+    ): array {
         $campuses = Campus::query()
             ->with(['buildings' => function ($query) {
                 $query->select('id', 'name', 'campus_id')
@@ -216,7 +244,7 @@ class BookingController extends Controller
             'minimumBookingDate' => $minimumDate->toDateString(),
             'formMode' => $mode,
             'sourceBookingId' => $source?->id,
-            'initialData' => $source ? $this->bookingInitialData($source) : null,
+            'initialData' => $source ? $this->bookingInitialData($source) : $initialData,
             'revisionNote' => $source ? $this->latestDecisionNote($source) : null,
             'existingAttachment' => $source?->attachment,
         ];

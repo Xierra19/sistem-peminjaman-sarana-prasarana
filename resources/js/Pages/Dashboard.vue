@@ -1,364 +1,447 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
-import SortableTh from '@/Components/SortableTh.vue'
 import { Head, Link, usePage } from '@inertiajs/vue3'
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
+import {
+  Boxes,
+  Building2,
+  CalendarClock,
+  CheckCircle2,
+  ClipboardList,
+  PackageCheck,
+  Search,
+} from 'lucide-vue-next'
 import {
   getBookingStatusClasses,
   getBookingStatusLabel,
   normalizeBookingStatus,
 } from '@/Composables/useBookingStatus'
-import { formatDateTimeToDDMMYY, formatToDDMMYY } from '@/Composables/useDateFormatter'
-import { useTableSort } from '@/Composables/useTableSort'
-
-const page = usePage()
+import {
+  getItemBorrowingStatusClasses,
+  getItemBorrowingStatusLabel,
+  normalizeItemBorrowingStatus,
+} from '@/Composables/useItemBorrowingStatus'
+import { usePagination } from '@/Composables/usePagination'
 
 const props = defineProps({
-  rooms: {
-    type: Array,
-    default: () => [],
-  },
-  campuses: {
-    type: Array,
-    default: () => [],
-  },
-  recentBookings: {
-    type: Array,
-    default: () => [],
-  },
-  bookingSummary: {
-    type: Object,
-    default: () => ({
-      total: 0,
-      approved: 0,
-      waiting: 0,
-      needs_revision: 0,
-      rejected: 0,
-      cancelled: 0,
-      expired: 0,
-    }),
-  },
+  rooms: { type: Array, default: () => [] },
+  campuses: { type: Array, default: () => [] },
+  items: { type: Array, default: () => [] },
+  itemCategories: { type: Array, default: () => [] },
+  roomSummary: { type: Object, default: () => ({}) },
+  itemSummary: { type: Object, default: () => ({}) },
+  combinedSummary: { type: Object, default: () => ({}) },
+  requestHistory: { type: Array, default: () => [] },
+  minimumBookingDate: { type: String, required: true },
+  minimumBorrowDate: { type: String, required: true },
 })
 
-const formatDateTime = (value) => formatDateTimeToDDMMYY(value)
+const page = usePage()
+const greetingName = computed(() => {
+  const name = page.props?.auth?.user?.name ?? 'Pengguna'
+  return name.split(' ')[0] || name
+})
 
-const extractFeatures = (features) => {
-  if (Array.isArray(features)) {
-    return features.map((item) => String(item).trim()).filter(Boolean)
-  }
+const activeStatsTab = ref('all')
+const activeSearchTab = ref('room')
+const availabilitySection = ref(null)
+const requestHistorySection = ref(null)
+const historyType = ref('all')
+const historyStatus = ref('')
 
-  if (typeof features === 'string') {
-    const trimmed = features.trim()
-    if (!trimmed) {
-      return []
-    }
+const emptyRoomFilters = () => ({
+  query: '',
+  minCapacity: '',
+  campusId: '',
+  buildingId: '',
+  date: '',
+  startTime: '',
+  endTime: '',
+  onlyAvailable: true,
+  sort: 'capacity-desc',
+})
 
-    try {
-      const parsed = JSON.parse(trimmed)
-      if (Array.isArray(parsed)) {
-        return parsed.map((item) => String(item).trim()).filter(Boolean)
-      }
-    } catch {
-      // abaikan jika string bukan JSON valid
-    }
+const emptyItemFilters = () => ({
+  query: '',
+  category: '',
+  date: '',
+  startTime: '',
+  endTime: '',
+  quantity: 1,
+  onlyAvailable: true,
+  sort: 'name-asc',
+})
 
-    return trimmed
-      .split(',')
-      .map((item) => item.trim())
-      .filter(Boolean)
-  }
+const roomFilters = ref(emptyRoomFilters())
+const itemFilters = ref(emptyItemFilters())
+const appliedRoomFilters = ref(null)
+const appliedItemFilters = ref(null)
+const roomAvailability = ref({})
+const itemAvailability = ref({})
+const isSearching = ref(false)
+const searchError = ref('')
 
-  return []
-}
-
-const userName = computed(() => page.props?.auth?.user?.name ?? 'Pengguna')
-const greetingName = computed(() => userName.value.split(' ')[0] || userName.value)
-
-const bookingSummaryData = computed(() => ({
-  total: props.bookingSummary?.total ?? 0,
-  approved: props.bookingSummary?.approved ?? 0,
-  waiting: props.bookingSummary?.waiting ?? 0,
-  needs_revision: props.bookingSummary?.needs_revision ?? 0,
-  rejected: props.bookingSummary?.rejected ?? 0,
-  cancelled: props.bookingSummary?.cancelled ?? 0,
-  expired: props.bookingSummary?.expired ?? 0,
-}))
-
-const rooms = computed(() => props.rooms ?? [])
-const totalRooms = computed(() => rooms.value.length)
-
-const searchQuery = ref('')
-const minCapacity = ref('')
-const campusFilter = ref('')
-const buildingFilter = ref('')
-const onlyAvailable = ref(false)
-const sortOption = ref('capacity-desc')
-const searchDate = ref('')
-const searchStartTime = ref('')
-const searchEndTime = ref('')
-const appliedFilters = ref(null)
-
-const campusOptions = computed(() => props.campuses ?? [])
-const selectedCampus = computed(() =>
-  campusOptions.value.find((campus) => String(campus.id) === String(campusFilter.value)),
-)
-const buildingOptions = computed(() => selectedCampus.value?.buildings ?? [])
-
-const sortOptionLabels = {
-  'capacity-desc': 'Kapasitas terbesar',
-  'capacity-asc': 'Kapasitas terkecil',
-  availability: 'Ketersediaan',
-  'name-asc': 'Nama ruangan (A-Z)',
-}
-
-const findCampusById = (id) => {
-  if (!id) return null
-  return campusOptions.value.find((campus) => String(campus.id) === String(id)) ?? null
-}
-
-const findBuildingById = (id) => {
-  if (!id) return null
-  for (const campus of campusOptions.value) {
-    const building = (campus.buildings ?? []).find((item) => String(item.id) === String(id))
-    if (building) {
-      return building
-    }
-  }
-  return null
-}
-
-const formatDateLabel = (value) => formatToDDMMYY(value)
-
-const generateTimeSlots = (startHour = 7, endHour = 21, stepMinutes = 30) => {
+const timeSlots = (() => {
   const slots = []
-  for (let hour = startHour; hour <= endHour; hour++) {
-    for (let minute = 0; minute < 60; minute += stepMinutes) {
-      if (hour === endHour && minute > 0) {
-        break
-      }
-      const h = String(hour).padStart(2, '0')
-      const m = String(minute).padStart(2, '0')
-      slots.push(`${h}:${m}`)
+  for (let hour = 7; hour <= 21; hour++) {
+    for (let minute = 0; minute < 60; minute += 30) {
+      if (hour === 21 && minute > 0) break
+      slots.push(`${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`)
     }
   }
   return slots
-}
+})()
 
-const timeSlots = generateTimeSlots()
-const endTimeOptions = computed(() =>
-  timeSlots.filter((slot) => !searchStartTime.value || slot > searchStartTime.value),
+const roomEndTimes = computed(() =>
+  timeSlots.filter((slot) => !roomFilters.value.startTime || slot > roomFilters.value.startTime),
+)
+const itemEndTimes = computed(() =>
+  timeSlots.filter((slot) => !itemFilters.value.startTime || slot > itemFilters.value.startTime),
 )
 
-watch(campusFilter, () => {
-  buildingFilter.value = ''
+watch(() => roomFilters.value.campusId, () => {
+  roomFilters.value.buildingId = ''
 })
-
-watch(searchStartTime, (value) => {
-  if (searchEndTime.value && searchEndTime.value <= value) {
-    searchEndTime.value = ''
+watch(() => roomFilters.value.startTime, (value) => {
+  if (roomFilters.value.endTime && roomFilters.value.endTime <= value) {
+    roomFilters.value.endTime = ''
+  }
+})
+watch(() => itemFilters.value.startTime, (value) => {
+  if (itemFilters.value.endTime && itemFilters.value.endTime <= value) {
+    itemFilters.value.endTime = ''
   }
 })
 
-const hasActiveFilters = computed(
-  () =>
-    Boolean(
-      searchQuery.value ||
-        minCapacity.value ||
-        campusFilter.value ||
-        buildingFilter.value ||
-        onlyAvailable.value ||
-        sortOption.value !== 'capacity-desc' ||
-        searchDate.value ||
-        searchStartTime.value ||
-        searchEndTime.value,
-    ),
+const selectedCampus = computed(() =>
+  props.campuses.find((campus) => String(campus.id) === String(roomFilters.value.campusId)),
 )
+const buildingOptions = computed(() => selectedCampus.value?.buildings ?? [])
 
-const canResetFilters = computed(() => hasActiveFilters.value || appliedFilters.value !== null)
+const statsTabs = [
+  { key: 'all', label: 'Semua' },
+  { key: 'room', label: 'Ruangan' },
+  { key: 'item', label: 'Barang' },
+]
 
-const handleSearch = () => {
-  appliedFilters.value = {
-    query: searchQuery.value.trim(),
-    minCapacity: minCapacity.value,
-    campusId: campusFilter.value,
-    buildingId: buildingFilter.value,
-    onlyAvailable: onlyAvailable.value,
-    sortOption: sortOption.value || 'capacity-desc',
-    date: searchDate.value,
-    startTime: searchStartTime.value,
-    endTime: searchEndTime.value,
+const summaryForActiveTab = computed(() => {
+  if (activeStatsTab.value === 'room') return props.roomSummary
+  if (activeStatsTab.value === 'item') return props.itemSummary
+  return props.combinedSummary
+})
+
+const statisticCards = computed(() => {
+  const summary = summaryForActiveTab.value ?? {}
+  const cards = [
+    { key: 'total', label: 'Total Pengajuan', tone: 'blue' },
+    { key: 'approved', label: 'Disetujui', tone: 'emerald' },
+    { key: 'waiting', label: 'Menunggu', tone: 'amber' },
+    { key: 'needs_revision', label: 'Perlu Direvisi', tone: 'violet' },
+    { key: 'rejected', label: 'Ditolak', tone: 'rose' },
+    { key: 'cancelled', label: 'Dibatalkan', tone: 'slate' },
+  ]
+
+  if (activeStatsTab.value === 'room') {
+    cards.push({ key: 'expired', label: 'Kedaluwarsa', tone: 'orange' })
   }
+  if (activeStatsTab.value === 'item') {
+    cards.push({ key: 'completed', label: 'Selesai', tone: 'sky' })
+  }
+
+  return cards.map((card) => ({ ...card, value: summary[card.key] ?? 0 }))
+})
+
+const statisticTone = {
+  blue: 'border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-700 dark:text-blue-200',
+  emerald: 'border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-700 dark:text-emerald-300',
+  amber: 'border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-700 dark:text-amber-300',
+  violet: 'border-violet-200 bg-violet-50 text-violet-900 dark:border-violet-700 dark:text-violet-300',
+  rose: 'border-rose-200 bg-rose-50 text-rose-900 dark:border-rose-700 dark:text-rose-300',
+  slate: 'border-slate-200 bg-slate-50 text-slate-900 dark:border-slate-600 dark:text-slate-200',
+  orange: 'border-orange-200 bg-orange-50 text-orange-900 dark:border-orange-700 dark:text-orange-300',
+  sky: 'border-sky-200 bg-sky-50 text-sky-900 dark:border-sky-700 dark:text-sky-300',
 }
 
-const resetFilters = () => {
-  searchQuery.value = ''
-  minCapacity.value = ''
-  campusFilter.value = ''
-  buildingFilter.value = ''
-  onlyAvailable.value = false
-  sortOption.value = 'capacity-desc'
-  searchDate.value = ''
-  searchStartTime.value = ''
-  searchEndTime.value = ''
-  appliedFilters.value = null
+const extractFeatures = (features) => {
+  if (Array.isArray(features)) return features.filter(Boolean)
+  if (!features || typeof features !== 'string') return []
+  try {
+    const parsed = JSON.parse(features)
+    if (Array.isArray(parsed)) return parsed.filter(Boolean)
+  } catch {
+    return features.split(',').map((feature) => feature.trim()).filter(Boolean)
+  }
+  return []
 }
 
-const hasSearched = computed(() => appliedFilters.value !== null)
+const localRoomCandidates = computed(() => {
+  const filters = appliedRoomFilters.value
+  if (!filters) return []
+  const query = filters.query.toLowerCase()
 
-const filteredRooms = computed(() => {
-  const filters = appliedFilters.value
-  if (!filters) {
-    return []
-  }
-
-  const query = filters.query.trim().toLowerCase()
-  const campusId = filters.campusId ? String(filters.campusId) : ''
-  const buildingId = filters.buildingId ? String(filters.buildingId) : ''
-
-  let minCapValue = null
-  if (filters.minCapacity !== '') {
-    const parsed = Number(filters.minCapacity)
-    if (!Number.isNaN(parsed)) {
-      minCapValue = parsed
-    }
-  }
-
-  const requireAvailableForSchedule = Boolean(filters.date || filters.startTime || filters.endTime)
-
-  return rooms.value.filter((room) => {
-    if (!room) return false
-    if ((filters.onlyAvailable || requireAvailableForSchedule) && !room.is_available) {
-      return false
-    }
-
-    const roomCampusId = String(room.building?.campus?.id ?? room.building?.campus_id ?? '')
-    if (campusId && roomCampusId !== campusId) {
-      return false
-    }
-
-    if (buildingId && String(room.building_id ?? '') !== buildingId) {
-      return false
-    }
-
-    if (minCapValue !== null && (Number(room.capacity) || 0) < minCapValue) {
-      return false
-    }
-
-    if (!query) {
-      return true
-    }
-
-    const featuresText = extractFeatures(room.features).join(' ')
+  const filtered = props.rooms.filter((room) => {
+    const campusId = String(room.building?.campus?.id ?? '')
     const searchable = [
       room.name,
       room.building?.name,
       room.building?.campus?.name,
-      featuresText,
-    ]
-      .filter(Boolean)
-      .join(' ')
-      .toLowerCase()
+      ...extractFeatures(room.features),
+    ].filter(Boolean).join(' ').toLowerCase()
 
-    return searchable.includes(query)
+    return (!query || searchable.includes(query))
+      && (!filters.campusId || campusId === String(filters.campusId))
+      && (!filters.buildingId || String(room.building_id) === String(filters.buildingId))
+      && (!filters.minCapacity || Number(room.capacity) >= Number(filters.minCapacity))
+  })
+
+  return filtered.sort((left, right) => {
+    if (filters.sort === 'capacity-asc') return Number(left.capacity) - Number(right.capacity)
+    if (filters.sort === 'name-asc') return left.name.localeCompare(right.name)
+    if (filters.sort === 'availability') return Number(right.is_available) - Number(left.is_available)
+    return Number(right.capacity) - Number(left.capacity)
   })
 })
 
-const sortedRooms = computed(() => {
-  if (!appliedFilters.value) {
-    return []
-  }
+const roomResults = computed(() => localRoomCandidates.value.filter((room) => {
+  if (!appliedRoomFilters.value?.onlyAvailable) return true
+  if (!room.is_available) return false
+  const result = roomAvailability.value[room.id]
+  return !result || result.available
+}))
 
-  const list = [...filteredRooms.value]
+const localItemCandidates = computed(() => {
+  const filters = appliedItemFilters.value
+  if (!filters) return []
+  const query = filters.query.toLowerCase()
 
-  switch (appliedFilters.value.sortOption) {
-    case 'capacity-asc':
-      return list.sort(
-        (a, b) => (Number(a.capacity) || 0) - (Number(b.capacity) || 0),
-      )
-    case 'name-asc':
-      return list.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
-    case 'availability':
-      return list.sort((a, b) => Number(b.is_available) - Number(a.is_available))
-    case 'capacity-desc':
-    default:
-      return list.sort(
-        (a, b) => (Number(b.capacity) || 0) - (Number(a.capacity) || 0),
-      )
-  }
+  const filtered = props.items.filter((item) => {
+    const searchable = [item.name, item.code, item.category].filter(Boolean).join(' ').toLowerCase()
+    return (!query || searchable.includes(query))
+      && (!filters.category || item.category === filters.category)
+  })
+
+  return filtered.sort((left, right) => {
+    if (filters.sort === 'quantity-desc') return Number(right.quantity) - Number(left.quantity)
+    if (filters.sort === 'quantity-asc') return Number(left.quantity) - Number(right.quantity)
+    return left.name.localeCompare(right.name)
+  })
 })
 
-const resultsCount = computed(() => sortedRooms.value.length)
+const itemResults = computed(() => localItemCandidates.value.filter((item) => {
+  if (!appliedItemFilters.value?.onlyAvailable) return true
+  if (!item.is_available || Number(item.quantity) < Number(appliedItemFilters.value.quantity)) return false
+  const result = itemAvailability.value[item.id]
+  return !result || result.remaining >= Number(appliedItemFilters.value.quantity)
+}))
 
-const activeFilterChips = computed(() => {
-  const filters = appliedFilters.value
-  if (!filters) {
-    return []
+const hasCompleteSchedule = (filters) =>
+  Boolean(filters.date && filters.startTime && filters.endTime)
+
+const validateSchedule = (filters, minimumDate) => {
+  const hasAnySchedule = filters.date || filters.startTime || filters.endTime
+  if (hasAnySchedule && !hasCompleteSchedule(filters)) {
+    return 'Tanggal, jam mulai, dan jam selesai harus diisi bersama.'
   }
-
-  const chips = []
-
-  if (filters.query) {
-    chips.push({ label: 'Kata kunci', value: filters.query })
+  if (filters.date && filters.date < minimumDate) {
+    return `Tanggal paling awal yang dapat dipilih adalah ${minimumDate}.`
   }
+  return ''
+}
 
-  if (filters.minCapacity) {
-    chips.push({ label: 'Kapasitas ≥', value: `${filters.minCapacity} orang` })
+const overlapsSelectedTime = (booking, startTime, endTime) =>
+  booking.start < endTime && booking.end > startTime
+
+const searchRooms = async () => {
+  searchError.value = validateSchedule(roomFilters.value, props.minimumBookingDate)
+  if (searchError.value) return
+
+  appliedRoomFilters.value = { ...roomFilters.value, query: roomFilters.value.query.trim() }
+  roomAvailability.value = {}
+  if (!hasCompleteSchedule(appliedRoomFilters.value)) return
+
+  isSearching.value = true
+  try {
+    const results = await Promise.all(localRoomCandidates.value.map(async (room) => {
+      const response = await fetch(route('rooms.availability', {
+        room: room.id,
+        dates: [appliedRoomFilters.value.date],
+      }), { headers: { Accept: 'application/json' } })
+      if (!response.ok) throw new Error('Gagal memeriksa ketersediaan ruangan.')
+      const data = await response.json()
+      const bookings = (data.daily_bookings ?? []).flatMap((entry) => entry.bookings ?? [])
+      const hasConflict = bookings.some((booking) =>
+        overlapsSelectedTime(
+          booking,
+          appliedRoomFilters.value.startTime,
+          appliedRoomFilters.value.endTime,
+        ),
+      )
+      return [room.id, {
+        available: data.available !== false && !hasConflict,
+        conflictCount: bookings.filter((booking) =>
+          overlapsSelectedTime(
+            booking,
+            appliedRoomFilters.value.startTime,
+            appliedRoomFilters.value.endTime,
+          ),
+        ).length,
+      }]
+    }))
+    roomAvailability.value = Object.fromEntries(results)
+  } catch (error) {
+    searchError.value = error.message || 'Ketersediaan ruangan tidak dapat diperiksa.'
+  } finally {
+    isSearching.value = false
   }
+}
 
-  const campusName = findCampusById(filters.campusId)?.name
-  if (campusName) {
-    chips.push({ label: 'Kampus', value: campusName })
+const searchItems = async () => {
+  searchError.value = validateSchedule(itemFilters.value, props.minimumBorrowDate)
+  if (searchError.value) return
+
+  appliedItemFilters.value = {
+    ...itemFilters.value,
+    query: itemFilters.value.query.trim(),
+    quantity: Math.max(1, Number(itemFilters.value.quantity) || 1),
   }
+  itemAvailability.value = {}
+  if (!hasCompleteSchedule(appliedItemFilters.value)) return
 
-  const buildingName = findBuildingById(filters.buildingId)?.name
-  if (buildingName) {
-    chips.push({ label: 'Gedung', value: buildingName })
+  isSearching.value = true
+  try {
+    const results = await Promise.all(localItemCandidates.value.map(async (item) => {
+      const response = await fetch(route('items.availability', {
+        item: item.id,
+        dates: [appliedItemFilters.value.date],
+        start_time: appliedItemFilters.value.startTime,
+        end_time: appliedItemFilters.value.endTime,
+      }), { headers: { Accept: 'application/json' } })
+      if (!response.ok) throw new Error('Gagal memeriksa ketersediaan barang.')
+      const data = await response.json()
+      const daily = data.daily_availability?.[0]
+      return [item.id, {
+        available: data.available !== false,
+        remaining: Number(daily?.remaining_quantity ?? item.quantity),
+      }]
+    }))
+    itemAvailability.value = Object.fromEntries(results)
+  } catch (error) {
+    searchError.value = error.message || 'Ketersediaan barang tidak dapat diperiksa.'
+  } finally {
+    isSearching.value = false
   }
+}
 
-  if (filters.onlyAvailable) {
-    chips.push({ label: 'Ketersediaan', value: 'Hanya ruangan tersedia' })
+const handleSearch = () => {
+  if (activeSearchTab.value === 'room') return searchRooms()
+  return searchItems()
+}
+
+const resetSearch = () => {
+  searchError.value = ''
+  if (activeSearchTab.value === 'room') {
+    roomFilters.value = emptyRoomFilters()
+    appliedRoomFilters.value = null
+    roomAvailability.value = {}
+    return
   }
+  itemFilters.value = emptyItemFilters()
+  appliedItemFilters.value = null
+  itemAvailability.value = {}
+}
 
-  if (filters.date) {
-    chips.push({ label: 'Tanggal', value: formatDateLabel(filters.date) })
-  }
+const showSearch = async (type) => {
+  activeSearchTab.value = type
+  searchError.value = ''
+  await nextTick()
+  availabilitySection.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
 
-  if (filters.startTime || filters.endTime) {
-    const start = filters.startTime || '--:--'
-    const end = filters.endTime || '--:--'
-    chips.push({ label: 'Jam', value: `${start} - ${end}` })
-  }
-
-  if (filters.sortOption && filters.sortOption !== 'capacity-desc') {
-    chips.push({
-      label: 'Urut',
-      value: sortOptionLabels[filters.sortOption] ?? filters.sortOption,
-    })
-  }
-
-  return chips
+const roomCreateUrl = (room) => route('bookings.create', {
+  room_id: room.id,
+  date: appliedRoomFilters.value?.date || undefined,
+  start_time: appliedRoomFilters.value?.startTime || undefined,
+  end_time: appliedRoomFilters.value?.endTime || undefined,
 })
 
-const recentBookingsList = computed(() =>
-  (props.recentBookings ?? []).map((booking) => ({
-    ...booking,
-    normalizedStatus: normalizeBookingStatus(booking.status),
-  })),
+const itemCreateUrl = (item) => route('item-borrowings.create', {
+  item_id: item.id,
+  quantity: appliedItemFilters.value?.quantity || 1,
+  date: appliedItemFilters.value?.date || undefined,
+  start_time: appliedItemFilters.value?.startTime || undefined,
+  end_time: appliedItemFilters.value?.endTime || undefined,
+})
+
+const statusLabel = (request) => request.type === 'room'
+  ? getBookingStatusLabel(normalizeBookingStatus(request.status))
+  : getItemBorrowingStatusLabel(normalizeItemBorrowingStatus(request.status))
+
+const statusClasses = (request) => request.type === 'room'
+  ? getBookingStatusClasses(normalizeBookingStatus(request.status))
+  : getItemBorrowingStatusClasses(normalizeItemBorrowingStatus(request.status))
+
+const requestDetailUrl = (request) => request.type === 'room'
+  ? route('bookings.show', request.id)
+  : route('item-borrowings.show', request.id)
+
+const normalizedRequestStatus = (request) => request.type === 'room'
+  ? normalizeBookingStatus(request.status)
+  : normalizeItemBorrowingStatus(request.status)
+
+const filteredRequestHistory = computed(() =>
+  props.requestHistory.filter((request) =>
+    (historyType.value === 'all' || request.type === historyType.value)
+    && (!historyStatus.value || normalizedRequestStatus(request) === historyStatus.value),
+  ),
 )
 
 const {
-  sortedItems: sortedRecentBookings,
-  toggleSort: toggleRecentBookingSort,
-  sortDirection: recentBookingSortDirection,
-  ariaSortValue: recentBookingAriaSortValue,
-} = useTableSort(recentBookingsList, {
-  accessors: {
-    title: (booking) => booking.title ?? '',
-    room: (booking) => booking.room_summary ?? '',
-    start_time: (booking) => (booking.start_time ? new Date(booking.start_time) : null),
-    status: (booking) => booking.normalizedStatus ?? '',
-  },
+  paginatedItems: paginatedRequestHistory,
+  currentPage: historyPage,
+  totalPages: historyTotalPages,
+  pageMeta: historyPageMeta,
+  changePage: changeHistoryPage,
+} = usePagination(filteredRequestHistory, { perPage: 5 })
+
+watch([historyType, historyStatus], () => {
+  historyPage.value = 1
 })
+
+watch(historyType, (type) => {
+  if (type === 'room' && historyStatus.value === 'completed') {
+    historyStatus.value = ''
+  }
+  if (type === 'item' && historyStatus.value === 'expired') {
+    historyStatus.value = ''
+  }
+})
+
+const historyStatusOptions = computed(() => {
+  const options = [
+    { value: 'waiting', label: 'Menunggu Persetujuan' },
+    { value: 'needs_revision', label: 'Perlu Direvisi' },
+    { value: 'approved', label: 'Disetujui' },
+    { value: 'rejected', label: 'Ditolak' },
+    { value: 'cancelled', label: 'Dibatalkan' },
+  ]
+
+  if (historyType.value !== 'item') {
+    options.push({ value: 'expired', label: 'Kedaluwarsa' })
+  }
+  if (historyType.value !== 'room') {
+    options.push({ value: 'completed', label: 'Selesai' })
+  }
+
+  return options
+})
+
+const filterHistoryFromStatistic = async (stat) => {
+  historyType.value = activeStatsTab.value
+  historyStatus.value = stat.key === 'total' ? '' : stat.key
+  historyPage.value = 1
+  await nextTick()
+  requestHistorySection.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
 </script>
 
 <template>
@@ -367,472 +450,423 @@ const {
 
     <div class="py-8 sm:py-10">
       <div class="mx-auto space-y-8 px-4 sm:px-6 lg:max-w-7xl lg:px-8">
-        <section class="card-surface bg-gradient-to-br from-blue-50 via-white to-blue-100 p-6 dark:from-slate-800 dark:via-slate-900 dark:to-slate-800">
-          <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div class="space-y-3">
+        <section class="dashboard-hero card-surface overflow-hidden p-6 sm:p-8">
+          <div class="flex flex-col gap-7 lg:flex-row lg:items-center lg:justify-between">
+            <div class="max-w-3xl space-y-3">
               <p class="text-sm font-semibold text-blue-700 dark:text-blue-300">Halo, {{ greetingName }}!</p>
-              <h1 class="text-3xl font-semibold text-slate-900 dark:text-white">Temukan Ruangan untuk Kebutuhanmu</h1>
-              <p class="text-sm text-slate-600 dark:text-slate-300">
-                Cari ruangan yang sesuai dengan kapasitas, lokasi, dan jadwal kegiatanmu lalu ajukan peminjaman secara cepat.
+              <h1 class="text-3xl font-semibold leading-tight text-slate-900 dark:text-white sm:text-4xl">
+                Ajukan Peminjaman Ruangan dan Barang dengan Mudah
+              </h1>
+              <p class="max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300 sm:text-base">
+                Cari ruangan atau barang yang tersedia sesuai kebutuhan kegiatanmu, lalu ajukan peminjaman secara cepat.
               </p>
-              <div class="flex flex-wrap gap-2 text-xs text-slate-600 dark:text-slate-300">
-                <span class="inline-flex items-center gap-1 rounded-full bg-white/90 px-3 py-1 font-semibold text-blue-700 shadow-sm dark:bg-slate-700 dark:text-blue-300">
-                  🏢 {{ totalRooms }} Ruangan terdaftar
+              <div class="flex flex-wrap gap-2 pt-1 text-xs font-semibold">
+                <span class="rounded-full bg-white/90 px-3 py-1.5 text-blue-700 shadow-sm dark:bg-slate-700 dark:text-blue-300">
+                  {{ rooms.length }} ruangan
                 </span>
-                <span class="inline-flex items-center gap-1 rounded-full bg-white/90 px-3 py-1 font-semibold text-blue-700 shadow-sm dark:bg-slate-700 dark:text-blue-300">
-                  🕑 {{ recentBookingsList.length }} Peminjaman terbaru
+                <span class="rounded-full bg-white/90 px-3 py-1.5 text-blue-700 shadow-sm dark:bg-slate-700 dark:text-blue-300">
+                  {{ items.length }} barang
+                </span>
+                <span class="rounded-full bg-white/90 px-3 py-1.5 text-blue-700 shadow-sm dark:bg-slate-700 dark:text-blue-300">
+                  {{ combinedSummary.total ?? 0 }} request kamu
                 </span>
               </div>
             </div>
-            <div class="flex flex-col gap-3 sm:flex-row lg:flex-col lg:items-end">
-              <Link
-                :href="route('bookings.create')"
-                class="inline-flex w-full items-center justify-center rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-400/30 transition hover:bg-blue-700 sm:w-auto"
-              >
-                + Ajukan Peminjaman
+
+            <div class="grid w-full gap-3 sm:grid-cols-3 lg:w-auto lg:grid-cols-1">
+              <Link :href="route('bookings.create')" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 transition hover:bg-blue-700">
+                <Building2 class="h-4 w-4" /> + Pinjam Ruangan
               </Link>
-              <Link
-                :href="route('bookings.index')"
-                class="inline-flex w-full items-center justify-center rounded-2xl border border-blue-200 bg-white px-5 py-3 text-sm font-semibold text-blue-700 transition hover:border-blue-300 hover:bg-blue-50 sm:w-auto dark:border-slate-600 dark:bg-slate-700 dark:text-blue-300 dark:hover:border-slate-500 dark:hover:bg-slate-600"
-              >
-                Lihat Request Saya
+              <Link :href="route('item-borrowings.create')" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 transition hover:bg-blue-700">
+                <Boxes class="h-4 w-4" /> + Pinjam Barang
               </Link>
+              <a href="#riwayat-request" class="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600">
+                <ClipboardList class="h-4 w-4" /> Lihat Request Saya
+              </a>
             </div>
           </div>
         </section>
 
-        <section class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-7">
-          <Link
-            :href="route('bookings.index')"
-            class="rounded-2xl border border-blue-100 bg-blue-50 p-4 text-blue-900 transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-100 dark:hover:border-blue-600 dark:focus-visible:ring-offset-slate-900"
-            aria-label="Lihat semua pengajuan"
-          >
-            <p class="text-xs font-semibold uppercase tracking-wide text-blue-500 dark:text-blue-300">Total Pengajuan</p>
-            <p class="mt-2 text-3xl font-semibold">{{ bookingSummaryData.total }}</p>
-          </Link>
-          <Link
-            :href="route('bookings.index', { status: 'approved' })"
-            class="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-emerald-800 transition hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-100 dark:hover:border-emerald-600 dark:focus-visible:ring-offset-slate-900"
-            aria-label="Lihat pengajuan yang disetujui"
-          >
-            <p class="text-xs font-semibold uppercase tracking-wide text-emerald-500 dark:text-emerald-300">Disetujui</p>
-            <p class="mt-2 text-3xl font-semibold">{{ bookingSummaryData.approved }}</p>
-          </Link>
-          <Link
-            :href="route('bookings.index', { status: 'waiting' })"
-            class="rounded-2xl border border-amber-100 bg-amber-50 p-4 text-amber-800 transition hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-100 dark:hover:border-amber-600 dark:focus-visible:ring-offset-slate-900"
-            aria-label="Lihat pengajuan yang menunggu persetujuan"
-          >
-            <p class="text-xs font-semibold uppercase tracking-wide text-amber-500 dark:text-amber-300">Menunggu</p>
-            <p class="mt-2 text-3xl font-semibold">{{ bookingSummaryData.waiting }}</p>
-          </Link>
-          <Link
-            :href="route('bookings.index', { status: 'needs_revision' })"
-            class="rounded-2xl border border-violet-100 bg-violet-50 p-4 text-violet-800 transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-100 dark:hover:border-violet-600 dark:focus-visible:ring-offset-slate-900"
-            aria-label="Lihat pengajuan yang perlu direvisi"
-          >
-            <p class="text-xs font-semibold uppercase tracking-wide text-violet-500 dark:text-violet-300">Perlu Direvisi</p>
-            <p class="mt-2 text-3xl font-semibold">{{ bookingSummaryData.needs_revision }}</p>
-          </Link>
-          <Link
-            :href="route('bookings.index', { status: 'rejected' })"
-            class="rounded-2xl border border-rose-100 bg-rose-50 p-4 text-rose-800 transition hover:-translate-y-0.5 hover:border-rose-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-100 dark:hover:border-rose-600 dark:focus-visible:ring-offset-slate-900"
-            aria-label="Lihat pengajuan yang ditolak"
-          >
-            <p class="text-xs font-semibold uppercase tracking-wide text-rose-500 dark:text-rose-300">Ditolak</p>
-            <p class="mt-2 text-3xl font-semibold">{{ bookingSummaryData.rejected }}</p>
-          </Link>
-          <Link
-            :href="route('bookings.index', { status: 'cancelled' })"
-            class="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-slate-800 transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-200 dark:hover:border-slate-500 dark:focus-visible:ring-offset-slate-900"
-            aria-label="Lihat pengajuan yang dibatalkan"
-          >
-            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Dibatalkan</p>
-            <p class="mt-2 text-3xl font-semibold">{{ bookingSummaryData.cancelled }}</p>
-          </Link>
-          <Link
-            :href="route('bookings.index', { status: 'expired' })"
-            class="rounded-2xl border border-orange-100 bg-orange-50 p-4 text-orange-800 transition hover:-translate-y-0.5 hover:border-orange-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 dark:border-orange-800 dark:bg-orange-900/30 dark:text-orange-100 dark:hover:border-orange-600 dark:focus-visible:ring-offset-slate-900"
-            aria-label="Lihat pengajuan yang kedaluwarsa"
-          >
-            <p class="text-xs font-semibold uppercase tracking-wide text-orange-500 dark:text-orange-300">Kedaluwarsa</p>
-            <p class="mt-2 text-3xl font-semibold">{{ bookingSummaryData.expired }}</p>
-          </Link>
+        <section>
+          <div class="mb-4">
+            <h2 class="section-heading">Pilih Jenis Peminjaman</h2>
+            <p class="section-subtitle">Mulai dari kebutuhan ruangan atau perlengkapan kegiatanmu.</p>
+          </div>
+          <div class="grid gap-5 lg:grid-cols-2">
+            <article class="card-surface flex flex-col justify-between gap-6 p-6">
+              <div class="flex items-start gap-4">
+                <div class="rounded-2xl bg-blue-100 p-3 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                  <Building2 class="h-7 w-7" />
+                </div>
+                <div>
+                  <h3 class="text-xl font-semibold text-slate-900 dark:text-white">Peminjaman Ruangan</h3>
+                  <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                    Cari ruangan berdasarkan kampus, gedung, kapasitas, tanggal, dan jam penggunaan.
+                  </p>
+                </div>
+              </div>
+              <div class="flex flex-col gap-2 sm:flex-row">
+                <Link :href="route('bookings.create')" class="inline-flex justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
+                  Ajukan Ruangan
+                </Link>
+                <button type="button" class="inline-flex justify-center rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700" @click="showSearch('room')">
+                  Lihat Ruangan
+                </button>
+              </div>
+            </article>
+
+            <article class="card-surface flex flex-col justify-between gap-6 p-6">
+              <div class="flex items-start gap-4">
+                <div class="rounded-2xl bg-blue-100 p-3 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                  <Boxes class="h-7 w-7" />
+                </div>
+                <div>
+                  <h3 class="text-xl font-semibold text-slate-900 dark:text-white">Peminjaman Barang</h3>
+                  <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                    Ajukan proyektor, sound system, kabel, atau perlengkapan lain sesuai stok dan jadwal.
+                  </p>
+                </div>
+              </div>
+              <div class="flex flex-col gap-2 sm:flex-row">
+                <Link :href="route('item-borrowings.create')" class="inline-flex justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
+                  Ajukan Barang
+                </Link>
+                <button type="button" class="inline-flex justify-center rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700" @click="showSearch('item')">
+                  Lihat Barang
+                </button>
+              </div>
+            </article>
+          </div>
         </section>
 
-        <section class="card-surface space-y-6 p-5 sm:p-6">
-          <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <section class="card-surface p-5 sm:p-6">
+          <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 class="section-heading">Filter Pencarian Ruangan</h2>
-              <p class="section-subtitle">Isi detail kebutuhanmu lalu tekan Search untuk menampilkan hasil.</p>
+              <h2 class="section-heading">Ringkasan Request</h2>
+              <p class="section-subtitle">Pantau status pengajuan ruangan dan barang milikmu.</p>
             </div>
-            <span class="text-xs uppercase tracking-[0.35em] text-blue-500 sm:text-right dark:text-blue-300">
-              {{ hasSearched ? 'Filter diperbarui' : 'Belum ada filter' }}
-            </span>
-          </div>
-
-          <div
-            v-if="activeFilterChips.length"
-            class="flex flex-wrap items-center gap-2 rounded-2xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-xs text-blue-800 dark:border-slate-700 dark:bg-slate-800/70 dark:text-blue-200"
-          >
-            <span class="text-[11px] font-semibold uppercase tracking-[0.45em] text-blue-500">Filter aktif</span>
-              <span
-                v-for="(chip, index) in activeFilterChips"
-                :key="`${chip.label}-${index}`"
-                class="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 font-medium text-blue-700 shadow-sm dark:bg-slate-700 dark:text-blue-300"
+            <div class="inline-flex rounded-xl bg-slate-100 p-1 dark:bg-slate-800" role="tablist" aria-label="Jenis statistik">
+              <button
+                v-for="tab in statsTabs"
+                :key="tab.key"
+                type="button"
+                class="rounded-lg px-3 py-2 text-sm font-semibold transition"
+                :class="activeStatsTab === tab.key ? 'bg-white text-blue-700 shadow-sm dark:bg-slate-700 dark:text-blue-300' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'"
+                @click="activeStatsTab = tab.key"
               >
-              {{ chip.label }}: <span class="font-semibold text-blue-900">{{ chip.value }}</span>
-            </span>
+                {{ tab.label }}
+              </button>
+            </div>
           </div>
 
-          <form class="space-y-6" @submit.prevent="handleSearch">
-            <div class="grid gap-4 md:grid-cols-2">
-              <div class="md:col-span-2">
-                <label class="mb-1 block text-sm font-medium text-slate-700" for="room-search">Kata Kunci</label>
-                <input
-                  id="room-search"
-                  v-model="searchQuery"
-                  type="text"
-                  placeholder="Cari nama ruangan, fasilitas, kampus, atau gedung..."
-                  class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm leading-5 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200 dark:placeholder:text-slate-400"
-                />
-              </div>
+          <div class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-7">
+            <button
+              v-for="stat in statisticCards"
+              :key="`${activeStatsTab}-${stat.key}`"
+              type="button"
+              class="dashboard-stat rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-800"
+              :class="statisticTone[stat.tone]"
+              :aria-label="`Tampilkan riwayat ${stat.label.toLowerCase()} untuk ${statsTabs.find((tab) => tab.key === activeStatsTab)?.label ?? 'Semua'}`"
+              @click="filterHistoryFromStatistic(stat)"
+            >
+              <p class="text-[11px] font-semibold uppercase tracking-wide opacity-70">{{ stat.label }}</p>
+              <p class="mt-2 text-3xl font-semibold">{{ stat.value }}</p>
+            </button>
+          </div>
+        </section>
 
-              <div>
-                <label class="mb-1 block text-sm font-medium text-slate-700" for="room-capacity">Kapasitas Minimum</label>
-                <input
-                  id="room-capacity"
-                  v-model="minCapacity"
-                  type="number"
-                  min="0"
-                  step="1"
-                  placeholder="Contoh: 30"
-                  class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm leading-5 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200 dark:placeholder:text-slate-400"
-                />
-              </div>
-
-              <div>
-                <label class="mb-1 block text-sm font-medium text-slate-700" for="room-campus">Kampus</label>
-                <select
-                  id="room-campus"
-                  v-model="campusFilter"
-                  class="w-full appearance-none rounded-xl border border-slate-200 px-3 py-2 pr-9 text-sm leading-5 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200"
-                >
-                  <option value="">Semua Kampus</option>
-                  <option v-for="campus in campusOptions" :key="campus.id" :value="campus.id">
-                    {{ campus.name }}
-                  </option>
-                </select>
-              </div>
-
-              <div>
-                <label class="mb-1 block text-sm font-medium text-slate-700" for="room-building">Gedung</label>
-                <select
-                  id="room-building"
-                  v-model="buildingFilter"
-                  :disabled="!campusFilter"
-                  class="w-full appearance-none rounded-xl border border-slate-200 px-3 py-2 pr-9 text-sm leading-5 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-slate-100 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200 dark:disabled:bg-slate-800"
-                >
-                  <option value="">
-                    {{ campusFilter ? 'Semua Gedung' : 'Pilih kampus terlebih dahulu' }}
-                  </option>
-                  <option v-for="building in buildingOptions" :key="building.id" :value="building.id">
-                    {{ building.name }}
-                  </option>
-                </select>
-              </div>
+        <section ref="availabilitySection" class="card-surface scroll-mt-6 p-5 sm:p-6">
+          <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 class="section-heading">Cari Ketersediaan</h2>
+              <p class="section-subtitle">Filter ruangan dan barang dipisahkan agar pencarian tetap ringkas.</p>
             </div>
-
-            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <div>
-                <label class="mb-1 block text-sm font-medium text-slate-700" for="room-date">Tanggal Penggunaan</label>
-                <input
-                  id="room-date"
-                  v-model="searchDate"
-                  type="date"
-                  class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm leading-5 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200"
-                />
-              </div>
-
-              <div>
-                <label class="mb-1 block text-sm font-medium text-slate-700" for="room-start">Jam Mulai</label>
-                <select
-                  id="room-start"
-                  v-model="searchStartTime"
-                  :disabled="!searchDate"
-                  class="w-full appearance-none rounded-xl border border-slate-200 px-3 py-2 pr-9 text-sm leading-5 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-slate-100 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200 dark:disabled:bg-slate-800"
-                >
-                  <option value="">
-                    {{ searchDate ? 'Pilih jam mulai' : 'Pilih tanggal terlebih dahulu' }}
-                  </option>
-                  <option v-for="slot in timeSlots" :key="`start-${slot}`" :value="slot">
-                    {{ slot }}
-                  </option>
-                </select>
-              </div>
-
-              <div>
-                <label class="mb-1 block text-sm font-medium text-slate-700" for="room-end">Jam Selesai</label>
-                <select
-                  id="room-end"
-                  v-model="searchEndTime"
-                  :disabled="!searchDate || !searchStartTime"
-                  class="w-full appearance-none rounded-xl border border-slate-200 px-3 py-2 pr-9 text-sm leading-5 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-slate-100 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200 dark:disabled:bg-slate-800"
-                >
-                  <option value="">
-                    {{
-                      searchStartTime
-                        ? 'Pilih jam selesai'
-                        : searchDate
-                          ? 'Pilih jam mulai terlebih dahulu'
-                          : 'Pilih tanggal terlebih dahulu'
-                    }}
-                  </option>
-                  <option v-for="slot in endTimeOptions" :key="`end-${slot}`" :value="slot">
-                    {{ slot }}
-                  </option>
-                </select>
-              </div>
+            <div class="inline-flex rounded-xl bg-slate-100 p-1 dark:bg-slate-800" role="tablist" aria-label="Jenis pencarian">
+              <button type="button" class="rounded-lg px-4 py-2 text-sm font-semibold transition" :class="activeSearchTab === 'room' ? 'bg-white text-blue-700 shadow-sm dark:bg-slate-700 dark:text-blue-300' : 'text-slate-500 dark:text-slate-400'" @click="activeSearchTab = 'room'; searchError = ''">
+                Ruangan
+              </button>
+              <button type="button" class="rounded-lg px-4 py-2 text-sm font-semibold transition" :class="activeSearchTab === 'item' ? 'bg-white text-blue-700 shadow-sm dark:bg-slate-700 dark:text-blue-300' : 'text-slate-500 dark:text-slate-400'" @click="activeSearchTab = 'item'; searchError = ''">
+                Barang
+              </button>
             </div>
+          </div>
 
-            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <label class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-600 dark:border-slate-600 dark:text-slate-300">
-                <input
-                  type="checkbox"
-                  v-model="onlyAvailable"
-                  class="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                />
-                Tampilkan hanya ruangan yang tersedia
-              </label>
+          <p v-if="searchError" class="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300">
+            {{ searchError }}
+          </p>
 
-              <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-                <span class="text-sm text-slate-500">Urutkan berdasarkan:</span>
-                <div class="relative">
-                  <select
-                    v-model="sortOption"
-                    class="w-full appearance-none rounded-xl border border-slate-200 px-3 py-2 pr-9 text-sm leading-5 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:w-56 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200"
-                  >
+          <form class="mt-6 space-y-5" @submit.prevent="handleSearch">
+            <template v-if="activeSearchTab === 'room'">
+              <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <label class="xl:col-span-2">
+                  <span class="form-label">Kata Kunci</span>
+                  <input v-model="roomFilters.query" type="text" placeholder="Nama ruangan, fasilitas, kampus, gedung..." class="dashboard-input" />
+                </label>
+                <label>
+                  <span class="form-label">Kapasitas Minimum</span>
+                  <input v-model="roomFilters.minCapacity" type="number" min="1" class="dashboard-input" placeholder="Contoh: 30" />
+                </label>
+                <label>
+                  <span class="form-label">Urutkan</span>
+                  <select v-model="roomFilters.sort" class="dashboard-input">
                     <option value="capacity-desc">Kapasitas terbesar</option>
                     <option value="capacity-asc">Kapasitas terkecil</option>
                     <option value="availability">Ketersediaan</option>
-                    <option value="name-asc">Nama ruangan (A-Z)</option>
+                    <option value="name-asc">Nama A-Z</option>
                   </select>
-                  <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-400">
-                    <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                      <path
-                        fill-rule="evenodd"
-                        d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z"
-                        clip-rule="evenodd"
-                      />
-                    </svg>
-                  </span>
-                </div>
+                </label>
+                <label>
+                  <span class="form-label">Kampus</span>
+                  <select v-model="roomFilters.campusId" class="dashboard-input">
+                    <option value="">Semua Kampus</option>
+                    <option v-for="campus in campuses" :key="campus.id" :value="campus.id">{{ campus.name }}</option>
+                  </select>
+                </label>
+                <label>
+                  <span class="form-label">Gedung</span>
+                  <select v-model="roomFilters.buildingId" :disabled="!roomFilters.campusId" class="dashboard-input disabled:cursor-not-allowed disabled:opacity-60">
+                    <option value="">{{ roomFilters.campusId ? 'Semua Gedung' : 'Pilih kampus dahulu' }}</option>
+                    <option v-for="building in buildingOptions" :key="building.id" :value="building.id">{{ building.name }}</option>
+                  </select>
+                </label>
+                <label>
+                  <span class="form-label">Tanggal Penggunaan</span>
+                  <input v-model="roomFilters.date" type="date" :min="minimumBookingDate" class="dashboard-input" />
+                </label>
+                <label>
+                  <span class="form-label">Jam Mulai</span>
+                  <select v-model="roomFilters.startTime" :disabled="!roomFilters.date" class="dashboard-input disabled:cursor-not-allowed disabled:opacity-60">
+                    <option value="">Pilih jam</option>
+                    <option v-for="slot in timeSlots.slice(0, -1)" :key="`room-start-${slot}`" :value="slot">{{ slot }}</option>
+                  </select>
+                </label>
+                <label>
+                  <span class="form-label">Jam Selesai</span>
+                  <select v-model="roomFilters.endTime" :disabled="!roomFilters.startTime" class="dashboard-input disabled:cursor-not-allowed disabled:opacity-60">
+                    <option value="">Pilih jam</option>
+                    <option v-for="slot in roomEndTimes" :key="`room-end-${slot}`" :value="slot">{{ slot }}</option>
+                  </select>
+                </label>
               </div>
-            </div>
+              <label class="inline-flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                <input v-model="roomFilters.onlyAvailable" type="checkbox" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+                Tampilkan hanya ruangan yang tersedia
+              </label>
+            </template>
+
+            <template v-else>
+              <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <label class="xl:col-span-2">
+                  <span class="form-label">Kata Kunci Barang</span>
+                  <input v-model="itemFilters.query" type="text" placeholder="Nama, kode, atau kategori barang..." class="dashboard-input" />
+                </label>
+                <label>
+                  <span class="form-label">Kategori</span>
+                  <select v-model="itemFilters.category" class="dashboard-input">
+                    <option value="">Semua Kategori</option>
+                    <option v-for="category in itemCategories" :key="category" :value="category">{{ category }}</option>
+                  </select>
+                </label>
+                <label>
+                  <span class="form-label">Jumlah Dibutuhkan</span>
+                  <input v-model.number="itemFilters.quantity" type="number" min="1" class="dashboard-input" />
+                </label>
+                <label>
+                  <span class="form-label">Tanggal Penggunaan</span>
+                  <input v-model="itemFilters.date" type="date" :min="minimumBorrowDate" class="dashboard-input" />
+                </label>
+                <label>
+                  <span class="form-label">Jam Mulai</span>
+                  <select v-model="itemFilters.startTime" :disabled="!itemFilters.date" class="dashboard-input disabled:cursor-not-allowed disabled:opacity-60">
+                    <option value="">Pilih jam</option>
+                    <option v-for="slot in timeSlots.slice(0, -1)" :key="`item-start-${slot}`" :value="slot">{{ slot }}</option>
+                  </select>
+                </label>
+                <label>
+                  <span class="form-label">Jam Selesai</span>
+                  <select v-model="itemFilters.endTime" :disabled="!itemFilters.startTime" class="dashboard-input disabled:cursor-not-allowed disabled:opacity-60">
+                    <option value="">Pilih jam</option>
+                    <option v-for="slot in itemEndTimes" :key="`item-end-${slot}`" :value="slot">{{ slot }}</option>
+                  </select>
+                </label>
+                <label>
+                  <span class="form-label">Urutkan</span>
+                  <select v-model="itemFilters.sort" class="dashboard-input">
+                    <option value="name-asc">Nama A-Z</option>
+                    <option value="quantity-desc">Stok terbesar</option>
+                    <option value="quantity-asc">Stok terkecil</option>
+                  </select>
+                </label>
+              </div>
+              <label class="inline-flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                <input v-model="itemFilters.onlyAvailable" type="checkbox" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+                Tampilkan hanya barang yang tersedia sesuai jumlah
+              </label>
+            </template>
 
             <div class="flex flex-col gap-3 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                class="inline-flex items-center justify-center rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
-                @click="resetFilters"
-                :disabled="!canResetFilters"
-              >
+              <button type="button" class="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700" @click="resetSearch">
                 Reset
               </button>
-              <button
-                type="submit"
-                class="inline-flex items-center justify-center rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-blue-700"
-              >
-                Search
+              <button type="submit" :disabled="isSearching" class="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-wait disabled:opacity-70">
+                <Search class="h-4 w-4" /> {{ isSearching ? 'Memeriksa...' : 'Cari Ketersediaan' }}
               </button>
             </div>
           </form>
         </section>
 
         <section class="card-surface p-5 sm:p-6">
-          <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div class="flex items-end justify-between gap-4">
             <div>
-              <h2 class="section-heading">Daftar Ruangan</h2>
+              <h2 class="section-heading">Hasil {{ activeSearchTab === 'room' ? 'Ruangan' : 'Barang' }}</h2>
               <p class="section-subtitle">
-                <template v-if="hasSearched && sortedRooms.length">
-                  Menampilkan {{ resultsCount }} dari {{ totalRooms }} ruangan.
-                </template>
-                <template v-else>
-                  Mulai dengan mengisi filter pencarian di atas.
-                </template>
+                <template v-if="activeSearchTab === 'room' && appliedRoomFilters">{{ roomResults.length }} hasil sesuai filter.</template>
+                <template v-else-if="activeSearchTab === 'item' && appliedItemFilters">{{ itemResults.length }} hasil sesuai filter.</template>
+                <template v-else>Isi filter dan tekan Cari Ketersediaan untuk melihat hasil.</template>
               </p>
             </div>
-            <div v-if="hasSearched" class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-              <span class="inline-flex items-center rounded-full border border-slate-200 px-3 py-1 font-semibold text-slate-700 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200">
-                {{ resultsCount }} hasil
-              </span>
-            </div>
           </div>
 
-          <div
-            v-if="!hasSearched"
-            class="mt-6 rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
-          >
-            Gunakan filter di atas dan klik tombol Search untuk melihat daftar ruangan yang cocok.
-          </div>
-
-          <div v-else-if="sortedRooms.length" class="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-            <article
-              v-for="room in sortedRooms"
-              :key="room.id"
-              class="flex h-full flex-col justify-between rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg dark:border-slate-700 dark:bg-slate-800"
-            >
-              <div class="space-y-4">
+          <div v-if="activeSearchTab === 'room' && appliedRoomFilters && roomResults.length" class="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            <article v-for="room in roomResults" :key="room.id" class="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+              <div>
                 <div class="flex items-start justify-between gap-3">
                   <div>
-                    <h3 class="text-lg font-semibold text-slate-900 dark:text-white">{{ room.name }}</h3>
-                    <p class="text-sm text-slate-500 dark:text-slate-400">
-                      {{ room.building?.campus?.name ?? '-' }} - {{ room.building?.name ?? '-' }}
-                    </p>
+                    <h3 class="font-semibold text-slate-900 dark:text-white">{{ room.name }}</h3>
+                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ room.building?.campus?.name }} · {{ room.building?.name }}</p>
                   </div>
-                  <span
-                    class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide"
-                    :class="
-                      room.is_available
-                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
-                        : 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-300'
-                    "
-                  >
-                    {{ room.is_available ? 'Tersedia' : 'Tidak tersedia' }}
+                  <span class="rounded-full px-2.5 py-1 text-xs font-semibold" :class="roomAvailability[room.id]?.available === false || !room.is_available ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'">
+                    {{ roomAvailability[room.id]?.available === false || !room.is_available ? 'Tidak tersedia' : 'Tersedia' }}
                   </span>
                 </div>
-
-                <dl class="grid gap-3 text-sm text-slate-600 dark:text-slate-300">
-                  <div>
-                    <dt class="font-medium text-slate-700 dark:text-slate-200">Kapasitas</dt>
-                    <dd class="mt-1 text-base font-semibold text-slate-900 dark:text-white">
-                      {{ room.capacity ?? '-' }} orang
-                    </dd>
-                  </div>
-                  <div>
-                    <dt class="font-medium text-slate-700 dark:text-slate-200">Fasilitas</dt>
-                    <dd class="mt-2 flex flex-wrap gap-2">
-                      <template v-if="extractFeatures(room.features).length">
-                        <span
-                          v-for="feature in extractFeatures(room.features)"
-                          :key="feature"
-                          class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-200"
-                        >
-                          {{ feature }}
-                        </span>
-                      </template>
-                      <span v-else class="text-xs text-slate-400 dark:text-slate-500">Informasi fasilitas belum tersedia.</span>
-                    </dd>
-                  </div>
-                </dl>
+                <p class="mt-4 text-sm font-medium text-slate-700 dark:text-slate-200">Kapasitas {{ room.capacity }} orang</p>
+                <div v-if="extractFeatures(room.features).length" class="mt-3 flex flex-wrap gap-2">
+                  <span v-for="feature in extractFeatures(room.features).slice(0, 4)" :key="feature" class="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600 dark:bg-slate-700 dark:text-slate-300">{{ feature }}</span>
+                </div>
               </div>
-
-              <div class="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <Link
-                  :href="route('bookings.create')"
-                  class="inline-flex items-center justify-center rounded-xl border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-50 dark:border-slate-600 dark:text-blue-300 dark:hover:bg-slate-700"
-                >
-                  Ajukan Peminjaman
-                </Link>
-                <span class="text-xs text-slate-400 dark:text-slate-500">Pilih ruangan ini pada formulir Peminjaman.</span>
-              </div>
+              <Link :href="roomCreateUrl(room)" class="mt-5 inline-flex justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
+                Ajukan Ruangan Ini
+              </Link>
             </article>
           </div>
 
-          <div
-            v-else
-            class="mt-6 rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
-          >
-            Tidak ada ruangan yang cocok dengan filter saat ini. Coba ubah kombinasi filter untuk melihat opsi lainnya.
+          <div v-else-if="activeSearchTab === 'item' && appliedItemFilters && itemResults.length" class="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            <article v-for="item in itemResults" :key="item.id" class="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+              <div>
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <p class="text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-300">{{ item.code || 'Tanpa kode' }}</p>
+                    <h3 class="mt-1 font-semibold text-slate-900 dark:text-white">{{ item.name }}</h3>
+                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ item.category || 'Tanpa kategori' }}</p>
+                  </div>
+                  <PackageCheck class="h-6 w-6 text-emerald-500" />
+                </div>
+                <div class="mt-4 rounded-xl bg-slate-50 px-3 py-2 text-sm dark:bg-slate-700/60">
+                  <span class="text-slate-500 dark:text-slate-400">Tersedia:</span>
+                  <span class="ml-1 font-semibold text-slate-900 dark:text-white">{{ itemAvailability[item.id]?.remaining ?? item.quantity }} dari {{ item.quantity }} unit</span>
+                </div>
+              </div>
+              <Link :href="itemCreateUrl(item)" class="mt-5 inline-flex justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
+                Ajukan Barang Ini
+              </Link>
+            </article>
+          </div>
+
+          <div v-else class="mt-6 rounded-2xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+            <Search class="mx-auto mb-3 h-8 w-8 opacity-50" />
+            {{ (activeSearchTab === 'room' ? appliedRoomFilters : appliedItemFilters) ? 'Tidak ada hasil yang cocok dengan filter saat ini.' : 'Belum ada pencarian.' }}
           </div>
         </section>
 
-        <section class="card-surface p-5 sm:p-6">
-          <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <section id="riwayat-request" ref="requestHistorySection" class="card-surface scroll-mt-6 p-5 sm:p-6">
+          <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <h2 class="section-heading">Pengajuan Terbaru</h2>
-              <p class="section-subtitle">Pantau status beberapa pengajuan peminjaman terakhir kamu.</p>
+              <h2 class="section-heading">Riwayat Request Saya</h2>
+              <p class="section-subtitle">Seluruh pengajuan ruangan dan barang milikmu, diurutkan dari yang terbaru.</p>
             </div>
-          <Link
-            :href="route('bookings.index')"
-            class="inline-flex items-center rounded-xl border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700/50"
-          >
-            Lihat Semua
-          </Link>
+            <div class="grid gap-2 sm:grid-cols-2">
+              <label>
+                <span class="sr-only">Jenis peminjaman</span>
+                <select v-model="historyType" class="dashboard-input min-w-44">
+                  <option value="all">Semua Jenis</option>
+                  <option value="room">Ruangan</option>
+                  <option value="item">Barang</option>
+                </select>
+              </label>
+              <label>
+                <span class="sr-only">Status request</span>
+                <select v-model="historyStatus" class="dashboard-input min-w-48">
+                  <option value="">Semua Status</option>
+                  <option v-for="option in historyStatusOptions" :key="option.value" :value="option.value">
+                    {{ option.label }}
+                  </option>
+                </select>
+              </label>
+            </div>
           </div>
 
-          <div v-if="recentBookingsList.length" class="mt-4 overflow-x-auto">
-            <table class="mobile-friendly-table min-w-full divide-y divide-slate-200 text-sm text-slate-700">
-              <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                <tr>
-                  <SortableTh
-                    class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
-                    column="title"
-                    label="Judul"
-                    :direction="recentBookingSortDirection('title')"
-                    :aria-sort="recentBookingAriaSortValue('title')"
-                    @toggle="toggleRecentBookingSort"
-                  />
-                  <SortableTh
-                    class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
-                    column="room"
-                    label="Ruangan"
-                    :direction="recentBookingSortDirection('room')"
-                    :aria-sort="recentBookingAriaSortValue('room')"
-                    @toggle="toggleRecentBookingSort"
-                  />
-                  <SortableTh
-                    class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
-                    column="start_time"
-                    label="Mulai"
-                    :direction="recentBookingSortDirection('start_time')"
-                    :aria-sort="recentBookingAriaSortValue('start_time')"
-                    @toggle="toggleRecentBookingSort"
-                  />
-                  <SortableTh
-                    class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
-                    column="status"
-                    label="Status"
-                    :direction="recentBookingSortDirection('status')"
-                    :aria-sort="recentBookingAriaSortValue('status')"
-                    @toggle="toggleRecentBookingSort"
-                  />
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
-                <tr v-for="booking in sortedRecentBookings" :key="booking.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
-                  <td class="px-4 py-3" data-title="Judul">
-                    <div class="font-semibold text-slate-900 dark:text-slate-200">{{ booking.title }}</div>
-                    <div class="text-xs text-slate-500 dark:text-slate-400">{{ booking.description || 'Tidak ada deskripsi.' }}</div>
-                  </td>
-                  <td class="px-4 py-3" data-title="Ruangan">
-                    <div class="font-medium text-slate-900 dark:text-slate-200">{{ booking.room_summary ?? '-' }}</div>
-                    <div class="text-xs text-slate-500 dark:text-slate-400">
-                      {{ booking.room_schedules?.length ?? 0 }} jadwal ruangan
-                    </div>
-                  </td>
-                  <td class="px-4 py-3 text-slate-700 dark:text-slate-300" data-title="Mulai">
-                    <div class="font-medium">Jadwal penggunaan</div>
-                    <div class="text-xs text-slate-500 dark:text-slate-400">{{ booking.schedule_short_summary ?? formatDateTime(booking.start_time) }}</div>
-                  </td>
-                  <td class="px-4 py-3" data-title="Status">
-                    <span
-                      class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold capitalize"
-                      :class="getBookingStatusClasses(booking.normalizedStatus)"
-                    >
-                      {{ getBookingStatusLabel(booking.normalizedStatus) || booking.status }}
-                    </span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+          <div v-if="paginatedRequestHistory.length" class="mt-5 grid gap-3">
+            <Link v-for="request in paginatedRequestHistory" :key="request.key" :href="requestDetailUrl(request)" class="group flex flex-col gap-3 rounded-2xl border border-slate-200 p-4 transition hover:border-blue-300 hover:bg-blue-50/40 dark:border-slate-700 dark:hover:border-blue-700 dark:hover:bg-blue-950/20 sm:flex-row sm:items-center sm:justify-between">
+              <div class="flex min-w-0 items-start gap-3">
+                <div class="rounded-xl bg-blue-100 p-2.5 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                  <Building2 v-if="request.type === 'room'" class="h-5 w-5" />
+                  <Boxes v-else class="h-5 w-5" />
+                </div>
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ request.type === 'room' ? 'Ruangan' : 'Barang' }}</span>
+                    <span class="font-semibold text-slate-900 dark:text-white">{{ request.title }}</span>
+                  </div>
+                  <p class="mt-1 truncate text-sm text-slate-600 dark:text-slate-300">{{ request.resource_name }}</p>
+                  <p class="mt-1 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                    <CalendarClock class="h-3.5 w-3.5" /> {{ request.schedule || 'Jadwal belum tersedia' }}
+                    <template v-if="request.quantity"> · {{ request.quantity }} unit</template>
+                  </p>
+                </div>
+              </div>
+              <span class="inline-flex shrink-0 self-start rounded-full border px-3 py-1 text-xs font-semibold sm:self-center" :class="statusClasses(request)">
+                {{ statusLabel(request) }}
+              </span>
+            </Link>
+          </div>
+          <div v-else class="mt-5 rounded-2xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+            <CheckCircle2 class="mx-auto mb-3 h-8 w-8 opacity-50" />
+            Tidak ada request yang cocok dengan filter saat ini.
           </div>
 
-          <p v-else class="mt-6 text-sm text-slate-500 dark:text-slate-400">
-            Kamu belum memiliki pengajuan Peminjaman. Mulai dengan memilih ruangan yang sesuai di atas.
-          </p>
+          <div v-if="historyPageMeta.of" class="mt-5 flex flex-col gap-3 border-t border-slate-200 pt-4 dark:border-slate-700 sm:flex-row sm:items-center sm:justify-between">
+            <p class="text-sm text-slate-500 dark:text-slate-400">
+              Menampilkan {{ historyPageMeta.from }}–{{ historyPageMeta.to }} dari {{ historyPageMeta.of }} request
+            </p>
+            <div class="flex items-center gap-2">
+              <button type="button" :disabled="historyPage <= 1" class="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700" @click="changeHistoryPage(historyPage - 1)">
+                Sebelumnya
+              </button>
+              <span class="px-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                {{ historyPage }} / {{ historyTotalPages }}
+              </span>
+              <button type="button" :disabled="historyPage >= historyTotalPages" class="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700" @click="changeHistoryPage(historyPage + 1)">
+                Berikutnya
+              </button>
+            </div>
+          </div>
         </section>
       </div>
     </div>
   </AuthenticatedLayout>
 </template>
+
+<style scoped>
+.dashboard-hero {
+  background-color: #ffffff;
+  background-image: linear-gradient(to bottom right, #eff6ff, #ffffff, #e0f2fe);
+}
+
+.form-label {
+  @apply mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300;
+}
+
+.dashboard-input {
+  @apply w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200;
+}
+</style>

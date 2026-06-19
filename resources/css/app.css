@@ -32,6 +32,20 @@
     @apply border-slate-700 bg-slate-800;
   }
 
+  html.dark .dashboard-hero {
+    background-color: #1e293b !important;
+    background-image: linear-gradient(
+      to bottom right,
+      #1e293b,
+      #0f172a,
+      rgb(23 37 84 / 0.6)
+    ) !important;
+  }
+
+  html.dark .dashboard-stat {
+    background-color: rgb(15 23 42 / 0.72) !important;
+  }
+
   .section-heading {
     @apply text-lg font-semibold text-gray-900 dark:text-white;
   }

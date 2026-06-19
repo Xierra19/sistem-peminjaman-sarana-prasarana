@@ -222,9 +222,10 @@ class BookingControllerTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Dashboard')
-                ->where('bookingSummary.total', count(Booking::APPROVAL_PENDING_STATUSES) + 1)
-                ->where('bookingSummary.waiting', count(Booking::APPROVAL_PENDING_STATUSES))
-                ->where('bookingSummary.needs_revision', 1)
+                ->where('roomSummary.total', count(Booking::APPROVAL_PENDING_STATUSES) + 1)
+                ->where('roomSummary.waiting', count(Booking::APPROVAL_PENDING_STATUSES))
+                ->where('roomSummary.needs_revision', 1)
+                ->where('combinedSummary.total', count(Booking::APPROVAL_PENDING_STATUSES) + 1)
             );
     }
 
