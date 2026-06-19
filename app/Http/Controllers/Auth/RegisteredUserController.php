@@ -32,6 +32,12 @@ class RegisteredUserController extends Controller
         $validated = $request->validate(
             [
                 'name' => 'required|string|max:255',
+                'nim' => [
+                    'required',
+                    'string',
+                    'digits:11',
+                    'unique:users,nim',
+                ],
                 'phone' => [
                     'required',
                     'string',
@@ -51,12 +57,15 @@ class RegisteredUserController extends Controller
             ],
             [
                 'email.regex' => 'Registrasi hanya tersedia untuk email student.esaunggul.ac.id.',
+                'nim.digits' => 'NIM harus terdiri dari tepat 11 digit angka.',
+                'nim.unique' => 'NIM sudah terdaftar.',
                 'phone.regex' => 'Nomor telepon harus menggunakan format Indonesia yang valid.',
             ]
         );
 
         $user = User::create([
             'name' => $validated['name'],
+            'nim' => $validated['nim'],
             'email' => strtolower($validated['email']),
             'phone' => $validated['phone'],
             'role' => User::ROLE_USER,

@@ -25,6 +25,7 @@ class RegistrationTest extends TestCase
 
         $response = $this->post('/register', [
             'name' => 'Tester',
+            'nim' => '20220801005',
             'phone' => '081234567890',
             'email' => 'tester@student.esaunggul.ac.id',
             'password' => 'Password123!',
@@ -35,6 +36,7 @@ class RegistrationTest extends TestCase
 
         $response->assertRedirect(route('verification.notice'));
         $this->assertNotNull($user);
+        $this->assertSame('20220801005', $user->nim);
         $this->assertNull($user->email_verified_at);
         $this->assertAuthenticatedAs($user);
 
@@ -52,6 +54,7 @@ class RegistrationTest extends TestCase
 
         $response = $this->from('/register')->post('/register', [
             'name' => 'Blocked User',
+            'nim' => '20220801006',
             'phone' => '081234567890',
             'email' => 'blocked@student.esaunggul.ac.id',
             'password' => 'Password123!',
@@ -66,6 +69,46 @@ class RegistrationTest extends TestCase
             1,
             User::query()->where('email', 'blocked@student.esaunggul.ac.id')->count()
         );
+        $this->assertGuest();
+    }
+
+    public function test_nim_is_required_and_must_contain_exactly_eleven_digits(): void
+    {
+        $payload = [
+            'name' => 'Tester',
+            'phone' => '081234567890',
+            'email' => 'tester@student.esaunggul.ac.id',
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
+        ];
+
+        $this->from('/register')
+            ->post('/register', $payload)
+            ->assertRedirect('/register')
+            ->assertSessionHasErrors('nim');
+
+        $this->from('/register')
+            ->post('/register', [...$payload, 'nim' => '2022080100A'])
+            ->assertRedirect('/register')
+            ->assertSessionHasErrors('nim');
+    }
+
+    public function test_nim_must_be_unique(): void
+    {
+        User::factory()->create(['nim' => '20220801005']);
+
+        $this->from('/register')
+            ->post('/register', [
+                'name' => 'Tester',
+                'nim' => '20220801005',
+                'phone' => '081234567890',
+                'email' => 'tester@student.esaunggul.ac.id',
+                'password' => 'Password123!',
+                'password_confirmation' => 'Password123!',
+            ])
+            ->assertRedirect('/register')
+            ->assertSessionHasErrors('nim');
+
         $this->assertGuest();
     }
 }

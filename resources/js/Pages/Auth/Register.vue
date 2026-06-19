@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import {
     User,
+    IdCard,
     Mail,
     Phone,
     Lock,
@@ -18,6 +19,7 @@ const showConfirmPassword = ref(false);
 
 const form = useForm({
     name: '',
+    nim: '',
     email: '',
     phone: '',
     password: '',
@@ -27,6 +29,7 @@ const form = useForm({
 const checklist = [
     'Gunakan email student.esaunggul.ac.id aktif.',
     'Nama lengkap sesuai kartu identitas kampus.',
+    'Siapkan NIM aktif dengan format 11 digit.',
     'Password minimal 8 karakter dengan kombinasi huruf dan angka.',
 ];
 
@@ -134,6 +137,34 @@ const submit = () => {
                                 <p v-if="form.errors.name" id="name-error" class="mt-2 flex items-center gap-2 text-sm text-rose-500">
                                     <AlertCircle class="h-4 w-4 flex-shrink-0" />
                                     {{ form.errors.name }}
+                                </p>
+                            </div>
+
+                            <div>
+                                <label for="nim" class="text-sm font-medium text-slate-700 dark:text-slate-300">NIM</label>
+                                <div class="relative mt-2">
+                                    <IdCard class="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 dark:text-slate-500" aria-hidden="true" />
+                                    <input
+                                        id="nim"
+                                        v-model="form.nim"
+                                        type="text"
+                                        inputmode="numeric"
+                                        pattern="[0-9]{11}"
+                                        maxlength="11"
+                                        autocomplete="off"
+                                        title="NIM harus terdiri dari tepat 11 digit angka"
+                                        placeholder="Contoh: 20200101001"
+                                        class="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/60 pl-12 pr-4 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-indigo-400 dark:focus:bg-slate-800 dark:focus:ring-indigo-500/20"
+                                        :class="{ 'border-rose-500': form.errors.nim }"
+                                        :aria-invalid="!!form.errors.nim"
+                                        :aria-describedby="form.errors.nim ? 'nim-error' : 'nim-help'"
+                                        required
+                                    />
+                                </div>
+                                <p id="nim-help" class="mt-2 text-xs text-slate-500 dark:text-slate-400">Format: tahun masuk, fakultas, program studi, dan nomor urut.</p>
+                                <p v-if="form.errors.nim" id="nim-error" class="mt-2 flex items-center gap-2 text-sm text-rose-500">
+                                    <AlertCircle class="h-4 w-4 flex-shrink-0" />
+                                    {{ form.errors.nim }}
                                 </p>
                             </div>
 

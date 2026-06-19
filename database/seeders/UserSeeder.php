@@ -13,6 +13,7 @@ class UserSeeder extends Seeder
             [
                 'id' => 3,
                 'name' => 'Leo',
+                'nim' => '20220801005',
                 'email' => 'leomarhadi13@student.esaunggul.ac.id',
                 'phone' => '087851327550',
                 'role' => 'user',
@@ -25,6 +26,7 @@ class UserSeeder extends Seeder
             [
                 'id' => 4,
                 'name' => 'ADMIN SARPRAS',
+                'nim' => null,
                 'email' => 'screamyd19@gmail.com',
                 'phone' => null,
                 'role' => 'admin_sarpras',
@@ -37,4 +39,3 @@ class UserSeeder extends Seeder
         ]);
     }
 }
-

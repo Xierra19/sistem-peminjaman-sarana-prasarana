@@ -20,6 +20,7 @@ const showPasswordConfirmation = ref(false)
 
 const form = useForm({
   name: props.user?.name ?? '',
+  nim: props.user?.nim ?? '',
   email: props.user?.email ?? '',
   phone: props.user?.phone ?? '',
   role: props.user?.role ?? 'user',
@@ -37,6 +38,7 @@ const submit = () => {
 const resetForm = () => {
   form.reset()
   form.name  = props.user?.name  ?? ''
+  form.nim   = props.user?.nim   ?? ''
   form.email = props.user?.email ?? ''
   form.phone = props.user?.phone ?? ''
   form.role  = props.user?.role  ?? 'user'
@@ -132,6 +134,29 @@ const initials = computed(() => {
                   />
                 </div>
                 <InputError :message="form.errors.name" />
+              </div>
+
+              <!-- NIM -->
+              <div v-if="form.role === 'user'" class="space-y-1.5">
+                <label for="nim" class="block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  NIM <span class="text-red-400">*</span>
+                </label>
+                <input
+                  id="nim"
+                  v-model="form.nim"
+                  type="text"
+                  inputmode="numeric"
+                  pattern="[0-9]{11}"
+                  maxlength="11"
+                  placeholder="Contoh: 20200101001"
+                  required
+                  class="w-full rounded-xl border bg-slate-50 px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 transition duration-150
+                         border-slate-200 focus:border-blue-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-400/20
+                         dark:border-slate-600 dark:bg-slate-700/60 dark:text-white dark:placeholder-slate-500 dark:focus:border-blue-500 dark:focus:bg-slate-700 dark:focus:ring-blue-500/20"
+                  :class="{ 'border-red-400 dark:border-red-500': form.errors.nim }"
+                />
+                <p class="text-xs text-slate-500 dark:text-slate-400">11 digit: tahun, fakultas, prodi, dan nomor urut.</p>
+                <InputError :message="form.errors.nim" />
               </div>
 
               <!-- Email -->

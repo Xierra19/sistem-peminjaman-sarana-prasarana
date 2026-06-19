@@ -2,9 +2,9 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use App\Models\User;
 
 class UpdateUserRequest extends FormRequest
 {
@@ -27,6 +27,13 @@ class UpdateUserRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:255'],
+            'nim' => [
+                Rule::requiredIf(fn (): bool => $this->input('role') === User::ROLE_USER),
+                'nullable',
+                'string',
+                'digits:11',
+                Rule::unique('users', 'nim')->ignore($userId),
+            ],
             'email' => [
                 'required',
                 'string',
@@ -46,8 +53,24 @@ class UpdateUserRequest extends FormRequest
                 User::ROLE_ADMIN_SARPRAS,
                 User::ROLE_USER,
             ])],
-            'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+            'password' => [
+                $this->routeIs('admin.users.store') ? 'required' : 'nullable',
+                'string',
+                'min:8',
+                'confirmed',
+            ],
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $nim = trim((string) $this->input('nim', ''));
+
+        $this->merge([
+            'nim' => $this->input('role') === User::ROLE_USER && $nim !== ''
+                ? $nim
+                : null,
+        ]);
     }
 
     /**
@@ -59,10 +82,20 @@ class UpdateUserRequest extends FormRequest
     {
         return [
             'name' => 'nama',
+            'nim' => 'NIM',
             'email' => 'email',
             'phone' => 'nomor telepon',
             'role' => 'role',
             'password' => 'password',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'nim.required' => 'NIM wajib diisi untuk mahasiswa.',
+            'nim.digits' => 'NIM harus terdiri dari tepat 11 digit angka.',
+            'nim.unique' => 'NIM sudah digunakan oleh mahasiswa lain.',
         ];
     }
 }

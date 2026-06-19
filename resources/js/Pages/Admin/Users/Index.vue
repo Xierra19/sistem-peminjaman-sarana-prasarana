@@ -80,6 +80,7 @@ const filteredUsers = computed(() => {
     if (query) {
       const searchable = [
         user.name,
+        user.nim,
         user.email,
         user.phone,
         user.roleLabel,
@@ -148,6 +149,7 @@ const {
 } = useTableSort(filteredUsers, {
   accessors: {
     name: (user) => user.name ?? '',
+    nim: (user) => user.nim ?? '',
     email: (user) => user.email ?? '',
     phone: (user) => user.phone ?? '',
     role: (user) => user.roleLabel ?? user.role ?? '',
@@ -356,7 +358,7 @@ const formatDate = (value) => formatDateTimeToDDMMYY(value)
                 v-model="searchQuery"
                 type="search"
                 class="h-11 w-full rounded-xl border border-slate-300 bg-white pl-10 pr-10 text-sm text-slate-800 shadow-sm transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-950"
-                placeholder="Cari nama, email, atau nomor telepon..."
+                placeholder="Cari nama, NIM, email, atau nomor telepon..."
               />
               <button
                 v-if="searchQuery"
@@ -413,6 +415,7 @@ const formatDate = (value) => formatDateTimeToDDMMYY(value)
           <thead class="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:bg-slate-700 dark:text-slate-400">
             <tr>
               <SortableTh class="px-5 py-3 text-left" column="name" label="Nama" :direction="userSortDirection('name')" :aria-sort="userAriaSortValue('name')" @toggle="toggleUserSort" />
+              <SortableTh class="px-5 py-3 text-left" column="nim" label="NIM" :direction="userSortDirection('nim')" :aria-sort="userAriaSortValue('nim')" @toggle="toggleUserSort" />
               <SortableTh class="px-5 py-3 text-left" column="email" label="Email" :direction="userSortDirection('email')" :aria-sort="userAriaSortValue('email')" @toggle="toggleUserSort" />
               <SortableTh class="px-5 py-3 text-left" column="phone" label="No. Telp" :direction="userSortDirection('phone')" :aria-sort="userAriaSortValue('phone')" @toggle="toggleUserSort" />
               <SortableTh class="px-5 py-3 text-left" column="role" label="Role" :direction="userSortDirection('role')" :aria-sort="userAriaSortValue('role')" @toggle="toggleUserSort" />
@@ -422,12 +425,18 @@ const formatDate = (value) => formatDateTimeToDDMMYY(value)
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-100 text-gray-700 dark:divide-slate-700 dark:text-slate-300">
-            <tr v-for="user in paginatedUsers" :key="user.id" class="transition hover:bg-gray-50 dark:hover:bg-slate-700/50" :class="{ 'bg-blue-50/50': isCurrentUser(user.id) }">
+            <tr
+              v-for="user in paginatedUsers"
+              :key="user.id"
+              class="transition hover:bg-gray-50 dark:hover:bg-slate-700/50"
+              :class="{ 'bg-blue-50/50 shadow-[inset_3px_0_0_#3b82f6] dark:bg-blue-950/35 dark:hover:bg-blue-900/30': isCurrentUser(user.id) }"
+            >
               <td class="mobile-primary-cell mobile-span-2 px-5 py-4" data-title="Nama">
                 <div class="mobile-primary-label">Nama</div>
                 <div class="mobile-primary-title">{{ user.name }}</div>
                 <div v-if="isCurrentUser(user.id)" class="text-xs font-semibold uppercase text-blue-500 dark:text-blue-400">Anda</div>
               </td>
+              <td class="px-5 py-4 text-sm text-gray-700 dark:text-slate-300 mobile-meta-cell mobile-compact-meta" data-title="NIM">{{ user.nim || '-' }}</td>
               <td class="px-5 py-4 text-sm text-gray-700 dark:text-slate-300 mobile-meta-cell mobile-compact-meta" data-title="Email">{{ user.email }}</td>
               <td class="px-5 py-4 text-sm text-gray-700 dark:text-slate-300 mobile-meta-cell mobile-compact-meta" data-title="No. Telp">{{ user.phone || '-' }}</td>
               <td class="mobile-status-cell px-5 py-4" data-title="Role">
@@ -485,7 +494,7 @@ const formatDate = (value) => formatDateTimeToDDMMYY(value)
               </td>
             </tr>
             <tr v-if="!filteredUsers.length">
-              <td colspan="7" class="px-5 py-10 text-center text-sm text-gray-400 dark:text-slate-500">
+              <td colspan="8" class="px-5 py-10 text-center text-sm text-gray-400 dark:text-slate-500">
                 {{ hasActiveFilters ? 'Tidak ada user yang sesuai dengan pencarian atau filter.' : 'Belum ada user terdaftar.' }}
               </td>
             </tr>

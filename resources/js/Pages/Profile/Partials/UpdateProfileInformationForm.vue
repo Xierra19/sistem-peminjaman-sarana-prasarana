@@ -54,6 +54,23 @@ const form = useForm({
                 <InputError class="mt-2" :message="form.errors.name" />
             </div>
 
+            <div v-if="user.role === 'user'">
+                <InputLabel for="nim" value="NIM" />
+
+                <input
+                    id="nim"
+                    type="text"
+                    :value="user.nim || '-'"
+                    class="mt-1 block h-12 w-full cursor-not-allowed rounded-2xl border border-slate-200 bg-slate-100 px-4 text-sm text-slate-500 shadow-sm dark:border-slate-600 dark:bg-slate-700/70 dark:text-slate-300"
+                    readonly
+                    aria-describedby="nim-help"
+                />
+
+                <p id="nim-help" class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                    NIM terikat pada akun dan hanya dapat diperbarui oleh super admin.
+                </p>
+            </div>
+
             <div>
                 <InputLabel for="email" value="Email Kampus" />
 

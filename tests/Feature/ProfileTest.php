@@ -67,6 +67,22 @@ class ProfileTest extends TestCase
         $this->assertTrue($originalVerifiedAt->equalTo($user->email_verified_at));
     }
 
+    public function test_nim_cannot_be_updated_from_the_profile(): void
+    {
+        $user = User::factory()->create(['nim' => '20220801005']);
+
+        $this->actingAs($user)
+            ->patch('/profile', [
+                'name' => $user->name,
+                'nim' => '20220802005',
+                'phone' => $user->phone,
+            ])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect('/profile');
+
+        $this->assertSame('20220801005', $user->fresh()->nim);
+    }
+
     public function test_user_cannot_delete_their_account(): void
     {
         $user = User::factory()->create();

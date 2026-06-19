@@ -23,6 +23,7 @@ class UserController extends Controller
             ->select([
                 'id',
                 'name',
+                'nim',
                 'email',
                 'phone',
                 'role',
@@ -51,6 +52,7 @@ class UserController extends Controller
             'users' => $users->map(fn (User $user) => [
                 'id' => $user->id,
                 'name' => $user->name,
+                'nim' => $user->nim,
                 'email' => $user->email,
                 'phone' => $user->phone,
                 'role' => $user->role,
@@ -106,6 +108,7 @@ class UserController extends Controller
             'user' => [
                 'id' => $user->id,
                 'name' => $user->name,
+                'nim' => $user->nim,
                 'email' => $user->email,
                 'phone' => $user->phone,
                 'role' => $user->role,
