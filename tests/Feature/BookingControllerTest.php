@@ -329,6 +329,29 @@ class BookingControllerTest extends TestCase
         $this->assertDatabaseCount('log_histories', 1);
     }
 
+    public function test_owner_can_cancel_booking_that_needs_revision(): void
+    {
+        [$owner, $rooms] = $this->createLocation(1);
+        $booking = $this->createBooking($owner, $rooms[0], [
+            'status' => Booking::STATUS_NEEDS_REVISION,
+        ]);
+
+        $this->actingAs($owner)
+            ->from(route('bookings.show', $booking))
+            ->post(route('bookings.cancel', $booking))
+            ->assertRedirect(route('bookings.show', $booking))
+            ->assertSessionHas('success', 'Booking berhasil dibatalkan.');
+
+        $this->assertSame(Booking::STATUS_CANCELLED, $booking->fresh()->status);
+        $this->assertDatabaseHas('log_histories', [
+            'booking_id' => $booking->id,
+            'user_id' => $owner->id,
+            'action' => Booking::STATUS_CANCELLED,
+            'description' => 'Booking dibatalkan oleh pemohon.',
+        ]);
+        $this->assertFalse($booking->fresh()->canBeResubmitted());
+    }
+
     public function test_cancelling_past_due_booking_expires_it_instead(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-06-10 00:01', 'Asia/Jakarta'));

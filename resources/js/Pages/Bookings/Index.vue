@@ -54,7 +54,8 @@ const formatDateTime = (value) => formatDateTimeToDDMMYY(value)
 const cancelForm = useForm({})
 const cancellingId = ref(null)
 
-const canCancelBooking = (booking) => normalizeBookingStatus(booking.status) === 'waiting'
+const canCancelBooking = (booking) =>
+  ['waiting', 'needs_revision'].includes(normalizeBookingStatus(booking.status))
 
 const cancelBooking = (booking) => {
   if (!canCancelBooking(booking)) {
@@ -410,6 +411,22 @@ const changePage = (page) => {
                           Download Surat
                         </a>
                       </template>
+                      <template v-else-if="normalizeBookingStatus(booking.status) === 'needs_revision'">
+                        <Link
+                          :href="route('bookings.edit', booking.id)"
+                          class="inline-flex min-h-9 items-center justify-center whitespace-nowrap rounded-xl bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-violet-700"
+                        >
+                          Perbaiki Pengajuan
+                        </Link>
+                        <button
+                          type="button"
+                          class="inline-flex items-center justify-center rounded-xl border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-rose-800 dark:text-rose-300 dark:hover:border-rose-700 dark:hover:bg-rose-900/30"
+                          :disabled="cancelForm.processing && cancellingId === booking.id"
+                          @click="cancelBooking(booking)"
+                        >
+                          {{ cancellingId === booking.id ? 'Membatalkan...' : 'Batalkan Permintaan' }}
+                        </button>
+                      </template>
                       <template v-else-if="canCancelBooking(booking)">
                         <button
                           type="button"
@@ -431,14 +448,6 @@ const changePage = (page) => {
                           class="inline-flex min-h-9 items-center justify-center whitespace-nowrap rounded-xl bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-700"
                         >
                           Ajukan Ulang
-                        </Link>
-                      </template>
-                      <template v-else-if="normalizeBookingStatus(booking.status) === 'needs_revision'">
-                        <Link
-                          :href="route('bookings.edit', booking.id)"
-                          class="inline-flex min-h-9 items-center justify-center whitespace-nowrap rounded-xl bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-violet-700"
-                        >
-                          Perbaiki Pengajuan
                         </Link>
                       </template>
                       <template v-else-if="normalizeBookingStatus(booking.status) === 'cancelled'">

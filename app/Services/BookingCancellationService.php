@@ -28,7 +28,7 @@ final class BookingCancellationService
             $result = match (true) {
                 $lockedBooking->status === Booking::STATUS_CANCELLED => CancellationResult::AlreadyCancelled,
                 $lockedBooking->status === Booking::STATUS_EXPIRED => CancellationResult::Expired,
-                ! in_array($lockedBooking->status, Booking::PENDING_STATUSES, true) => CancellationResult::NotAllowed,
+                ! in_array($lockedBooking->status, Booking::CANCELLABLE_STATUSES, true) => CancellationResult::NotAllowed,
                 default => null,
             };
 

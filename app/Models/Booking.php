@@ -62,6 +62,13 @@ class Booking extends Model
         self::STATUS_NEEDS_REVISION,
     ];
 
+    public const CANCELLABLE_STATUSES = [
+        self::STATUS_WAITING,
+        self::STATUS_PENDING,
+        self::STATUS_REQUESTED,
+        self::STATUS_NEEDS_REVISION,
+    ];
+
     public const APPROVAL_PENDING_STATUSES = [
         self::STATUS_WAITING,
         self::STATUS_PENDING,

@@ -73,7 +73,7 @@ const decisionNote = computed(() => {
 })
 
 const cancelForm = useForm({})
-const canCancel = computed(() => normalizedStatus.value === 'waiting')
+const canCancel = computed(() => ['waiting', 'needs_revision'].includes(normalizedStatus.value))
 const canRevise = computed(() => normalizedStatus.value === 'needs_revision')
 const canResubmit = computed(() => normalizedStatus.value === 'rejected')
 

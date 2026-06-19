@@ -43,7 +43,7 @@ const decisionNote = computed(() => {
 const decisionTimestamp = computed(() => formatDateTime(props.latestDecisionLog?.created_at))
 
 const cancelForm = useForm({})
-const canCancelBooking = computed(() => normalizedStatus.value === 'waiting')
+const canCancelBooking = computed(() => ['waiting', 'needs_revision'].includes(normalizedStatus.value))
 const canReviseBooking = computed(() => normalizedStatus.value === 'needs_revision')
 const canResubmitBooking = computed(() =>
   normalizedStatus.value === 'rejected'

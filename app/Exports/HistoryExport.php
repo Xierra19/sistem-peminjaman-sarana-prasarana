@@ -4,17 +4,21 @@ namespace App\Exports;
 
 use App\Models\LogHistory;
 use App\Models\User;
-use Illuminate\Contracts\Support\Responsable;
+use App\Support\HistoryFilters;
 use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 
-class HistoryExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize
+class HistoryExport implements FromCollection, ShouldAutoSize, WithHeadings, WithMapping
 {
-    public function __construct(private User $user)
-    {
-    }
+    /**
+     * @param  array<string, mixed>  $filters
+     */
+    public function __construct(
+        private User $user,
+        private array $filters = [],
+    ) {}
 
     public function collection()
     {
@@ -24,6 +28,8 @@ class HistoryExport implements FromCollection, WithHeadings, WithMapping, Should
         if (! $this->user->canManageHistory()) {
             $query->where('user_id', $this->user->id);
         }
+
+        HistoryFilters::apply($query, $this->filters);
 
         return $query->get();
     }
@@ -37,6 +43,7 @@ class HistoryExport implements FromCollection, WithHeadings, WithMapping, Should
             'Deskripsi',
             'Ruangan',
             'Booking ID',
+            'Judul Booking',
         ];
     }
 
@@ -49,6 +56,7 @@ class HistoryExport implements FromCollection, WithHeadings, WithMapping, Should
             $log->description,
             optional($log->booking)->room_summary,
             optional($log->booking)->id,
+            optional($log->booking)->title,
         ];
     }
 }
