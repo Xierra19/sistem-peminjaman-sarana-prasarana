@@ -286,6 +286,18 @@ class ItemBorrowingScheduleTest extends TestCase
 
         Notification::assertSentTo($sarprasAdmin, ItemBorrowingRequestedNotification::class);
         Notification::assertNotSentTo($bapAdmin, ItemBorrowingRequestedNotification::class);
+
+        $borrowing = ItemBorrowing::query()
+            ->with(['user', 'items.item', 'singleItem'])
+            ->firstOrFail();
+        $mail = (new ItemBorrowingRequestedNotification($borrowing))->toMail($sarprasAdmin);
+        $mailContent = implode("\n", $mail->introLines);
+
+        $this->assertSame('Halo Tim Sarpras,', $mail->greeting);
+        $this->assertSame('Tinjau Pengajuan', $mail->actionText);
+        $this->assertContains('NIM: '.$user->nim, $mail->introLines);
+        $this->assertStringContainsString('Barang: '.$item->name, $mailContent);
+        $this->assertStringNotContainsString($item->code, $mailContent);
     }
 
     public function test_user_cannot_submit_after_the_h_minus_seven_calendar_date(): void

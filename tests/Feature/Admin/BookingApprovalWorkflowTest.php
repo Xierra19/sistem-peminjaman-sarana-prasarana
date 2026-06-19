@@ -63,7 +63,37 @@ class BookingApprovalWorkflowTest extends TestCase
         Notification::assertSentTo(
             $owner,
             BookingStatusUpdatedNotification::class,
+            function (BookingStatusUpdatedNotification $notification) use ($owner, $booking): bool {
+                $mail = $notification->toMail($owner);
+
+                $this->assertSame('Disetujui Peminjaman Ruangan: '.$booking->title, $mail->subject);
+                $this->assertContains(
+                    'Status pengajuan peminjaman ruangan Anda: disetujui.',
+                    $mail->introLines,
+                );
+                $this->assertSame('Lihat Detail Pengajuan', $mail->actionText);
+                $this->assertSame(route('bookings.show', $booking), $mail->actionUrl);
+
+                return true;
+            },
         );
+    }
+
+    public function test_booking_cancellation_email_uses_neutral_reason(): void
+    {
+        $owner = User::factory()->create();
+        $booking = $this->createBooking($owner);
+        $mail = (new BookingStatusUpdatedNotification(
+            $booking,
+            Booking::STATUS_CANCELLED,
+            'Gedung sedang dalam pemeliharaan.',
+            'Admin BAP',
+        ))->toMail($owner);
+        $content = implode("\n", $mail->introLines);
+
+        $this->assertStringContainsString('Peminjaman ruangan Anda telah dibatalkan oleh admin.', $content);
+        $this->assertStringContainsString('Catatan: Gedung sedang dalam pemeliharaan.', $content);
+        $this->assertStringNotContainsString('prioritas lebih tinggi', $content);
     }
 
     public function test_monthly_letter_sequence_increments_and_invalid_reapproval_has_no_side_effects(): void

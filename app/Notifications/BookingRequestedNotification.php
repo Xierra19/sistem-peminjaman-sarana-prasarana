@@ -25,11 +25,12 @@ class BookingRequestedNotification extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         $booking = $this->booking;
-        $mail = (new MailMessage())
-            ->subject('Pengajuan Booking Ruangan Baru: '.$booking->title)
-            ->greeting('Halo Admin,')
-            ->line('Terdapat pengajuan booking ruangan baru yang memerlukan tinjauan Anda.')
-            ->line('Pemohon: '.$booking->user?->name.' ('.$booking->user?->email.')');
+        $mail = (new MailMessage)
+            ->subject('Pengajuan Peminjaman Ruangan Baru: '.$booking->title)
+            ->greeting('Halo Tim BAP,')
+            ->line('Terdapat pengajuan peminjaman ruangan baru yang memerlukan tinjauan.')
+            ->line('Pemohon: '.$booking->user?->name.' ('.$booking->user?->email.')')
+            ->line('NIM: '.($booking->user?->nim ?: '-'));
 
         foreach ($booking->roomSchedules as $schedule) {
             $location = collect([
@@ -45,16 +46,16 @@ class BookingRequestedNotification extends Notification
             $mail->line('Keperluan: '.Str::limit($booking->description, 200));
         }
 
-         $fromAddress = config('mail.from.address');
-         $fromName = 'Sistem Peminjaman Sarana dan Prasarana';
+        $fromAddress = config('mail.from.address');
+        $fromName = config('mail.from.name', config('app.name'));
 
-         if ($fromAddress) {
-             $mail->from($fromAddress, $fromName);
-         }
+        if ($fromAddress) {
+            $mail->from($fromAddress, $fromName);
+        }
 
-         return $mail
-             ->salutation("Hormat kami,\nTim Sistem Peminjaman Sarana dan Prasarana")
-             ->action('Tinjau Booking', route('admin.bookings.show', $booking))
-             ->line('Terima kasih telah mengelola jadwal kampus dengan baik.');
+        return $mail
+            ->salutation("Hormat kami,\n".$fromName)
+            ->action('Tinjau Pengajuan', route('admin.bookings.show', $booking))
+            ->line('Silakan tindak lanjuti pengajuan melalui sistem.');
     }
 }

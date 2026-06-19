@@ -6,6 +6,7 @@ use App\Models\Item;
 use App\Models\ItemBorrowing;
 use App\Models\ItemBorrowingItem;
 use App\Models\User;
+use App\Notifications\ItemBorrowingRequestedNotification;
 use App\Notifications\ItemBorrowingStatusUpdatedNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -77,6 +78,19 @@ class ItemBorrowingSignedLetterTest extends TestCase
         Notification::assertSentTo(
             $owner,
             ItemBorrowingStatusUpdatedNotification::class,
+            function (ItemBorrowingStatusUpdatedNotification $notification) use ($owner, $itemBorrowing): bool {
+                $mail = $notification->toMail($owner);
+
+                $this->assertSame('Disetujui Peminjaman Barang: '.$itemBorrowing->title, $mail->subject);
+                $this->assertContains(
+                    'Status pengajuan peminjaman barang Anda: disetujui.',
+                    $mail->introLines,
+                );
+                $this->assertSame('Lihat Detail Pengajuan', $mail->actionText);
+                $this->assertSame(route('item-borrowings.show', $itemBorrowing), $mail->actionUrl);
+
+                return true;
+            },
         );
     }
 
@@ -256,6 +270,15 @@ class ItemBorrowingSignedLetterTest extends TestCase
 
         $this->assertContains('Barang: Proyektor Legacy', $mail->introLines);
         $this->assertContains('Jumlah: 2', $mail->introLines);
+
+        $requestMail = (new ItemBorrowingRequestedNotification(
+            $itemBorrowing->load(['user', 'singleItem']),
+        ))->toMail(User::factory()->create(['role' => User::ROLE_ADMIN_SARPRAS]));
+        $requestMailContent = implode("\n", $requestMail->introLines);
+
+        $this->assertContains('NIM: '.$owner->nim, $requestMail->introLines);
+        $this->assertStringContainsString('Barang: Proyektor Legacy', $requestMailContent);
+        $this->assertStringNotContainsString('ITM-LEGACY', $requestMailContent);
     }
 
     private function createItemBorrowing(?User $owner = null): ItemBorrowing

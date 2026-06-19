@@ -31,7 +31,7 @@ class ItemBorrowingStatusUpdatedNotification extends Notification implements Sho
     public function toMail(object $notifiable): MailMessage
     {
         $borrowing = $this->itemBorrowing;
-        $status = match ($this->status) {
+        $statusLabel = match ($this->status) {
             ItemBorrowing::STATUS_APPROVED => 'Disetujui',
             ItemBorrowing::STATUS_NEEDS_REVISION => 'Perlu Direvisi',
             ItemBorrowing::STATUS_REJECTED => 'Ditolak',
@@ -41,13 +41,15 @@ class ItemBorrowingStatusUpdatedNotification extends Notification implements Sho
         $items = $borrowing->items instanceof Collection ? $borrowing->items : collect();
 
         $mail = (new MailMessage)
-            ->subject($status.' Peminjaman Barang: '.$borrowing->title)
+            ->subject($statusLabel.' Peminjaman Barang: '.$borrowing->title)
             ->greeting('Halo '.$borrowing->user?->name.',');
 
         if ($this->status === ItemBorrowing::STATUS_NEEDS_REVISION) {
             $mail->line('Tim Sarpras meminta perbaikan pada pengajuan Anda. Silakan buka detail pengajuan dan kirim revisi.');
+        } elseif ($this->status === ItemBorrowing::STATUS_CANCELLED) {
+            $mail->line('Peminjaman barang Anda telah dibatalkan oleh Tim Sarpras.');
         } else {
-            $mail->line('Pengajuan peminjaman barang Anda telah '.$status.' oleh tim Sarpras.');
+            $mail->line('Status pengajuan peminjaman barang Anda: '.Str::lower($statusLabel).'.');
         }
 
         if ($items->isNotEmpty()) {
@@ -107,7 +109,7 @@ class ItemBorrowingStatusUpdatedNotification extends Notification implements Sho
 
         return $mail
             ->salutation("Hormat kami,\n".$fromName)
-            ->action('Lihat Pengajuan', route('item-borrowings.index'))
+            ->action('Lihat Detail Pengajuan', route('item-borrowings.show', $borrowing))
             ->line('Terima kasih telah menggunakan '.$fromName.'.');
     }
 }

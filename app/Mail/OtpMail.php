@@ -24,8 +24,8 @@ class OtpMail extends Mailable
     public function build(): self
     {
         $subject = $this->context === OtpCode::CONTEXT_REGISTRATION
-            ? 'Verifikasi akun Anda'
-            : 'Reset kata sandi Anda';
+            ? 'Verifikasi Akun Anda'
+            : 'Atur Ulang Kata Sandi Anda';
 
         $frontendBase = rtrim(config('app.frontend_url', config('app.url')), '/');
         $path = $this->context === OtpCode::CONTEXT_REGISTRATION

@@ -29,28 +29,25 @@ class BookingStatusUpdatedNotification extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         $booking = $this->booking;
-        $status = Str::headline($this->status);
-
-        // Ubah status ke bahasa Indonesia
-        $statusIndo = match ($this->status) {
-            'approved' => 'Disetujui',
-            'needs_revision' => 'Perlu Direvisi',
-            'rejected' => 'Ditolak',
-            'cancelled' => 'Dibatalkan',
-            'expired' => 'Kedaluwarsa',
-            default => $status
+        $statusLabel = match ($this->status) {
+            Booking::STATUS_APPROVED => 'Disetujui',
+            Booking::STATUS_NEEDS_REVISION => 'Perlu Direvisi',
+            Booking::STATUS_REJECTED => 'Ditolak',
+            Booking::STATUS_CANCELLED => 'Dibatalkan',
+            Booking::STATUS_EXPIRED => 'Kedaluwarsa',
+            default => Str::headline($this->status),
         };
 
         $mail = (new MailMessage)
-            ->subject($statusIndo.' Booking: '.$booking->title)
+            ->subject($statusLabel.' Peminjaman Ruangan: '.$booking->title)
             ->greeting('Halo '.$booking->user?->name.',');
 
-        if ($this->status === 'cancelled') {
-            $mail->line('Dengan menyesal kami informasikan bahwa booking ruangan Anda yang sebelumnya disetujui telah dibatalkan oleh admin karena terdapat kegiatan dengan prioritas lebih tinggi.');
-        } elseif ($this->status === 'needs_revision') {
-            $mail->line('Admin meminta perbaikan pada pengajuan booking ruangan Anda. Silakan buka detail pengajuan dan kirim revisi.');
+        if ($this->status === Booking::STATUS_CANCELLED) {
+            $mail->line('Peminjaman ruangan Anda telah dibatalkan oleh admin.');
+        } elseif ($this->status === Booking::STATUS_NEEDS_REVISION) {
+            $mail->line('Tim BAP meminta perbaikan pada pengajuan peminjaman ruangan Anda. Silakan buka detail pengajuan dan kirim revisi.');
         } else {
-            $mail->line('Pengajuan booking ruangan Anda telah '.$statusIndo.'.');
+            $mail->line('Status pengajuan peminjaman ruangan Anda: '.Str::lower($statusLabel).'.');
         }
 
         foreach ($booking->roomSchedules as $schedule) {
@@ -85,7 +82,7 @@ class BookingStatusUpdatedNotification extends Notification
 
         return $mail
             ->salutation("Hormat kami,\n".$fromName)
-            ->action('Lihat Booking Anda', route('bookings.index'))
+            ->action('Lihat Detail Pengajuan', route('bookings.show', $booking))
             ->line('Terima kasih telah menggunakan '.$fromName.'.');
     }
 }

@@ -1,7 +1,13 @@
 @php
     $title = $context === \App\Models\OtpCode::CONTEXT_REGISTRATION
-        ? 'Verifikasi akun Anda'
-        : 'Reset kata sandi Anda';
+        ? 'Verifikasi Akun Anda'
+        : 'Atur Ulang Kata Sandi Anda';
+    $description = $context === \App\Models\OtpCode::CONTEXT_REGISTRATION
+        ? 'Gunakan kode berikut untuk memverifikasi akun Anda.'
+        : 'Gunakan kode berikut untuk mengatur ulang kata sandi Anda.';
+    $actionText = $context === \App\Models\OtpCode::CONTEXT_REGISTRATION
+        ? 'Verifikasi Akun'
+        : 'Atur Ulang Kata Sandi';
 @endphp
 <!DOCTYPE html>
 <html lang="id">
@@ -18,8 +24,8 @@
                         <td>
                             <h1 style="font-size:20px;color:#111827;margin-bottom:16px;">{{ $title }}</h1>
                             <p style="color:#4b5563;margin-bottom:16px;">
-                                Gunakan kode berikut untuk melanjutkan proses. Kode berlaku hingga
-                                <strong>{{ $expiresAt->timezone(config('app.timezone'))->format('d M Y H:i') }}</strong>.
+                                {{ $description }} Kode berlaku hingga
+                                <strong>{{ $expiresAt->timezone(config('app.business_timezone'))->format('d M Y H:i') }} WIB</strong>.
                             </p>
                             <p style="font-size:32px;letter-spacing:8px;color:#111827;margin:24px 0;">
                                 <strong>{{ $code }}</strong>
@@ -29,12 +35,12 @@
                             </p>
                             <p style="text-align:center;margin-bottom:32px;">
                                 <a href="{{ $magicLink }}" style="background-color:#2563eb;color:#ffffff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">
-                                    Buka tautan verifikasi
+                                    {{ $actionText }}
                                 </a>
                             </p>
                             <p style="font-size:12px;color:#9ca3af;word-break:break-all;">{{ $magicLink }}</p>
                             <p style="color:#6b7280;margin-top:32px;font-size:12px;">
-                                Abaikan email ini jika Anda tidak meminta tindakan tersebut.
+                                Jangan bagikan kode ini kepada siapa pun. Abaikan email ini jika Anda tidak meminta tindakan tersebut.
                             </p>
                         </td>
                     </tr>

@@ -3,7 +3,9 @@
 namespace Tests\Feature\Auth;
 
 use App\Mail\OtpMail;
+use App\Models\OtpCode;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -38,6 +40,38 @@ class PasswordResetTest extends TestCase
         ])->assertOk();
 
         Mail::assertSent(OtpMail::class, fn (OtpMail $mail) => $mail->hasTo($user->email));
+    }
+
+    public function test_otp_email_uses_contextual_wording_and_business_timezone(): void
+    {
+        $expiresAt = CarbonImmutable::parse('2026-06-19 03:00:00', 'UTC');
+
+        $resetMail = new OtpMail(
+            email: 'user@example.com',
+            context: OtpCode::CONTEXT_RESET_PASSWORD,
+            code: '123456',
+            token: 'reset-token',
+            expiresAt: $expiresAt,
+        );
+        $resetHtml = $resetMail->render();
+
+        $this->assertSame('Atur Ulang Kata Sandi Anda', $resetMail->subject);
+        $this->assertStringContainsString('Atur Ulang Kata Sandi', $resetHtml);
+        $this->assertStringContainsString('19 Jun 2026 10:00 WIB', $resetHtml);
+        $this->assertStringContainsString('Jangan bagikan kode ini kepada siapa pun.', $resetHtml);
+        $this->assertStringNotContainsString('Buka tautan verifikasi', $resetHtml);
+
+        $registrationMail = new OtpMail(
+            email: 'user@example.com',
+            context: OtpCode::CONTEXT_REGISTRATION,
+            code: '654321',
+            token: 'registration-token',
+            expiresAt: $expiresAt,
+        );
+        $registrationHtml = $registrationMail->render();
+
+        $this->assertSame('Verifikasi Akun Anda', $registrationMail->subject);
+        $this->assertStringContainsString('Verifikasi Akun', $registrationHtml);
     }
 
     public function test_password_can_be_reset_with_valid_otp_code(): void

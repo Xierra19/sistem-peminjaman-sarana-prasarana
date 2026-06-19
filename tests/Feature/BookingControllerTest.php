@@ -301,6 +301,14 @@ class BookingControllerTest extends TestCase
 
         Notification::assertSentTo($bapAdmin, BookingRequestedNotification::class);
         Notification::assertNotSentTo($sarprasAdmin, BookingRequestedNotification::class);
+
+        $booking = Booking::query()->firstOrFail();
+        $mail = (new BookingRequestedNotification($booking))->toMail($bapAdmin);
+
+        $this->assertSame('Pengajuan Peminjaman Ruangan Baru: Seminar', $mail->subject);
+        $this->assertSame('Halo Tim BAP,', $mail->greeting);
+        $this->assertSame('Tinjau Pengajuan', $mail->actionText);
+        $this->assertContains('NIM: '.$user->nim, $mail->introLines);
     }
 
     public function test_owner_can_cancel_waiting_booking_only_once(): void

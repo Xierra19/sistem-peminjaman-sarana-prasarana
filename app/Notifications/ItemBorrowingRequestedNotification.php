@@ -32,8 +32,9 @@ class ItemBorrowingRequestedNotification extends Notification
         $mail = (new MailMessage)
             ->subject('Pengajuan Peminjaman Barang Baru: '.$borrowing->title)
             ->greeting('Halo Tim Sarpras,')
-            ->line('Ada pengajuan peminjaman barang baru yang menunggu tindak lanjut Sarpras.')
-            ->line('Pemohon: '.$borrowing->user?->name.' ('.$borrowing->user?->email.')');
+            ->line('Terdapat pengajuan peminjaman barang baru yang memerlukan tinjauan.')
+            ->line('Pemohon: '.$borrowing->user?->name.' ('.$borrowing->user?->email.')')
+            ->line('NIM: '.($borrowing->user?->nim ?: '-'));
 
         // Tampilkan daftar barang (schema baru - multiple items)
         if ($items->isNotEmpty()) {
@@ -53,14 +54,14 @@ class ItemBorrowingRequestedNotification extends Notification
                     ->sort()
                     ->implode('/');
 
-                return $item->name.' ('.$item->code.') x'.$quantities.' per jadwal';
+                return $item->name.' x'.$quantities.' per jadwal';
             })->filter()->implode(', '));
 
             $mail->line('Total jenis barang: '.$itemGroups->count());
             $mail->line('Total jadwal: '.$items->count());
         } elseif ($borrowing->singleItem?->name) {
             // Fallback ke schema lama (legacy)
-            $mail->line('Barang: '.$borrowing->singleItem->name.' ('.$borrowing->singleItem->code.')');
+            $mail->line('Barang: '.$borrowing->singleItem->name);
             $mail->line('Jumlah: '.$borrowing->quantity);
         }
 
@@ -77,15 +78,15 @@ class ItemBorrowingRequestedNotification extends Notification
         }
 
         $fromAddress = config('mail.from.address');
-        $fromName = 'Sistem Peminjaman Sarana dan Prasarana';
+        $fromName = config('mail.from.name', config('app.name'));
 
         if ($fromAddress) {
             $mail->from($fromAddress, $fromName);
         }
 
         return $mail
-            ->salutation("Hormat kami,\nTim Sistem Peminjaman Sarana dan Prasarana")
+            ->salutation("Hormat kami,\n".$fromName)
             ->action('Tinjau Pengajuan', route('admin.item-borrowings.show', $borrowing))
-            ->line('Terima kasih telah mengelola permintaan inventaris barang dengan tertib.');
+            ->line('Silakan tindak lanjuti pengajuan melalui sistem.');
     }
 }

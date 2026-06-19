@@ -40,7 +40,20 @@ class RegistrationTest extends TestCase
         $this->assertNull($user->email_verified_at);
         $this->assertAuthenticatedAs($user);
 
-        Notification::assertSentToTimes($user, VerifyEmail::class, 1);
+        Notification::assertSentTo($user, VerifyEmail::class, function (VerifyEmail $notification) use ($user): bool {
+            $mail = $notification->toMail($user);
+            $rendered = $mail->render();
+
+            $this->assertSame('Verifikasi Alamat Email Anda', $mail->subject);
+            $this->assertSame('Verifikasi Email', $mail->actionText);
+            $this->assertStringContainsString('Klik tombol berikut untuk memverifikasi alamat email', $rendered);
+            $this->assertStringContainsString('Jika tombol "Verifikasi Email" tidak berfungsi', $rendered);
+            $this->assertStringContainsString('Seluruh hak cipta dilindungi.', $rendered);
+            $this->assertStringNotContainsString('Verify Email Address', $rendered);
+            $this->assertStringNotContainsString("If you're having trouble", $rendered);
+
+            return true;
+        });
     }
 
     public function test_inactive_account_email_cannot_be_registered_again(): void

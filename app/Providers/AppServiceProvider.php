@@ -6,8 +6,10 @@ use App\Models\Booking;
 use App\Models\ItemBorrowing;
 use App\Policies\BookingPolicy;
 use App\Policies\ItemBorrowingPolicy;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Vite;
@@ -30,6 +32,18 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::policy(Booking::class, BookingPolicy::class);
         Gate::policy(ItemBorrowing::class, ItemBorrowingPolicy::class);
+
+        VerifyEmail::toMailUsing(function (object $notifiable, string $verificationUrl): MailMessage {
+            $applicationName = config('mail.from.name', config('app.name'));
+
+            return (new MailMessage)
+                ->subject('Verifikasi Alamat Email Anda')
+                ->greeting('Halo '.$notifiable->name.',')
+                ->line('Klik tombol berikut untuk memverifikasi alamat email dan mengaktifkan akun Anda.')
+                ->action('Verifikasi Email', $verificationUrl)
+                ->line('Abaikan email ini jika Anda tidak membuat akun.')
+                ->salutation("Hormat kami,\n".$applicationName);
+        });
 
         Vite::prefetch(concurrency: 3);
 
