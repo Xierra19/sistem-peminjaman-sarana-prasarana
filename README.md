@@ -1,4 +1,4 @@
-# Sistem Peminjaman Sarana dan Prasarana
+# Sistem Peminjaman Ruangan dan Barang
 
 Web application for managing room bookings and item borrowing at Universitas Esa Unggul. Users can submit requests, check availability, upload supporting documents, and monitor request status. Administrators manage facilities, approve requests, send notifications, and export reports.
 

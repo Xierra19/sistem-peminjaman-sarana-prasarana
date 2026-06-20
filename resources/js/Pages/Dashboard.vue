@@ -594,7 +594,7 @@ const filterHistoryFromStatistic = async (stat) => {
               <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <label class="xl:col-span-2">
                   <span class="form-label">Kata Kunci</span>
-                  <input v-model="roomFilters.query" type="text" placeholder="Nama ruangan, fasilitas, kampus, gedung..." class="dashboard-input" />
+                  <input v-model="roomFilters.query" type="text" placeholder="Nama ruangan, gedung..." class="dashboard-input" />
                 </label>
                 <label>
                   <span class="form-label">Kapasitas Minimum</span>

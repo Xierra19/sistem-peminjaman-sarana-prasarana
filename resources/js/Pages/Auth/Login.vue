@@ -28,20 +28,26 @@ const form = useForm({
 
 const featureHighlights = [
     {
-        title: 'Ketersediaan Cerdas',
-        description: 'Lihat jadwal real-time dan hindari bentrok jadwal dengan sinkronisasi langsung antar data.',
+        title: 'Pengajuan Terjadwal',
+        description: 'Periksa jadwal penggunaan sebelum mengajukan peminjaman.',
         icon: CalendarCheck2,
     },
     {
-        title: 'Akses Aman',
-        description: 'Hanya akun kampus terverifikasi yang dapat mengakses alur kerja pemesanan dan persetujuan.',
+        title: 'Akses Terverifikasi',
+        description: 'Sistem hanya dapat diakses menggunakan akun yang terdaftar dan telah diverifikasi.',
         icon: ShieldCheck,
     }
 ];
 
 const stats = [
-    { label: 'Pemberitahuan Lanjutan', value: 'Ajukan permohonan ≥3 hari sebelumnya' },
-    { label: 'Status Pemesanan Langsung', value: 'Transparan secara real-time' },
+    {
+        label: 'Status Pengajuan',
+        value: 'Pantau proses persetujuan dan riwayat pengajuan melalui dashboard.',
+    },
+    {
+        label: 'Data Terpusat',
+        value: 'Informasi pengajuan ruangan dan barang dikelola dalam satu portal.',
+    },
 ];
 
 const submit = () => {
@@ -65,12 +71,12 @@ const submit = () => {
             <div class="w-full max-w-5xl">
                 <div class="grid gap-8 lg:grid-cols-[1.05fr_0.95fr]">
                     <section class="rounded-[32px] border border-white/10 bg-white/5 p-6 shadow-[0_20px_80px_rgba(15,23,42,0.55)] backdrop-blur sm:p-8">
-                        <p class="text-xs font-semibold uppercase tracking-[0.35em] text-indigo-200">Universitas Esa Unggul</p>
+                        <p class="text-xs font-semibold uppercase tracking-[0.35em] text-indigo-200">Portal Peminjaman Ruangan dan Barang</p>
                         <h1 class="mt-4 text-4xl font-semibold leading-tight text-white md:text-5xl">
-                            Platform Reservasi Ruangan & Barang
+                            Akses Sistem Peminjaman Kampus
                         </h1>
                         <p class="mt-3 text-base text-indigo-100 md:text-lg">
-                            Pesan ruang kelas, laboratorium, dan ruang kolaborasi di seluruh kampus Bekasi dengan satu alur kerja yang indah.
+                            Ajukan dan pantau peminjaman ruangan serta barang kampus melalui satu sistem terintegrasi.
                         </p>
 
                         <dl class="mt-10 grid grid-cols-1 gap-4 text-left text-indigo-100 sm:grid-cols-2">
@@ -78,7 +84,7 @@ const submit = () => {
                                 <dt class="text-sm uppercase tracking-wide text-indigo-200">
                                     {{ stat.label }}
                                 </dt>
-                                <dd class="mt-2 text-3xl font-semibold text-white">
+                                <dd class="mt-2 text-base font-medium leading-relaxed text-white">
                                     {{ stat.value }}
                                 </dd>
                             </div>
@@ -106,12 +112,12 @@ const submit = () => {
 
                     <section class="rounded-[32px] bg-white p-6 text-slate-900 shadow-2xl ring-1 ring-slate-100 transition-colors sm:p-8 lg:p-10 dark:bg-slate-900/95 dark:text-slate-100 dark:ring-white/10">
                         <div class="mb-8 space-y-2">
-                            <p class="text-sm font-semibold uppercase tracking-[0.25em] text-indigo-500 dark:text-indigo-300">Masuk Kembali</p>
+                            <p class="text-sm font-semibold uppercase tracking-[0.25em] text-indigo-500 dark:text-indigo-300">Akses Pengguna</p>
                             <h2 class="text-3xl font-semibold text-slate-900 dark:text-white">
-                                Selamat Datang Kembali
+                                Masuk ke Sistem
                             </h2>
                             <p class="text-sm text-slate-500 dark:text-slate-400">
-                                Gunakan email kampus Anda untuk mengakses dasbor reservasi.
+                                Masukkan email dan password akun Anda untuk melanjutkan.
                             </p>
                         </div>
 
@@ -171,8 +177,7 @@ const submit = () => {
                                 </p>
                             </div>
 
-                            <div class="flex items-center justify-between text-sm text-slate-500 dark:text-slate-400">
-                                <p>Dilindungi oleh single sign on UEU.</p>
+                            <div class="flex justify-end text-sm text-slate-500 dark:text-slate-400">
                                 <Link
                                     v-if="canResetPassword"
                                     :href="route('password.request')"
@@ -199,7 +204,7 @@ const submit = () => {
                         <p class="mt-8 text-center text-sm text-slate-500 dark:text-slate-400">
                             Belum punya akun?
                             <Link :href="route('register')" class="font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-300 dark:hover:text-indigo-200">
-                                Buat akun di sini
+                                Registrasi mahasiswa
                             </Link>
                         </p>
 

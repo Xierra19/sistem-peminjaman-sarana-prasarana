@@ -27,15 +27,21 @@ const form = useForm({
 });
 
 const checklist = [
-    'Gunakan email student.esaunggul.ac.id aktif.',
-    'Nama lengkap sesuai kartu identitas kampus.',
-    'Siapkan NIM aktif dengan format 11 digit.',
-    'Password minimal 8 karakter dengan huruf besar, huruf kecil, dan angka.',
+    'Gunakan email aktif @student.esaunggul.ac.id.',
+    'Masukkan nama lengkap sesuai data mahasiswa.',
+    'Siapkan NIM aktif yang terdiri dari 11 digit.',
+    'Gunakan password minimal 8 karakter dengan huruf besar, huruf kecil, dan angka.',
 ];
 
 const badges = [
-    { label: 'Mahasiswa aktif', value: 'Diverifikasi harian' },
-    { label: 'Integrasi Ruangan & Barang', value: 'Semua gedung UEU Bekasi' },
+    {
+        label: 'Akun Mahasiswa',
+        value: 'Registrasi menggunakan email resmi mahasiswa Universitas Esa Unggul.',
+    },
+    {
+        label: 'Layanan Terintegrasi',
+        value: 'Kelola pengajuan ruangan dan barang dalam satu portal.',
+    },
 ];
 
 const submit = () => {
@@ -58,12 +64,12 @@ const submit = () => {
             <div class="w-full max-w-6xl">
                 <div class="grid gap-8 lg:grid-cols-[1.05fr_0.95fr]">
                     <section class="rounded-[32px] border border-white/10 bg-gradient-to-b from-white/15 to-white/5 p-6 shadow-[0_25px_90px_rgba(15,23,42,0.55)] backdrop-blur sm:p-8">
-                        <p class="text-xs font-semibold uppercase tracking-[0.35em] text-indigo-200">Mulai Reservasi</p>
+                        <p class="text-xs font-semibold uppercase tracking-[0.35em] text-indigo-200">Portal Peminjaman Ruangan dan Barang</p>
                         <h1 class="mt-4 text-4xl font-semibold leading-tight text-white md:text-5xl">
-                            Buat Akun UEU Reservasi Ruangan & Barang
+                            Daftarkan Akun Mahasiswa Anda
                         </h1>
                         <p class="mt-3 text-base text-indigo-100 md:text-lg">
-                            Kelola jadwal ruangan dan peminjaman barang kampus melalui satu portal terintegrasi.
+                            Ajukan peminjaman ruangan dan barang kampus melalui satu sistem yang terintegrasi.
                         </p>
 
                         <div class="mt-10 grid gap-4 sm:grid-cols-2">
@@ -73,7 +79,7 @@ const submit = () => {
                                 class="rounded-2xl border border-white/10 bg-white/5 p-4"
                             >
                                 <p class="text-sm uppercase tracking-wide text-indigo-200">{{ badge.label }}</p>
-                                <p class="mt-2 text-2xl font-semibold text-white">{{ badge.value }}</p>
+                                <p class="mt-2 text-base font-medium leading-relaxed text-white">{{ badge.value }}</p>
                             </div>
                         </div>
 
@@ -81,15 +87,15 @@ const submit = () => {
                             <div class="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-4">
                                 <Sparkles class="h-10 w-10 flex-shrink-0 rounded-2xl bg-white/10 p-2 text-indigo-100" aria-hidden="true" />
                                 <div>
-                                    <p class="font-medium text-white">Registrasi satu kali, gunakan selamanya.</p>
-                                    <p class="text-sm text-indigo-100">Akses cepat ke panel reservasi dengan riwayat peminjaman lengkap.</p>
+                                    <p class="font-medium text-white">Proses Pengajuan Terpusat</p>
+                                    <p class="text-sm text-indigo-100">Pantau status dan riwayat seluruh pengajuan dengan lebih mudah.</p>
                                 </div>
                             </div>
                             <div class="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-4">
                                 <ShieldCheck class="h-10 w-10 flex-shrink-0 rounded-2xl bg-white/10 p-2 text-indigo-100" aria-hidden="true" />
                                 <div>
-                                    <p class="font-medium text-white">Keamanan akun terjamin.</p>
-                                    <p class="text-sm text-indigo-100">Verifikasi email kampus dan enkripsi kata sandi bawaan Laravel.</p>
+                                    <p class="font-medium text-white">Keamanan Akun</p>
+                                    <p class="text-sm text-indigo-100">Akun dilindungi melalui verifikasi email kampus dan penyimpanan kata sandi yang aman.</p>
                                 </div>
                             </div>
                         </div>
@@ -108,10 +114,10 @@ const submit = () => {
 
                     <section class="rounded-[32px] bg-white p-6 text-slate-900 shadow-2xl ring-1 ring-slate-100 transition-colors sm:p-8 lg:p-10 dark:bg-slate-900/95 dark:text-slate-100 dark:ring-white/10">
                         <div class="mb-8 space-y-2">
-                            <p class="text-sm font-semibold uppercase tracking-[0.35em] text-indigo-500 dark:text-indigo-300">Daftar akun</p>
-                            <h2 class="text-3xl font-semibold text-slate-900 dark:text-white">Selangkah lagi untuk reservasi</h2>
+                            <p class="text-sm font-semibold uppercase tracking-[0.35em] text-indigo-500 dark:text-indigo-300">Registrasi Mahasiswa</p>
+                            <h2 class="text-3xl font-semibold text-slate-900 dark:text-white">Buat Akun Baru</h2>
                             <p class="text-sm text-slate-500 dark:text-slate-400">
-                                Lengkapi data diri menggunakan email kampus resmi Anda.
+                                Lengkapi data berikut menggunakan identitas dan email resmi mahasiswa.
                             </p>
                         </div>
 

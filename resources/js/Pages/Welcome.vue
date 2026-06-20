@@ -5,8 +5,6 @@ import {
     CalendarCheck2,
     ShieldCheck,
     Sparkles,
-    Mail,
-    Phone
 } from 'lucide-vue-next';
 import DarkModeSwitch from '@/Components/DarkModeSwitch.vue';
 
@@ -29,45 +27,45 @@ const props = defineProps({
     },
 });
 
-const appName = 'Sistem Peminjaman Sarana & Prasarana';
+const appName = 'Sistem Peminjaman Ruangan dan Barang';
 const campusName = 'Universitas Esa Unggul Kampus Bekasi';
 const currentYear = new Date().getFullYear();
 
 const heroContent = {
-    badge: 'Selamat Datang di Portal Peminjaman Internal',
-    title: 'Peminjaman Sarana & Prasarana',
-    subtitle: 'Kelola peminjaman ruangan kelas, ruang rapat, laboratorium, hingga perangkat pendukung kampus dalam satu platform terintegrasi yang modern dan efisien.',
+    badge: 'Portal Peminjaman Internal',
+    title: 'Sistem Peminjaman Ruangan dan Barang',
+    subtitle: 'Ajukan peminjaman ruangan dan barang kampus, pantau proses persetujuan, serta kelola riwayat pengajuan dalam satu sistem.',
 };
 
 const features = [
     {
         icon: CalendarCheck2,
-        title: 'Peminjaman Sarana & Prasarana',
-        description: 'Pesan ruang kelas, rapat, laboratorium, serta pinjam perangkat pendukung seperti meja, kursi, proyektor, dan sound system secara real-time.',
-    },
-    {
-        icon: ShieldCheck,
-        title: 'Akses Terverifikasi & Aman',
-        description: 'Hanya civitas academica dengan email resmi kampus yang dapat mengakses sistem dengan enkripsi keamanan tingkat tinggi.',
+        title: 'Peminjaman Ruangan',
+        description: 'Ajukan penggunaan ruangan berdasarkan lokasi, kapasitas, dan jadwal yang tersedia.',
     },
     {
         icon: Sparkles,
-        title: 'Pengalaman Tanpa Hambatan',
-        description: 'Antarmuka minimalis dengan konfirmasi instan, notifikasi otomatis, dan template surat peminjaman siap unduh.',
+        title: 'Peminjaman Barang',
+        description: 'Pilih barang, jumlah, dan jadwal penggunaan sesuai kebutuhan kegiatan kampus.',
+    },
+    {
+        icon: ShieldCheck,
+        title: 'Pemantauan Pengajuan',
+        description: 'Lihat status persetujuan dan riwayat setiap pengajuan secara terpusat.',
     },
 ];
 
 const aboutBadges = [
     {
-        text: 'Real-time Availability',
+        text: 'Pengajuan Terjadwal',
         classes: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-200',
     },
     {
-        text: 'Konfirmasi Instan',
+        text: 'Status Terpantau',
         classes: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-200',
     },
     {
-        text: 'Akses 24/7',
+        text: 'Dokumen Terintegrasi',
         classes: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-200',
     },
 ];
@@ -105,7 +103,7 @@ const aboutBadges = [
                         :href="route('register')"
                         class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-center text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 dark:border-white/15 dark:bg-white/5 dark:text-white dark:hover:bg-white/10 sm:w-auto"
                     >
-                        Daftar Sekarang
+                        Registrasi Mahasiswa
                     </Link>
                     <Link
                         v-if="props.canLogin"
@@ -154,7 +152,7 @@ const aboutBadges = [
                                         class="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-6 py-3 text-base font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 dark:border-white/15 dark:bg-white/5 dark:text-indigo-100 dark:hover:bg-white/10 sm:w-auto"
                                     >
                                         <Sparkles class="size-4 text-indigo-500 dark:text-indigo-300" />
-                                        Daftar Sekarang
+                                        Registrasi Mahasiswa
                                     </Link>
                                     <Link
                                         v-if="props.canLogin"
@@ -181,12 +179,12 @@ const aboutBadges = [
             </section>
 
             <!-- Features Section -->
-            <section class="container mx-auto px-4 py-12 md:py-16">
+            <section id="features" class="container mx-auto px-4 py-12 md:py-16">
                 <div class="mx-auto max-w-6xl">
                     <div class="mb-12 text-center">
                         <h2 class="mb-4 text-2xl font-semibold text-slate-900 dark:text-white">Fitur Utama</h2>
                         <p class="mx-auto max-w-2xl text-base text-slate-600 dark:text-indigo-100/80">
-                            Semua yang dibutuhkan untuk mengatur Peminjaman ruangan dan peminjaman barang kampus secara efisien dan terorganisir.
+                            Layanan utama untuk mengajukan dan memantau peminjaman fasilitas kampus.
                         </p>
                     </div>
                     <div class="mx-auto grid grid-cols-1 max-w-5xl gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -220,12 +218,12 @@ const aboutBadges = [
                                 <div class="absolute inset-0 bg-gradient-to-br from-indigo-600/10 via-transparent to-purple-600/20"></div>
                             </div>
                             <div class="flex flex-col justify-center gap-4 p-8">
-                                <h2 class="text-2xl font-semibold text-slate-900 dark:text-white">Tentang Sistem Peminjaman</h2>
+                                <h2 class="text-2xl font-semibold text-slate-900 dark:text-white">Tentang Sistem</h2>
                                 <p class="text-sm leading-relaxed text-slate-600 dark:text-indigo-100/80">
-                                    Sistem Peminjaman Ruangan & Barang Internal dirancang khusus untuk civitas academica Universitas Esa Unggul Kampus Bekasi. Platform ini merapikan proses peminjaman dan pengelolaan fasilitas kampus dalam satu alur terpadu.
+                                    Sistem ini digunakan untuk mendukung proses pengajuan dan pengelolaan peminjaman ruangan dan barang di Universitas Esa Unggul Kampus Bekasi.
                                 </p>
                                 <p class="text-sm leading-relaxed text-slate-600 dark:text-indigo-100/80">
-                                    Butuh ruang kelas tambahan, ruangan rapat, atau perangkat pendukung seperti meja, kursi, dan proyektor? Tinggal pilih fasilitasnya, ajukan, dan ikuti status persetujuannya secara real-time.
+                                    Mahasiswa dapat mengajukan peminjaman, memantau status persetujuan, dan mengakses dokumen terkait melalui akun yang telah diverifikasi.
                                 </p>
                                 <div class="flex flex-wrap gap-2 pt-2">
                                     <span
@@ -246,12 +244,12 @@ const aboutBadges = [
 
         <footer class="mt-16 border-t border-slate-200 bg-slate-50/80 backdrop-blur-sm dark:border-white/10 dark:bg-slate-950/80">
             <div class="container mx-auto px-4 py-8">
-                <div class="grid gap-8 md:grid-cols-3">
+                <div class="grid gap-8 md:grid-cols-2">
                     <!-- Brand Info -->
                     <div class="space-y-3">
                         <p class="text-sm font-semibold text-indigo-600 dark:text-indigo-200">{{ appName }}</p>
                         <p class="text-xs leading-relaxed text-slate-600 dark:text-indigo-100/80">
-                            Platform Peminjaman ruangan dan peminjaman barang kampus yang terintegrasi untuk civitas academica Universitas Esa Unggul Kampus Bekasi.
+                            Sistem terintegrasi untuk pengajuan dan pengelolaan peminjaman ruangan dan barang Universitas Esa Unggul Kampus Bekasi.
                         </p>
                     </div>
 
@@ -274,31 +272,11 @@ const aboutBadges = [
                         </ul>
                     </div>
 
-                    <!-- Contact & Support -->
-                    <div class="space-y-3">
-                        <p class="text-sm font-semibold text-indigo-600 dark:text-indigo-200">Bantuan & Kontak</p>
-                        <ul class="space-y-2 text-sm text-slate-600 dark:text-indigo-100/80">
-                            <li class="flex items-center gap-2">
-                                <Mail class="h-4 w-4 text-indigo-600 dark:text-indigo-300" />
-                                <a href="mailto:leomarhadi13@gmail.com" class="transition hover:text-slate-900 dark:hover:text-white">leomarhadi13@gmail.com</a>
-                            </li>
-                            <li class="flex items-center gap-2">
-                                <Phone class="h-4 w-4 text-indigo-600 dark:text-indigo-300" />
-                                <a href="tel:+6287851327750" class="transition hover:text-slate-900 dark:hover:text-white">+62 878-5132-7750</a>
-                            </li>
-                        </ul>
-                    </div>
                 </div>
 
                 <!-- Copyright -->
                 <div class="mt-8 border-t border-slate-200 pt-6 text-center dark:border-white/10">
-                    <p class="font-medium text-slate-600 dark:text-indigo-100/90">&copy; {{ currentYear }} {{ campusName }}. All rights reserved.</p>
-                    <p class="mt-2 text-xs text-indigo-600 dark:text-indigo-300">
-                        Sistem Peminjaman Sarana & Prasarana &bull; Laravel v{{ props.laravelVersion }} &middot; PHP v{{ props.phpVersion }}
-                    </p>
-                    <p class="mt-1 text-xs text-indigo-600 dark:text-indigo-400">
-                        Dikembangkan untuk memenuhi tugas skripsi - Universitas Esa Unggul
-                    </p>
+                    <p class="font-medium text-slate-600 dark:text-indigo-100/90">&copy; {{ currentYear }} {{ campusName }}. Hak cipta dilindungi.</p>
                 </div>
             </div>
         </footer>

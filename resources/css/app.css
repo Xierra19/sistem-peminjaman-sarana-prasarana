@@ -500,7 +500,7 @@ html.dark .flatpickr-calendar .flatpickr-time .flatpickr-time-separator {
     }
 
     .mobile-friendly-table.request-mobile-table tbody td.mobile-action-cell > div {
-      align-items: stretch;
+      align-items: center;
     }
 
     .mobile-friendly-table.request-mobile-table tbody td.mobile-action-cell a,
