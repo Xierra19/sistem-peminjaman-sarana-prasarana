@@ -3,6 +3,7 @@ import { Transition } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
 import {
     CalendarCheck2,
+    FileCheck2,
     ShieldCheck,
     Sparkles,
 } from 'lucide-vue-next';
@@ -55,18 +56,21 @@ const features = [
     },
 ];
 
-const aboutBadges = [
+const aboutHighlights = [
     {
-        text: 'Pengajuan Terjadwal',
-        classes: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-200',
+        icon: CalendarCheck2,
+        title: 'Jadwal lebih terstruktur',
+        description: 'Pilih waktu penggunaan sesuai ketersediaan ruangan atau barang.',
     },
     {
-        text: 'Status Terpantau',
-        classes: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-200',
+        icon: ShieldCheck,
+        title: 'Proses mudah dipantau',
+        description: 'Periksa perkembangan persetujuan setiap pengajuan dari satu tempat.',
     },
     {
-        text: 'Dokumen Terintegrasi',
-        classes: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-200',
+        icon: FileCheck2,
+        title: 'Dokumen tersimpan rapi',
+        description: 'Akses dokumen pengajuan melalui akun yang telah diverifikasi.',
     },
 ];
 </script>
@@ -204,36 +208,65 @@ const aboutBadges = [
             </section>
 
             <!-- About Section -->
-            <section class="container mx-auto px-4 pb-16">
-                <div class="mx-auto max-w-4xl">
-                    <div class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg shadow-slate-200/70 dark:border-white/10 dark:bg-white/5 dark:shadow-none">
-                        <div class="grid gap-8 md:grid-cols-2">
-                            <div class="relative h-48 md:h-full">
+            <section class="container mx-auto px-4 pb-12">
+                <div class="mx-auto max-w-6xl">
+                    <div class="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-xl shadow-slate-200/70 dark:border-white/10 dark:bg-white/5 dark:shadow-none">
+                        <div class="grid lg:grid-cols-12">
+                            <div class="relative min-h-64 overflow-hidden sm:min-h-80 lg:col-span-5 lg:min-h-[34rem]">
                                 <img
                                     alt="Kampus Bekasi"
-                                    class="size-full object-cover"
+                                    class="absolute inset-0 size-full object-cover transition duration-700 hover:scale-105"
                                     loading="lazy"
-                                    src="/images/Kampus Bekasi IMG.jpg"
+                                    src="/images/esa-unggul-kampus-bekasi.webp"
                                 />
-                                <div class="absolute inset-0 bg-gradient-to-br from-indigo-600/10 via-transparent to-purple-600/20"></div>
+                                <div class="absolute inset-0 bg-gradient-to-t from-slate-950/50 via-transparent to-indigo-600/10"></div>
+                                <div class="absolute inset-x-0 bottom-0 p-6 text-white sm:p-8">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-100">Universitas Esa Unggul</p>
+                                    <p class="mt-2 text-lg font-semibold">Kampus Bekasi</p>
+                                </div>
                             </div>
-                            <div class="flex flex-col justify-center gap-4 p-8">
-                                <h2 class="text-2xl font-semibold text-slate-900 dark:text-white">Tentang Sistem</h2>
-                                <p class="text-sm leading-relaxed text-slate-600 dark:text-indigo-100/80">
-                                    Sistem ini digunakan untuk mendukung proses pengajuan dan pengelolaan peminjaman ruangan dan barang di Universitas Esa Unggul Kampus Bekasi.
-                                </p>
-                                <p class="text-sm leading-relaxed text-slate-600 dark:text-indigo-100/80">
-                                    Mahasiswa dapat mengajukan peminjaman, memantau status persetujuan, dan mengakses dokumen terkait melalui akun yang telah diverifikasi.
-                                </p>
-                                <div class="flex flex-wrap gap-2 pt-2">
-                                    <span
-                                        v-for="badge in aboutBadges"
-                                        :key="badge.text"
-                                        class="rounded-full px-3 py-1 text-xs font-semibold"
-                                        :class="badge.classes"
-                                    >
-                                        {{ badge.text }}
-                                    </span>
+                            <div class="relative flex flex-col justify-center p-6 sm:p-10 lg:col-span-7 lg:p-12">
+                                <div aria-hidden="true" class="pointer-events-none absolute right-0 top-0 size-48 rounded-full bg-indigo-200/30 blur-3xl dark:bg-indigo-500/10"></div>
+
+                                <div class="relative">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-600 dark:text-indigo-300">Tentang platform</p>
+                                    <h2 class="mt-3 max-w-xl text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl dark:text-white">
+                                        Pengajuan fasilitas kampus dalam satu alur yang jelas
+                                    </h2>
+                                    <p class="mt-4 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base dark:text-indigo-100/80">
+                                        Sistem ini membantu mahasiswa mengajukan peminjaman ruangan dan barang, mengikuti proses persetujuan, serta mengakses dokumen terkait secara terpusat.
+                                    </p>
+
+                                    <div class="mt-8 space-y-3">
+                                        <article
+                                            v-for="highlight in aboutHighlights"
+                                            :key="highlight.title"
+                                            class="flex gap-4 rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4 transition hover:border-indigo-200 hover:bg-indigo-50/70 dark:border-white/10 dark:bg-white/5 dark:hover:border-indigo-400/20 dark:hover:bg-indigo-500/10"
+                                        >
+                                            <div class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-300">
+                                                <component :is="highlight.icon" class="size-5" />
+                                            </div>
+                                            <div>
+                                                <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ highlight.title }}</h3>
+                                                <p class="mt-1 text-xs leading-relaxed text-slate-600 sm:text-sm dark:text-indigo-100/70">
+                                                    {{ highlight.description }}
+                                                </p>
+                                            </div>
+                                        </article>
+                                    </div>
+
+                                    <div v-if="props.canLogin" class="mt-8">
+                                        <Link
+                                            :href="route('login')"
+                                            class="inline-flex items-center gap-2 text-sm font-semibold text-indigo-600 transition hover:text-indigo-700 dark:text-indigo-300 dark:hover:text-indigo-200"
+                                        >
+                                            Mulai ajukan peminjaman
+                                            <svg class="size-4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewBox="0 0 24 24">
+                                                <path d="M5 12h14" />
+                                                <path d="m13 6 6 6-6 6" />
+                                            </svg>
+                                        </Link>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -242,11 +275,11 @@ const aboutBadges = [
             </section>
         </main>
 
-        <footer class="mt-16 border-t border-slate-200 bg-slate-50/80 backdrop-blur-sm dark:border-white/10 dark:bg-slate-950/80">
-            <div class="container mx-auto px-4 py-8">
-                <div class="grid gap-8 md:grid-cols-2">
+        <footer class="mt-4 border-t border-slate-200 bg-slate-50/80 backdrop-blur-sm dark:border-white/10 dark:bg-slate-950/80">
+            <div class="container mx-auto max-w-6xl px-4 py-8">
+                <div class="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
                     <!-- Brand Info -->
-                    <div class="space-y-3">
+                    <div class="max-w-2xl space-y-3">
                         <p class="text-sm font-semibold text-indigo-600 dark:text-indigo-200">{{ appName }}</p>
                         <p class="text-xs leading-relaxed text-slate-600 dark:text-indigo-100/80">
                             Sistem terintegrasi untuk pengajuan dan pengelolaan peminjaman ruangan dan barang Universitas Esa Unggul Kampus Bekasi.
@@ -254,24 +287,23 @@ const aboutBadges = [
                     </div>
 
                     <!-- Navigation Links -->
-                    <div class="space-y-3">
+                    <nav class="space-y-3 md:text-right" aria-label="Navigasi footer">
                         <p class="text-sm font-semibold text-indigo-600 dark:text-indigo-200">Navigasi</p>
-                        <ul class="space-y-2 text-sm text-slate-600 dark:text-indigo-100/80">
+                        <ul class="flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-600 md:justify-end dark:text-indigo-100/80">
                             <li>
                                 <Link href="/" class="transition hover:text-slate-900 dark:hover:text-white">Beranda</Link>
                             </li>
-                            <li>
+                            <li v-if="props.canLogin">
                                 <Link :href="route('login')" class="transition hover:text-slate-900 dark:hover:text-white">Masuk</Link>
                             </li>
-                            <li>
+                            <li v-if="props.canRegister">
                                 <Link :href="route('register')" class="transition hover:text-slate-900 dark:hover:text-white">Daftar</Link>
                             </li>
                             <li>
                                 <a href="#features" class="transition hover:text-slate-900 dark:hover:text-white">Fitur</a>
                             </li>
                         </ul>
-                    </div>
-
+                    </nav>
                 </div>
 
                 <!-- Copyright -->
