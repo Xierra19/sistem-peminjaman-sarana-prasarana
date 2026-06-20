@@ -1,5 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
+import TablePagination from '@/Components/TablePagination.vue'
 import SortableTh from '@/Components/SortableTh.vue'
 import { Head, Link, useForm } from '@inertiajs/vue3'
 import { computed, ref } from 'vue'
@@ -317,7 +318,7 @@ const cancelBorrowing = (borrowing) => {
                 <td class="px-4 py-3 text-slate-700 dark:text-slate-300 mobile-compact-meta" data-title="Kembali">{{ formatDate(getReturnDates(borrowing)) }}</td>
                 <td class="mobile-status-cell mobile-span-2 px-4 py-3" data-title="Status">
                   <span
-                    class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold"
+                    class="table-badge"
                     :class="getItemBorrowingStatusClasses(borrowing.effective_status ?? borrowing.status)"
                   >
                     {{ getItemBorrowingStatusLabel(borrowing.effective_status ?? borrowing.status) }}
@@ -327,7 +328,7 @@ const cancelBorrowing = (borrowing) => {
                   <div class="flex flex-col gap-2">
                     <Link
                       :href="route('item-borrowings.show', borrowing.id)"
-                      class="inline-flex min-h-9 items-center justify-center whitespace-nowrap rounded-xl border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:border-blue-300 hover:text-blue-800 dark:border-blue-800 dark:text-blue-300 dark:hover:border-blue-700 dark:hover:text-blue-200"
+                      class="table-action border-blue-200 text-blue-700 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-800 dark:border-blue-800 dark:text-blue-300 dark:hover:border-blue-700 dark:hover:bg-blue-900/30 dark:hover:text-blue-200"
                     >
                       Lihat Detail
                     </Link>
@@ -376,62 +377,12 @@ const cancelBorrowing = (borrowing) => {
           </table>
         </div>
 
-        <div class="flex flex-col gap-3 border-t border-slate-100 px-5 py-4 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:text-slate-400">
-          <div>
-            <span v-if="pageMeta.of">Menampilkan {{ pageMeta.from }}-{{ pageMeta.to }} dari {{ pageMeta.of }} data</span>
-            <span v-else>Menampilkan 0 data</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <button
-              type="button"
-              class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400"
-              @click="changePage(1)"
-              :disabled="currentPage === 1 || !filteredBorrowings.length"
-            >
-              «
-            </button>
-            <button
-              type="button"
-              class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400"
-              @click="changePage(currentPage - 1)"
-              :disabled="currentPage === 1 || !filteredBorrowings.length"
-            >
-              ‹
-            </button>
-            <template v-if="filteredBorrowings.length">
-              <button
-                v-for="page in pages"
-                :key="`item-borrowings-page-${page}`"
-                type="button"
-                class="rounded border px-3 py-1 text-sm transition"
-                :class="
-                  currentPage === page
-                    ? 'border-blue-500 bg-blue-500 text-white'
-                    : 'border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400'
-                "
-                @click="changePage(page)"
-              >
-                {{ page }}
-              </button>
-            </template>
-            <button
-              type="button"
-              class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400"
-              @click="changePage(currentPage + 1)"
-              :disabled="currentPage === pages.length || !filteredBorrowings.length"
-            >
-              ›
-            </button>
-            <button
-              type="button"
-              class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-blue-500 dark:hover:text-blue-400"
-              @click="changePage(pages.length)"
-              :disabled="currentPage === pages.length || !filteredBorrowings.length"
-            >
-              »
-            </button>
-          </div>
-        </div>
+        <TablePagination
+          :page-meta="pageMeta"
+          :pages="pages"
+          :current-page="currentPage"
+          @change="changePage"
+        />
       </div>
     </div>
   </AuthenticatedLayout>

@@ -183,7 +183,6 @@ class DashboardController extends Controller
             'rooms' => $rooms,
             'campuses' => $campuses,
             'items' => $items,
-            'itemCategories' => $items->pluck('category')->filter()->unique()->sort()->values(),
             'roomSummary' => $roomSummary,
             'itemSummary' => $itemSummary,
             'combinedSummary' => $combinedSummary,

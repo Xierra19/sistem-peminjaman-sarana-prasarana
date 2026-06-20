@@ -235,7 +235,7 @@ const canGoToNextPage = computed(() => currentPage.value < pages.value.length &&
         </button>
       </div>
 
-      <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+      <div class="overflow-x-auto rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
         <div class="flex flex-col gap-4 px-5 py-4 md:flex-row md:items-end md:justify-between dark:border-slate-700">
           <div class="flex flex-1 flex-col gap-3 md:flex-row md:items-center">
             <div class="w-full md:max-w-sm">

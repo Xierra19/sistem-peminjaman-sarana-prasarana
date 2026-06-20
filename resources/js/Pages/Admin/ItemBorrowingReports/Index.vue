@@ -640,7 +640,7 @@ const chartOptions = computed(() => ({
                 </td>
                 <td class="mobile-report-status mobile-report-span-2 px-5 py-4" data-title="Status">
                   <span
-                    class="inline-flex rounded-full px-3 py-1 text-xs font-semibold"
+                    class="table-badge"
                     :class="getItemBorrowingStatusClasses(borrowing.effective_status ?? borrowing.status)"
                   >
                     {{ getItemBorrowingStatusLabel(borrowing.effective_status ?? borrowing.status) }}

@@ -30,7 +30,7 @@ const checklist = [
     'Gunakan email student.esaunggul.ac.id aktif.',
     'Nama lengkap sesuai kartu identitas kampus.',
     'Siapkan NIM aktif dengan format 11 digit.',
-    'Password minimal 8 karakter dengan kombinasi huruf dan angka.',
+    'Password minimal 8 karakter dengan huruf besar, huruf kecil, dan angka.',
 ];
 
 const badges = [
@@ -229,6 +229,9 @@ const submit = () => {
                                         v-model="form.password"
                                         :type="showPassword ? 'text' : 'password'"
                                         autocomplete="new-password"
+                                        minlength="8"
+                                        pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}"
+                                        title="Minimal 8 karakter dengan sedikitnya satu huruf besar, satu huruf kecil, dan satu angka"
                                         placeholder="Minimal 8 karakter"
                                         class="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/60 pl-12 pr-12 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-indigo-400 dark:focus:bg-slate-800 dark:focus:ring-indigo-500/20"
                                         :class="{ 'border-rose-500': form.errors.password }"
@@ -246,7 +249,7 @@ const submit = () => {
                                         <Eye v-else class="h-5 w-5" />
                                     </button>
                                 </div>
-                                <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Gunakan kombinasi huruf besar, kecil, dan angka.</p>
+                                <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Minimal 8 karakter dengan sedikitnya satu huruf besar, satu huruf kecil, dan satu angka.</p>
                                 <p v-if="form.errors.password" id="password-error" class="mt-2 flex items-center gap-2 text-sm text-rose-500">
                                     <AlertCircle class="h-4 w-4 flex-shrink-0" />
                                     {{ form.errors.password }}

@@ -285,9 +285,9 @@ const cancelBorrowing = () => {
                   :class="getItemBorrowingStatusClasses(log.action)"
                 />
                 <div class="min-w-0 flex-1 space-y-1 text-sm text-gray-600 dark:text-slate-300">
-                  <div class="flex w-full items-start gap-3">
-                    <span class="min-w-0 font-medium text-gray-800 dark:text-white">{{ log.user?.name ?? 'Sistem' }}</span>
-                    <span class="ml-auto shrink-0 whitespace-nowrap text-right text-xs text-gray-400 dark:text-slate-500">{{ formatDateTime(log.created_at) }}</span>
+                  <div class="flex w-full min-w-0 flex-col gap-1 sm:flex-row sm:items-start sm:gap-3">
+                    <span class="min-w-0 break-words font-medium text-gray-800 dark:text-white">{{ log.user?.name ?? 'Sistem' }}</span>
+                    <span class="shrink-0 text-xs text-gray-400 sm:ml-auto sm:whitespace-nowrap sm:text-right dark:text-slate-500">{{ formatDateTime(log.created_at) }}</span>
                   </div>
                   <p class="text-xs uppercase tracking-wide text-gray-400 dark:text-slate-500">
                     {{ getItemBorrowingActionLabel(log.action) || log.action }}

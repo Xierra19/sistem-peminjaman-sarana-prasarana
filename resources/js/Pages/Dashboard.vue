@@ -27,7 +27,6 @@ const props = defineProps({
   rooms: { type: Array, default: () => [] },
   campuses: { type: Array, default: () => [] },
   items: { type: Array, default: () => [] },
-  itemCategories: { type: Array, default: () => [] },
   roomSummary: { type: Object, default: () => ({}) },
   itemSummary: { type: Object, default: () => ({}) },
   combinedSummary: { type: Object, default: () => ({}) },
@@ -62,8 +61,7 @@ const emptyRoomFilters = () => ({
 })
 
 const emptyItemFilters = () => ({
-  query: '',
-  category: '',
+  itemId: '',
   date: '',
   startTime: '',
   endTime: '',
@@ -212,13 +210,10 @@ const roomResults = computed(() => localRoomCandidates.value.filter((room) => {
 const localItemCandidates = computed(() => {
   const filters = appliedItemFilters.value
   if (!filters) return []
-  const query = filters.query.toLowerCase()
 
-  const filtered = props.items.filter((item) => {
-    const searchable = [item.name, item.code, item.category].filter(Boolean).join(' ').toLowerCase()
-    return (!query || searchable.includes(query))
-      && (!filters.category || item.category === filters.category)
-  })
+  const filtered = props.items.filter((item) =>
+    !filters.itemId || String(item.id) === String(filters.itemId),
+  )
 
   return filtered.sort((left, right) => {
     if (filters.sort === 'quantity-desc') return Number(right.quantity) - Number(left.quantity)
@@ -301,7 +296,6 @@ const searchItems = async () => {
 
   appliedItemFilters.value = {
     ...itemFilters.value,
-    query: itemFilters.value.query.trim(),
     quantity: Math.max(1, Number(itemFilters.value.quantity) || 1),
   }
   itemAvailability.value = {}
@@ -657,14 +651,12 @@ const filterHistoryFromStatistic = async (stat) => {
             <template v-else>
               <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <label class="xl:col-span-2">
-                  <span class="form-label">Kata Kunci Barang</span>
-                  <input v-model="itemFilters.query" type="text" placeholder="Nama, kode, atau kategori barang..." class="dashboard-input" />
-                </label>
-                <label>
-                  <span class="form-label">Kategori</span>
-                  <select v-model="itemFilters.category" class="dashboard-input">
-                    <option value="">Semua Kategori</option>
-                    <option v-for="category in itemCategories" :key="category" :value="category">{{ category }}</option>
+                  <span class="form-label">Barang</span>
+                  <select v-model="itemFilters.itemId" class="dashboard-input">
+                    <option value="">Semua Barang</option>
+                    <option v-for="item in items" :key="item.id" :value="item.id">
+                      {{ item.name }}
+                    </option>
                   </select>
                 </label>
                 <label>

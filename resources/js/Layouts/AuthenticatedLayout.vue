@@ -195,7 +195,7 @@ watch(
 </script>
 
 <template>
-    <div class="relative min-h-screen bg-slate-100 dark:bg-slate-900 lg:flex">
+    <div class="relative min-h-screen max-w-full overflow-x-hidden bg-slate-100 dark:bg-slate-900 lg:flex">
     <transition name="fade">
       <div
         v-if="isMobileMenuOpen"
@@ -417,7 +417,7 @@ watch(
       </div>
     </aside>
 
-    <div class="flex min-h-screen flex-1 flex-col lg:ml-64">
+    <div class="flex min-h-screen min-w-0 max-w-full flex-1 flex-col lg:ml-64">
       <nav class="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur dark:border-slate-700 dark:bg-slate-800/95">
         <div class="page-shell flex min-h-[4.25rem] items-center justify-between gap-3 py-2">
           <div class="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
@@ -470,7 +470,7 @@ watch(
                   >
                     {{ userInitials }}
                   </span>
-                  <span class="hidden text-sm font-semibold text-slate-900 sm:block md:hidden dark:text-slate-100">{{ user.name }}</span>
+                  <span class="hidden max-w-28 truncate text-sm font-semibold text-slate-900 sm:block md:hidden dark:text-slate-100">{{ user.name }}</span>
                   <svg class="h-4 w-4 text-slate-500 dark:text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                   </svg>
@@ -485,13 +485,13 @@ watch(
         </div>
       </nav>
 
-      <main class="flex-1 bg-slate-100/60 py-6 dark:bg-slate-900/60">
-        <div class="page-shell space-y-6">
+      <main class="min-w-0 flex-1 bg-slate-100/60 py-6 dark:bg-slate-900/60">
+        <div class="page-shell min-w-0 space-y-6">
           <header v-if="$slots.header">
             <slot name="header" />
           </header>
 
-          <section>
+          <section class="min-w-0">
             <slot />
           </section>
         </div>

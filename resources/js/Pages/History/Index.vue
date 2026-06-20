@@ -3,6 +3,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import SortableTh from '@/Components/SortableTh.vue'
 import { usePagination } from '@/Composables/usePagination'
 import { useTableSort } from '@/Composables/useTableSort'
+import { getBookingActionLabel, getBookingStatusClasses } from '@/Composables/useBookingStatus'
 import { Head, Link } from '@inertiajs/vue3'
 import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
 import flatpickr from 'flatpickr'
@@ -33,7 +34,7 @@ const datePickers = ref({})
 const actionLabels = {
   requested: 'Diajukan',
   approved: 'Disetujui',
-  needs_revision: 'Perlu Revisi',
+  needs_revision: 'Perlu Direvisi',
   rejected: 'Ditolak',
   cancelled: 'Dibatalkan',
   expired: 'Kedaluwarsa',
@@ -42,7 +43,7 @@ const actionLabels = {
 const actionClasses = {
   requested: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
   approved: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
-  needs_revision: 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+  needs_revision: getBookingStatusClasses('needs_revision'),
   rejected: 'bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
   cancelled: 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300',
   expired: 'bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
@@ -447,10 +448,10 @@ onBeforeUnmount(() => {
                 </td>
                 <td class="px-5 py-4" data-title="Aksi">
                   <span
-                    class="inline-flex rounded-full px-3 py-1 text-xs font-semibold capitalize"
+                    class="table-badge"
                     :class="actionClass(history.action)"
                   >
-                    {{ actionLabel(history.action) }}
+                    {{ getBookingActionLabel(history.action) || actionLabel(history.action) }}
                   </span>
                 </td>
                 <td class="px-5 py-4 text-sm text-slate-600 dark:text-slate-300" data-title="Waktu">

@@ -67,7 +67,6 @@ class DashboardTest extends TestCase
                 ->has('requestHistory.0.status')
                 ->has('requestHistory.0.resource_name')
                 ->has('items', 1)
-                ->has('itemCategories', 1)
             );
     }
 

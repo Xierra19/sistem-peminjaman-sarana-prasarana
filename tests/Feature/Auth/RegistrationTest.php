@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class RegistrationTest extends TestCase
@@ -123,5 +124,33 @@ class RegistrationTest extends TestCase
             ->assertSessionHasErrors('nim');
 
         $this->assertGuest();
+    }
+
+    #[DataProvider('invalidPasswordProvider')]
+    public function test_password_must_contain_uppercase_lowercase_and_number(string $password): void
+    {
+        $this->from('/register')
+            ->post('/register', [
+                'name' => 'Tester',
+                'nim' => '20220801005',
+                'phone' => '081234567890',
+                'email' => 'tester@student.esaunggul.ac.id',
+                'password' => $password,
+                'password_confirmation' => $password,
+            ])
+            ->assertRedirect('/register')
+            ->assertSessionHasErrors('password');
+
+        $this->assertGuest();
+    }
+
+    public static function invalidPasswordProvider(): array
+    {
+        return [
+            'too short' => ['Pass1'],
+            'without uppercase letter' => ['password123'],
+            'without lowercase letter' => ['PASSWORD123'],
+            'without number' => ['PasswordOnly'],
+        ];
     }
 }

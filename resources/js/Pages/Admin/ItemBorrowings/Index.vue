@@ -382,7 +382,7 @@ const formatTimeHHMM = (value) => {
       </div>
       <!-- End Filter Panel -->
 
-      <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+      <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
 
         <!-- Card Header -->
         <div class="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 md:flex-row md:items-center md:justify-between dark:border-slate-700">
@@ -489,7 +489,7 @@ const formatTimeHHMM = (value) => {
               </td>
               <td class="mobile-status-cell px-5 py-4 text-center" data-title="Status">
                 <span
-                  class="inline-flex rounded-full px-3 py-1 text-xs font-semibold"
+                  class="table-badge"
                   :class="getItemBorrowingStatusClasses(borrowing.effective_status ?? borrowing.status)"
                 >
                   {{ getItemBorrowingStatusLabel(borrowing.effective_status ?? borrowing.status) }}
@@ -498,7 +498,7 @@ const formatTimeHHMM = (value) => {
               <td class="mobile-action-cell px-5 py-4 text-right" data-title="Aksi">
                 <Link
                   :href="route('admin.item-borrowings.show', borrowing.id)"
-                  class="inline-flex items-center rounded-md border border-blue-200 px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 dark:border-slate-600 dark:text-blue-300 dark:hover:border-slate-500 dark:hover:bg-slate-600"
+                  class="table-action border-blue-200 text-blue-700 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-800 dark:border-blue-800 dark:text-blue-300 dark:hover:border-blue-700 dark:hover:bg-blue-900/30"
                 >
                   Lihat Detail
                 </Link>

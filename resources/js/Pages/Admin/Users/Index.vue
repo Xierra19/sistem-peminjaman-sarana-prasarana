@@ -330,7 +330,7 @@ const formatDate = (value) => formatDateTimeToDDMMYY(value)
         </button>
       </div>
 
-      <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+      <div class="overflow-x-auto rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
         <div class="border-b border-gray-100 px-5 py-4 dark:border-slate-700">
           <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -440,7 +440,7 @@ const formatDate = (value) => formatDateTimeToDDMMYY(value)
               <td class="px-5 py-4 text-sm text-gray-700 dark:text-slate-300 mobile-meta-cell mobile-compact-meta" data-title="Email">{{ user.email }}</td>
               <td class="px-5 py-4 text-sm text-gray-700 dark:text-slate-300 mobile-meta-cell mobile-compact-meta" data-title="No. Telp">{{ user.phone || '-' }}</td>
               <td class="mobile-status-cell px-5 py-4" data-title="Role">
-                <span class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold" :class="roleBadgeClasses[user.role] ?? 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600'">
+                <span class="table-badge" :class="roleBadgeClasses[user.role] ?? 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600'">
                   {{ user.roleLabel }}
                 </span>
               </td>

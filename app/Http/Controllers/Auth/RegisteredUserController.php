@@ -53,13 +53,19 @@ class RegisteredUserController extends Controller
                     'unique:'.User::class,
                     'regex:/^[^@\\s]+@student\\.esaunggul\\.ac\\.id$/i',
                 ],
-                'password' => ['required', 'confirmed', Rules\Password::defaults()],
+                'password' => [
+                    'required',
+                    'confirmed',
+                    Rules\Password::min(8)->mixedCase()->numbers(),
+                ],
             ],
             [
                 'email.regex' => 'Registrasi hanya tersedia untuk email student.esaunggul.ac.id.',
                 'nim.digits' => 'NIM harus terdiri dari tepat 11 digit angka.',
                 'nim.unique' => 'NIM sudah terdaftar.',
                 'phone.regex' => 'Nomor telepon harus menggunakan format Indonesia yang valid.',
+                'password.mixed' => 'Password harus mengandung minimal satu huruf besar dan satu huruf kecil.',
+                'password.numbers' => 'Password harus mengandung minimal satu angka.',
             ]
         );
 
