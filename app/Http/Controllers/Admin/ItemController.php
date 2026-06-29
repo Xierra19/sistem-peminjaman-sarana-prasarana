@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Item;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class ItemController extends Controller
@@ -60,5 +61,48 @@ class ItemController extends Controller
         $item->delete();
 
         return redirect()->route('admin.items.index')->with('success', 'Barang berhasil dihapus!');
+    }
+
+    /**
+     * Hapus banyak barang sekaligus.
+     */
+    public function bulkDestroy(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'distinct', 'exists:items,id'],
+        ]);
+
+        $items = Item::query()
+            ->withCount(['itemBorrowings', 'borrowingItems'])
+            ->whereIn('id', $validated['ids'])
+            ->get();
+
+        $deletableIds = $items
+            ->filter(fn (Item $item) => (int) $item->item_borrowings_count === 0 && (int) $item->borrowing_items_count === 0)
+            ->pluck('id')
+            ->values();
+
+        $blockedCount = $items->count() - $deletableIds->count();
+
+        if ($deletableIds->isEmpty()) {
+            return redirect()
+                ->route('admin.items.index')
+                ->with('error', 'Tidak ada barang yang dapat dihapus karena masih memiliki riwayat peminjaman.');
+        }
+
+        DB::transaction(function () use ($deletableIds) {
+            Item::whereIn('id', $deletableIds)->delete();
+        });
+
+        $message = 'Berhasil menghapus ' . $deletableIds->count() . ' barang.';
+
+        if ($blockedCount > 0) {
+            $message .= ' ' . $blockedCount . ' barang lain dilewati karena masih memiliki riwayat peminjaman.';
+        }
+
+        return redirect()
+            ->route('admin.items.index')
+            ->with('success', $message);
     }
 }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Building;
 use App\Models\Campus;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class BuildingController extends Controller
@@ -129,5 +130,48 @@ class BuildingController extends Controller
         return redirect()
             ->route('admin.buildings.index')
             ->with('success', 'Building berhasil dihapus!');
+    }
+
+    /**
+     * Hapus banyak building sekaligus.
+     */
+    public function bulkDestroy(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'distinct', 'exists:buildings,id'],
+        ]);
+
+        $buildings = Building::query()
+            ->withCount('rooms')
+            ->whereIn('id', $validated['ids'])
+            ->get();
+
+        $deletableIds = $buildings
+            ->filter(fn (Building $building) => (int) $building->rooms_count === 0)
+            ->pluck('id')
+            ->values();
+
+        $blockedCount = $buildings->count() - $deletableIds->count();
+
+        if ($deletableIds->isEmpty()) {
+            return redirect()
+                ->route('admin.buildings.index')
+                ->with('error', 'Tidak ada gedung yang dapat dihapus karena masih memiliki ruangan terkait.');
+        }
+
+        DB::transaction(function () use ($deletableIds) {
+            Building::whereIn('id', $deletableIds)->delete();
+        });
+
+        $message = 'Berhasil menghapus ' . $deletableIds->count() . ' gedung.';
+
+        if ($blockedCount > 0) {
+            $message .= ' ' . $blockedCount . ' gedung lain dilewati karena masih memiliki ruangan terkait.';
+        }
+
+        return redirect()
+            ->route('admin.buildings.index')
+            ->with('success', $message);
     }
 }
