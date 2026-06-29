@@ -49,12 +49,105 @@ const editForm = useForm({
   is_available: true,
 })
 
+const bulkDeleteForm = useForm({
+  ids: []
+})
+
+const selectedItemIds = ref([])
+
 const getSwalTarget = () => document.querySelector('dialog[open]') || document.body
 
 const getItemDependencyCounts = (item) => ({
   legacy: Number(item?.item_borrowings_count) || 0,
   pivot: Number(item?.borrowing_items_count) || 0,
 })
+
+const selectedItems = computed(() => {
+  const ids = selectedItemIds.value
+  return (props.items ?? []).filter((item) => ids.includes(item.id))
+})
+
+const selectedFilteredItemIds = computed(() => (filteredItems.value ?? []).map((item) => item.id))
+
+const allFilteredItemsSelected = computed(() => {
+  const ids = selectedFilteredItemIds.value
+  return ids.length > 0 && ids.every((id) => selectedItemIds.value.includes(id))
+})
+
+const clearItemSelection = () => {
+  selectedItemIds.value = []
+}
+
+const toggleAllFilteredItems = () => {
+  const ids = selectedFilteredItemIds.value
+
+  if (ids.length === 0) {
+    return
+  }
+
+  if (allFilteredItemsSelected.value) {
+    selectedItemIds.value = selectedItemIds.value.filter((id) => !ids.includes(id))
+    return
+  }
+
+  selectedItemIds.value = Array.from(new Set([...selectedItemIds.value, ...ids]))
+}
+
+const submitBulkDelete = () => {
+  bulkDeleteForm.ids = selectedItems.value.map((item) => item.id)
+
+  bulkDeleteForm.post(route('admin.items.bulk-destroy'), {
+    preserveScroll: true,
+    onSuccess: () => {
+      clearItemSelection()
+    },
+  })
+}
+
+const confirmBulkDelete = () => {
+  const items = selectedItems.value
+  const deletableCount = items.filter((item) => {
+    const dependencyCounts = getItemDependencyCounts(item)
+    return dependencyCounts.legacy === 0 && dependencyCounts.pivot === 0
+  }).length
+  const blockedCount = items.length - deletableCount
+
+  if (deletableCount === 0) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Tidak ada data yang bisa dihapus',
+      text: 'Semua barang terpilih masih memiliki riwayat peminjaman.',
+      confirmButtonText: 'Mengerti',
+      target: getSwalTarget(),
+      customClass: {
+        container: 'swal-z-top-force'
+      }
+    })
+
+    return
+  }
+
+  Swal.fire({
+    title: 'Hapus barang terpilih?',
+    text: blockedCount > 0
+      ? `Sebanyak ${deletableCount} barang akan dihapus. ${blockedCount} barang lain dilewati karena masih memiliki riwayat peminjaman.`
+      : `Sebanyak ${deletableCount} barang akan dihapus permanen dan tidak dapat dikembalikan!`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#dc2626',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: 'Ya, Hapus!',
+    cancelButtonText: 'Batal',
+    target: getSwalTarget(),
+    customClass: {
+      container: 'swal-z-top-force'
+    }
+  }).then((result) => {
+    if (result.isConfirmed) {
+      submitBulkDelete()
+    }
+  })
+}
 
 // ==========================================
 // LOGIKA MODAL CREATE
@@ -201,7 +294,11 @@ const confirmDelete = (item) => {
     }
   }).then((result) => {
     if (result.isConfirmed) {
-      router.delete(route('admin.items.destroy', item.id))
+      router.delete(route('admin.items.destroy', item.id), {
+        onSuccess: () => {
+          clearItemSelection()
+        }
+      })
     }
   })
 }
@@ -296,9 +393,30 @@ const canGoToNextPage = computed(() => currentPage.value < pages.value.length &&
           </div>
         </div>
 
+        <div v-if="selectedItems.length" class="flex flex-col gap-3 border-t border-gray-100 px-5 py-3 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:text-slate-400">
+          <span>{{ selectedItems.length }} barang dipilih</span>
+          <button
+            type="button"
+            class="inline-flex items-center justify-center rounded-md bg-red-600 px-4 py-2 font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+            :disabled="bulkDeleteForm.processing"
+            @click="confirmBulkDelete"
+          >
+            Hapus Terpilih
+          </button>
+        </div>
+
         <table class="master-mobile-table mobile-friendly-table min-w-full divide-y divide-gray-200 text-sm dark:divide-slate-700">
           <thead class="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:bg-slate-700 dark:text-slate-400">
             <tr>
+              <th class="px-4 py-2 text-left">
+                <input
+                  type="checkbox"
+                  class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700"
+                  :checked="allFilteredItemsSelected"
+                  @change="toggleAllFilteredItems"
+                  aria-label="Pilih semua barang"
+                />
+              </th>
               <SortableTh class="px-4 py-2 text-left" column="number" label="#" :direction="sortDirection('number')" :aria-sort="ariaSortValue('number')" @toggle="toggleSort" />
               <SortableTh class="px-4 py-2 text-left" column="code" label="Kode" :direction="sortDirection('code')" :aria-sort="ariaSortValue('code')" @toggle="toggleSort" />
               <SortableTh class="px-4 py-2 text-left" column="name" label="Nama Barang" :direction="sortDirection('name')" :aria-sort="ariaSortValue('name')" @toggle="toggleSort" />
@@ -310,6 +428,15 @@ const canGoToNextPage = computed(() => currentPage.value < pages.value.length &&
           </thead>
           <tbody class="divide-y divide-gray-100 text-gray-700 dark:divide-slate-700 dark:text-slate-300">
             <tr v-for="(item, index) in paginatedItems" :key="item.id" class="transition hover:bg-gray-50 dark:hover:bg-slate-700/50">
+              <td class="px-4 py-2 align-top" data-title="Pilih">
+                <input
+                  v-model="selectedItemIds"
+                  type="checkbox"
+                  :value="item.id"
+                  class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700"
+                  :aria-label="`Pilih barang ${item.name}`"
+                />
+              </td>
               <td class="mobile-id-cell px-4 py-2 text-sm text-gray-500 dark:text-gray-400" data-title="#">{{ pageMeta.from ? pageMeta.from + index : index + 1 }}</td>
               <td class="px-4 py-2 mobile-meta-cell mobile-compact-meta" data-title="Kode">
                 <div class="font-mono text-sm text-gray-900 dark:text-slate-200">{{ item.code }}</div>
@@ -345,7 +472,7 @@ const canGoToNextPage = computed(() => currentPage.value < pages.value.length &&
               </td>
             </tr>
             <tr v-if="!filteredItems.length">
-              <td colspan="7" class="px-4 py-10 text-center text-sm text-gray-400 dark:text-slate-500">
+              <td colspan="8" class="px-4 py-10 text-center text-sm text-gray-400 dark:text-slate-500">
                 Tidak ada data barang.
               </td>
             </tr>

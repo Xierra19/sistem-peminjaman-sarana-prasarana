@@ -46,9 +46,99 @@ const editForm = useForm({
   phone: ''
 })
 
+const bulkDeleteForm = useForm({
+  ids: []
+})
+
+const selectedCampusIds = ref([])
+
 const getSwalTarget = () => document.querySelector('dialog[open]') || document.body
 
 const getCampusDependencyCount = (campus) => Number(campus?.buildings_count) || 0
+
+const selectedCampuses = computed(() => {
+  const ids = selectedCampusIds.value
+  return (props.campuses ?? []).filter((campus) => ids.includes(campus.id))
+})
+
+const selectedFilteredCampusIds = computed(() => (filteredCampuses.value ?? []).map((campus) => campus.id))
+
+const allFilteredCampusesSelected = computed(() => {
+  const ids = selectedFilteredCampusIds.value
+  return ids.length > 0 && ids.every((id) => selectedCampusIds.value.includes(id))
+})
+
+const clearCampusSelection = () => {
+  selectedCampusIds.value = []
+}
+
+const toggleAllFilteredCampuses = () => {
+  const ids = selectedFilteredCampusIds.value
+
+  if (ids.length === 0) {
+    return
+  }
+
+  if (allFilteredCampusesSelected.value) {
+    selectedCampusIds.value = selectedCampusIds.value.filter((id) => !ids.includes(id))
+    return
+  }
+
+  selectedCampusIds.value = Array.from(new Set([...selectedCampusIds.value, ...ids]))
+}
+
+const submitBulkDelete = () => {
+  bulkDeleteForm.ids = selectedCampuses.value.map((campus) => campus.id)
+
+  bulkDeleteForm.post(route('admin.campus.bulk-destroy'), {
+    preserveScroll: true,
+    onSuccess: () => {
+      clearCampusSelection()
+    },
+  })
+}
+
+const confirmBulkDelete = () => {
+  const items = selectedCampuses.value
+  const deletableCount = items.filter((campus) => getCampusDependencyCount(campus) === 0).length
+  const blockedCount = items.length - deletableCount
+
+  if (deletableCount === 0) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Tidak ada data yang bisa dihapus',
+      text: 'Semua campus terpilih masih memiliki gedung terkait.',
+      confirmButtonText: 'Mengerti',
+      target: getSwalTarget(),
+      customClass: {
+        container: 'swal-z-top-force'
+      }
+    })
+
+    return
+  }
+
+  Swal.fire({
+    title: 'Hapus campus terpilih?',
+    text: blockedCount > 0
+      ? `Sebanyak ${deletableCount} campus akan dihapus. ${blockedCount} campus lain dilewati karena masih memiliki gedung terkait.`
+      : `Sebanyak ${deletableCount} campus akan dihapus permanen dan tidak dapat dikembalikan!`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#dc2626',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: 'Ya, Hapus!',
+    cancelButtonText: 'Batal',
+    target: getSwalTarget(),
+    customClass: {
+      container: 'swal-z-top-force'
+    }
+  }).then((result) => {
+    if (result.isConfirmed) {
+      submitBulkDelete()
+    }
+  })
+}
 
 // ==========================================
 // LOGIKA MODAL CREATE
@@ -182,7 +272,11 @@ const confirmDelete = (campus) => {
   }).then((result) => {
     if (result.isConfirmed) {
       // Mengirim request DELETE menggunakan router Inertia
-      router.delete(route('admin.campus.destroy', campus.id))
+      router.delete(route('admin.campus.destroy', campus.id), {
+        onSuccess: () => {
+          clearCampusSelection()
+        }
+      })
     }
   })
 }
@@ -275,9 +369,30 @@ const canGoToNextPage = computed(() => currentPage.value < pages.value.length &&
           </div>
         </div>
 
+        <div v-if="selectedCampuses.length" class="flex flex-col gap-3 border-t border-gray-100 px-5 py-3 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:text-slate-400">
+          <span>{{ selectedCampuses.length }} campus dipilih</span>
+          <button
+            type="button"
+            class="inline-flex items-center justify-center rounded-md bg-red-600 px-4 py-2 font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+            :disabled="bulkDeleteForm.processing"
+            @click="confirmBulkDelete"
+          >
+            Hapus Terpilih
+          </button>
+        </div>
+
         <table class="master-mobile-table mobile-friendly-table min-w-full divide-y divide-gray-200 text-sm dark:divide-slate-700">
           <thead class="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:bg-slate-700 dark:text-slate-400">
             <tr>
+              <th class="px-4 py-2 text-left">
+                <input
+                  type="checkbox"
+                  class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700"
+                  :checked="allFilteredCampusesSelected"
+                  @change="toggleAllFilteredCampuses"
+                  aria-label="Pilih semua campus"
+                />
+              </th>
               <SortableTh class="px-4 py-2 text-left" column="number" label="#" :direction="campusSortDirection('number')" :aria-sort="campusAriaSortValue('number')" @toggle="toggleCampusSort" />
               <SortableTh class="px-4 py-2 text-left" column="name" label="Nama Campus" :direction="campusSortDirection('name')" :aria-sort="campusAriaSortValue('name')" @toggle="toggleCampusSort" />
               <SortableTh class="px-4 py-2 text-left" column="address" label="Alamat" :direction="campusSortDirection('address')" :aria-sort="campusAriaSortValue('address')" @toggle="toggleCampusSort" />
@@ -287,6 +402,15 @@ const canGoToNextPage = computed(() => currentPage.value < pages.value.length &&
           </thead>
           <tbody class="divide-y divide-gray-100 text-gray-700 dark:divide-slate-700 dark:text-slate-300">
             <tr v-for="(campus, index) in paginatedCampuses" :key="campus.id" class="transition hover:bg-gray-50 dark:hover:bg-slate-700/50">
+              <td class="px-4 py-2 align-top" data-title="Pilih">
+                <input
+                  v-model="selectedCampusIds"
+                  type="checkbox"
+                  :value="campus.id"
+                  class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700"
+                  :aria-label="`Pilih campus ${campus.name}`"
+                />
+              </td>
               <td class="mobile-id-cell px-4 py-2 text-sm text-gray-500 dark:text-gray-400" data-title="#">{{ pageMeta.from ? pageMeta.from + index : index + 1 }}</td>
               <td class="mobile-primary-cell mobile-span-2 px-4 py-2" data-title="Nama Campus">
                 <div class="mobile-primary-label">Nama Campus</div>
@@ -315,7 +439,7 @@ const canGoToNextPage = computed(() => currentPage.value < pages.value.length &&
               </td>
             </tr>
             <tr v-if="!filteredCampuses.length">
-              <td colspan="5" class="px-4 py-10 text-center text-sm text-gray-400 dark:text-slate-500">
+              <td colspan="6" class="px-4 py-10 text-center text-sm text-gray-400 dark:text-slate-500">
                 Tidak ada data campus.
               </td>
             </tr>

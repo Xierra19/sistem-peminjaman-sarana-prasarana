@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Campus;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class CampusController extends Controller
@@ -112,6 +113,49 @@ class CampusController extends Controller
         $campus->delete();
 
         return redirect()->route('admin.campus.index')->with('success', 'Campus berhasil dihapus!');
+    }
+
+    /**
+     * Hapus banyak campus sekaligus.
+     */
+    public function bulkDestroy(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'distinct', 'exists:campuses,id'],
+        ]);
+
+        $campuses = Campus::query()
+            ->withCount('buildings')
+            ->whereIn('id', $validated['ids'])
+            ->get();
+
+        $deletableIds = $campuses
+            ->filter(fn (Campus $campus) => (int) $campus->buildings_count === 0)
+            ->pluck('id')
+            ->values();
+
+        $blockedCount = $campuses->count() - $deletableIds->count();
+
+        if ($deletableIds->isEmpty()) {
+            return redirect()
+                ->route('admin.campus.index')
+                ->with('error', 'Tidak ada campus yang dapat dihapus karena masih memiliki gedung terkait.');
+        }
+
+        DB::transaction(function () use ($deletableIds) {
+            Campus::whereIn('id', $deletableIds)->delete();
+        });
+
+        $message = 'Berhasil menghapus ' . $deletableIds->count() . ' campus.';
+
+        if ($blockedCount > 0) {
+            $message .= ' ' . $blockedCount . ' campus lain dilewati karena masih memiliki gedung terkait.';
+        }
+
+        return redirect()
+            ->route('admin.campus.index')
+            ->with('success', $message);
     }
 
     /**

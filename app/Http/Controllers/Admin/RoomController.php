@@ -7,6 +7,7 @@ use App\Models\Building;
 use App\Models\Room;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class RoomController extends Controller
@@ -133,5 +134,48 @@ class RoomController extends Controller
         $room->delete();
 
         return redirect()->route('admin.rooms.index')->with('success', 'Room berhasil dihapus!');
+    }
+
+    /**
+     * Hapus banyak room sekaligus.
+     */
+    public function bulkDestroy(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'distinct', 'exists:rooms,id'],
+        ]);
+
+        $rooms = Room::query()
+            ->withCount('bookings')
+            ->whereIn('id', $validated['ids'])
+            ->get();
+
+        $deletableIds = $rooms
+            ->filter(fn (Room $room) => (int) $room->bookings_count === 0)
+            ->pluck('id')
+            ->values();
+
+        $blockedCount = $rooms->count() - $deletableIds->count();
+
+        if ($deletableIds->isEmpty()) {
+            return redirect()
+                ->route('admin.rooms.index')
+                ->with('error', 'Tidak ada ruangan yang dapat dihapus karena masih memiliki data peminjaman.');
+        }
+
+        DB::transaction(function () use ($deletableIds) {
+            Room::whereIn('id', $deletableIds)->delete();
+        });
+
+        $message = 'Berhasil menghapus ' . $deletableIds->count() . ' ruangan.';
+
+        if ($blockedCount > 0) {
+            $message .= ' ' . $blockedCount . ' ruangan lain dilewati karena masih memiliki data peminjaman.';
+        }
+
+        return redirect()
+            ->route('admin.rooms.index')
+            ->with('success', $message);
     }
 }

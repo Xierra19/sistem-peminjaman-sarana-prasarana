@@ -81,8 +81,11 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
 
     Route::middleware('role:super_admin,admin_bap')->group(function () {
         Route::resource('campus', CampusController::class)->except(['show']);
+        Route::post('campus/bulk-destroy', [CampusController::class, 'bulkDestroy'])->name('campus.bulk-destroy');
         Route::resource('buildings', BuildingController::class)->except(['show']);
+        Route::post('buildings/bulk-destroy', [BuildingController::class, 'bulkDestroy'])->name('buildings.bulk-destroy');
         Route::resource('rooms', RoomController::class)->except(['show']);
+        Route::post('rooms/bulk-destroy', [RoomController::class, 'bulkDestroy'])->name('rooms.bulk-destroy');
 
         Route::get('bookings', [BookingApprovalController::class, 'index'])->name('bookings.index');
         Route::get('bookings/{booking}', [BookingApprovalController::class, 'show'])->name('bookings.show');
@@ -97,6 +100,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
 
     Route::middleware('role:super_admin,admin_sarpras')->group(function () {
         Route::resource('items', \App\Http\Controllers\Admin\ItemController::class)->except(['show']);
+        Route::post('items/bulk-destroy', [\App\Http\Controllers\Admin\ItemController::class, 'bulkDestroy'])->name('items.bulk-destroy');
 
         Route::get('item-borrowings', [ItemBorrowingApprovalController::class, 'index'])->name('item-borrowings.index');
         Route::get('item-borrowings/{itemBorrowing}', [ItemBorrowingApprovalController::class, 'show'])->name('item-borrowings.show');

@@ -36,10 +36,97 @@ const selectedRoom = ref(null)
 
 const createForm = useForm({ name: '', building_id: '', capacity: 1, is_available: true })
 const editForm   = useForm({ name: '', building_id: '', capacity: 1, is_available: true })
+const bulkDeleteForm = useForm({ ids: [] })
+
+const selectedRoomIds = ref([])
 
 const getSwalTarget = () => document.querySelector('dialog[open]') || document.body
 
 const getRoomDependencyCount = (room) => Number(room?.bookings_count) || 0
+
+const selectedRooms = computed(() => {
+  const ids = selectedRoomIds.value
+  return (props.rooms ?? []).filter((room) => ids.includes(room.id))
+})
+
+const selectedFilteredRoomIds = computed(() => (filteredRooms.value ?? []).map((room) => room.id))
+
+const allFilteredRoomsSelected = computed(() => {
+  const ids = selectedFilteredRoomIds.value
+  return ids.length > 0 && ids.every((id) => selectedRoomIds.value.includes(id))
+})
+
+const clearRoomSelection = () => {
+  selectedRoomIds.value = []
+}
+
+const toggleAllFilteredRooms = () => {
+  const ids = selectedFilteredRoomIds.value
+
+  if (ids.length === 0) {
+    return
+  }
+
+  if (allFilteredRoomsSelected.value) {
+    selectedRoomIds.value = selectedRoomIds.value.filter((id) => !ids.includes(id))
+    return
+  }
+
+  selectedRoomIds.value = Array.from(new Set([...selectedRoomIds.value, ...ids]))
+}
+
+const submitBulkDelete = () => {
+  bulkDeleteForm.ids = selectedRooms.value.map((room) => room.id)
+
+  bulkDeleteForm.post(route('admin.rooms.bulk-destroy'), {
+    preserveScroll: true,
+    onSuccess: () => {
+      clearRoomSelection()
+    },
+  })
+}
+
+const confirmBulkDelete = () => {
+  const items = selectedRooms.value
+  const deletableCount = items.filter((room) => getRoomDependencyCount(room) === 0).length
+  const blockedCount = items.length - deletableCount
+
+  if (deletableCount === 0) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Tidak ada data yang bisa dihapus',
+      text: 'Semua ruangan terpilih masih memiliki data peminjaman.',
+      confirmButtonText: 'Mengerti',
+      target: getSwalTarget(),
+      customClass: {
+        container: 'swal-z-top-force'
+      }
+    })
+
+    return
+  }
+
+  Swal.fire({
+    title: 'Hapus ruangan terpilih?',
+    text: blockedCount > 0
+      ? `Sebanyak ${deletableCount} ruangan akan dihapus. ${blockedCount} ruangan lain dilewati karena masih memiliki data peminjaman.`
+      : `Sebanyak ${deletableCount} ruangan akan dihapus permanen dan tidak dapat dikembalikan!`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#dc2626',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: 'Ya, Hapus!',
+    cancelButtonText: 'Batal',
+    target: getSwalTarget(),
+    customClass: {
+      container: 'swal-z-top-force'
+    }
+  }).then((result) => {
+    if (result.isConfirmed) {
+      submitBulkDelete()
+    }
+  })
+}
 
 const ensureBuildingsLoaded = () => {
   if (!props.buildings || props.buildings.length === 0) {
@@ -199,7 +286,11 @@ const confirmDelete = (room) => {
     }
   }).then((result) => {
     if (result.isConfirmed) {
-      router.delete(route('admin.rooms.destroy', room.id))
+      router.delete(route('admin.rooms.destroy', room.id), {
+        onSuccess: () => {
+          clearRoomSelection()
+        }
+      })
     }
   })
 }
@@ -302,9 +393,30 @@ const canGoToNextPage = computed(() => currentPage.value < pages.value.length &&
           </div>
         </div>
 
+        <div v-if="selectedRooms.length" class="flex flex-col gap-3 border-t border-gray-100 px-5 py-3 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:text-slate-400">
+          <span>{{ selectedRooms.length }} ruangan dipilih</span>
+          <button
+            type="button"
+            class="inline-flex items-center justify-center rounded-md bg-red-600 px-4 py-2 font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+            :disabled="bulkDeleteForm.processing"
+            @click="confirmBulkDelete"
+          >
+            Hapus Terpilih
+          </button>
+        </div>
+
         <table class="master-mobile-table mobile-friendly-table min-w-full divide-y divide-gray-200 text-sm dark:divide-slate-700">
           <thead class="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:bg-slate-700 dark:text-slate-400">
             <tr>
+              <th class="px-4 py-2 text-left">
+                <input
+                  type="checkbox"
+                  class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700"
+                  :checked="allFilteredRoomsSelected"
+                  @change="toggleAllFilteredRooms"
+                  aria-label="Pilih semua ruangan"
+                />
+              </th>
               <SortableTh class="px-4 py-2 text-left" column="number" label="#" :direction="roomSortDirection('number')" :aria-sort="roomAriaSortValue('number')" @toggle="toggleRoomSort" />
               <SortableTh class="px-4 py-2 text-left" column="name" label="Nama Ruangan" :direction="roomSortDirection('name')" :aria-sort="roomAriaSortValue('name')" @toggle="toggleRoomSort" />
               <SortableTh class="px-4 py-2 text-left" column="building" label="Gedung" :direction="roomSortDirection('building')" :aria-sort="roomAriaSortValue('building')" @toggle="toggleRoomSort" />
@@ -316,6 +428,15 @@ const canGoToNextPage = computed(() => currentPage.value < pages.value.length &&
           </thead>
           <tbody class="divide-y divide-gray-100 text-gray-700 dark:divide-slate-700 dark:text-slate-300">
             <tr v-for="(room, index) in paginatedRooms" :key="room.id" class="transition hover:bg-gray-50 dark:hover:bg-slate-700/50">
+              <td class="px-4 py-2 align-top" data-title="Pilih">
+                <input
+                  v-model="selectedRoomIds"
+                  type="checkbox"
+                  :value="room.id"
+                  class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700"
+                  :aria-label="`Pilih ruangan ${room.name}`"
+                />
+              </td>
               <td class="mobile-id-cell px-4 py-2 text-sm text-gray-500 dark:text-gray-400" data-title="#">{{ pageMeta.from ? pageMeta.from + index : index + 1 }}</td>
               <td class="mobile-primary-cell mobile-span-2 px-4 py-2" data-title="Nama Ruangan">
                 <div class="mobile-primary-label">Nama Ruangan</div>
@@ -354,7 +475,7 @@ const canGoToNextPage = computed(() => currentPage.value < pages.value.length &&
               </td>
             </tr>
             <tr v-if="filteredRooms.length === 0">
-              <td colspan="7" class="px-4 py-10 text-center text-sm text-gray-400 dark:text-slate-500">
+              <td colspan="8" class="px-4 py-10 text-center text-sm text-gray-400 dark:text-slate-500">
                 Tidak ada data ruangan.
               </td>
             </tr>
