@@ -39,6 +39,8 @@ const editForm   = useForm({ name: '', building_id: '', capacity: 1, is_availabl
 
 const getSwalTarget = () => document.querySelector('dialog[open]') || document.body
 
+const getRoomDependencyCount = (room) => Number(room?.bookings_count) || 0
+
 const ensureBuildingsLoaded = () => {
   if (!props.buildings || props.buildings.length === 0) {
     router.reload({ only: ['buildings'] })
@@ -164,19 +166,40 @@ const submitEdit = () => {
 // ==========================================
 // LOGIKA DELETE
 // ==========================================
-const confirmDelete = (id, name) => {
+const confirmDelete = (room) => {
+  const dependencyCount = getRoomDependencyCount(room)
+
+  if (dependencyCount > 0) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Data masih digunakan',
+      text: `Ruangan "${room.name}" masih memiliki ${dependencyCount} booking. Selesaikan, batalkan, atau pindahkan booking terlebih dahulu sebelum menghapus ruangan ini.`,
+      confirmButtonText: 'Mengerti',
+      target: getSwalTarget(),
+      customClass: {
+        container: 'swal-z-top-force'
+      }
+    })
+
+    return
+  }
+
   Swal.fire({
     title: 'Yakin ingin menghapus?',
-    text: `Data ruangan "${name}" akan dihapus permanen dan tidak dapat dikembalikan!`,
+    text: `Data ruangan "${room.name}" akan dihapus permanen dan tidak dapat dikembalikan!`,
     icon: 'warning',
     showCancelButton: true,
     confirmButtonColor: '#dc2626',
     cancelButtonColor: '#6b7280',
     confirmButtonText: 'Ya, Hapus!',
     cancelButtonText: 'Batal',
+    target: getSwalTarget(),
+    customClass: {
+      container: 'swal-z-top-force'
+    }
   }).then((result) => {
     if (result.isConfirmed) {
-      router.delete(route('admin.rooms.destroy', id))
+      router.delete(route('admin.rooms.destroy', room.id))
     }
   })
 }
@@ -323,7 +346,7 @@ const canGoToNextPage = computed(() => currentPage.value < pages.value.length &&
                   <button
                     type="button"
                     class="rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700"
-                    @click="confirmDelete(room.id, room.name)"
+                    @click="confirmDelete(room)"
                   >
                     Hapus
                   </button>

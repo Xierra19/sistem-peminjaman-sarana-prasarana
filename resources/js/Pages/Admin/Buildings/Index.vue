@@ -43,6 +43,10 @@ const editForm = useForm({
   campus_id: ''
 })
 
+const getSwalTarget = () => document.querySelector('dialog[open]') || document.body
+
+const getBuildingDependencyCount = (building) => Number(building?.rooms_count) || 0
+
 // minta ulang hanya prop 'campuses' jika belum ada / kosong
 const ensureCampusesLoaded = () => {
   if (!props.campuses || props.campuses.length === 0) {
@@ -165,21 +169,41 @@ const submitEdit = () => {
 // ==========================================
 // LOGIKA DELETE
 // ==========================================
-const confirmDelete = (id, name) => {
+const confirmDelete = (building) => {
+  const dependencyCount = getBuildingDependencyCount(building)
+
+  if (dependencyCount > 0) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Data masih digunakan',
+      text: `Gedung "${building.name}" masih memiliki ${dependencyCount} ruangan. Hapus ruangan terkait terlebih dahulu sebelum menghapus gedung ini.`,
+      confirmButtonText: 'Mengerti',
+      target: getSwalTarget(),
+      customClass: {
+        container: 'swal-z-top-force'
+      }
+    })
+
+    return
+  }
+
   Swal.fire({
     title: 'Yakin ingin menghapus?',
-    text: `Data gedung "${name}" akan dihapus permanen dan tidak dapat dikembalikan!`,
+    text: `Data gedung "${building.name}" akan dihapus permanen dan tidak dapat dikembalikan!`,
     icon: 'warning',
     showCancelButton: true,
     confirmButtonColor: '#dc2626', // Warna merah untuk tombol hapus
     cancelButtonColor: '#6b7280',
     confirmButtonText: 'Ya, Hapus!',
     cancelButtonText: 'Batal',
-    // Tidak butuh target khusus karena pop up ini dipanggil saat tidak ada modal yang terbuka
+    target: getSwalTarget(),
+    customClass: {
+      container: 'swal-z-top-force'
+    }
   }).then((result) => {
     if (result.isConfirmed) {
       // Mengirim request DELETE menggunakan router Inertia
-      router.delete(route('admin.buildings.destroy', id))
+      router.delete(route('admin.buildings.destroy', building.id))
     }
   })
 }
@@ -306,7 +330,7 @@ const canGoToNextPage = computed(() => currentPage.value < pages.value.length &&
                   <button
                     type="button"
                     class="rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700"
-                    @click="confirmDelete(building.id, building.name)"
+                    @click="confirmDelete(building)"
                   >
                     Hapus
                   </button>

@@ -15,7 +15,7 @@ class BuildingController extends Controller
      */
     public function index()
     {
-        $buildings = Building::with('campus')->orderBy('name')->get();
+        $buildings = Building::with(['campus'])->withCount('rooms')->orderBy('name')->get();
 
         return Inertia::render('Admin/Buildings/Index', [
             'buildings' => $buildings,
@@ -118,6 +118,12 @@ class BuildingController extends Controller
      */
     public function destroy(Building $building)
     {
+        if ($building->rooms()->exists()) {
+            return redirect()
+                ->route('admin.buildings.index')
+                ->with('error', 'Gedung tidak dapat dihapus karena masih memiliki ruangan terkait. Hapus ruangan terlebih dahulu.');
+        }
+
         $building->delete();
 
         return redirect()

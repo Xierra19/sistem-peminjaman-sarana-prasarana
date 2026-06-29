@@ -15,7 +15,7 @@ class CampusController extends Controller
      */
     public function index()
     {
-        $campuses = Campus::orderBy('name')->get();
+        $campuses = Campus::withCount('buildings')->orderBy('name')->get();
 
         return Inertia::render('Admin/Campus/Index', [
             'campuses' => $campuses
@@ -104,6 +104,11 @@ class CampusController extends Controller
      */
     public function destroy(Campus $campus)
     {
+        if ($campus->buildings()->exists()) {
+            return redirect()->route('admin.campus.index')
+                ->with('error', 'Campus tidak dapat dihapus karena masih memiliki gedung terkait. Hapus gedung terlebih dahulu.');
+        }
+
         $campus->delete();
 
         return redirect()->route('admin.campus.index')->with('success', 'Campus berhasil dihapus!');

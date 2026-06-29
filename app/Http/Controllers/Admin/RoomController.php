@@ -16,7 +16,7 @@ class RoomController extends Controller
      */
     public function index()
     {
-        $rooms = Room::with('building.campus')->orderBy('name')->get();
+        $rooms = Room::with('building.campus')->withCount('bookings')->orderBy('name')->get();
 
         return Inertia::render('Admin/Rooms/Index', [
             'rooms' => $rooms,
@@ -124,6 +124,12 @@ class RoomController extends Controller
      */
     public function destroy(Room $room)
     {
+        if ($room->bookings()->exists()) {
+            return redirect()
+                ->route('admin.rooms.index')
+                ->with('error', 'Ruangan tidak dapat dihapus karena masih memiliki booking terkait. Selesaikan atau pindahkan booking terlebih dahulu.');
+        }
+
         $room->delete();
 
         return redirect()->route('admin.rooms.index')->with('success', 'Room berhasil dihapus!');

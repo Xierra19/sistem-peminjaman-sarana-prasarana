@@ -12,7 +12,7 @@ class ItemController extends Controller
 {
     public function index()
     {
-        $items = Item::orderBy('name')->get();
+        $items = Item::withCount(['itemBorrowings', 'borrowingItems'])->orderBy('name')->get();
 
         return Inertia::render('Admin/Items/Index', [
             'items' => $items
@@ -51,9 +51,10 @@ class ItemController extends Controller
 
     public function destroy(Item $item)
     {
-        // Check if item has any borrowing records
-        if ($item->borrowingItems()->exists()) {
-            return redirect()->route('admin.items.index')->with('error', 'Barang tidak dapat dihapus karena masih memiliki riwayat peminjaman!');
+        if ($item->itemBorrowings()->exists() || $item->borrowingItems()->exists()) {
+            return redirect()
+                ->route('admin.items.index')
+                ->with('error', 'Barang tidak dapat dihapus karena masih memiliki riwayat peminjaman. Selesaikan atau hapus data peminjaman terlebih dahulu.');
         }
 
         $item->delete();

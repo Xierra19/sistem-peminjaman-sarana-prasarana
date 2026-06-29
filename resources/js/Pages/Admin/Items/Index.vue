@@ -51,6 +51,11 @@ const editForm = useForm({
 
 const getSwalTarget = () => document.querySelector('dialog[open]') || document.body
 
+const getItemDependencyCounts = (item) => ({
+  legacy: Number(item?.item_borrowings_count) || 0,
+  pivot: Number(item?.borrowing_items_count) || 0,
+})
+
 // ==========================================
 // LOGIKA MODAL CREATE
 // ==========================================
@@ -162,19 +167,41 @@ const submitEdit = () => {
 // ==========================================
 // LOGIKA DELETE
 // ==========================================
-const confirmDelete = (id, name) => {
+const confirmDelete = (item) => {
+  const dependencyCounts = getItemDependencyCounts(item)
+  const totalDependencies = dependencyCounts.legacy + dependencyCounts.pivot
+
+  if (totalDependencies > 0) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Data masih digunakan',
+      text: `Barang "${item.name}" masih memiliki ${dependencyCounts.legacy} riwayat peminjaman lama dan ${dependencyCounts.pivot} riwayat peminjaman baru. Selesaikan data peminjaman terlebih dahulu sebelum menghapus barang ini.`,
+      confirmButtonText: 'Mengerti',
+      target: getSwalTarget(),
+      customClass: {
+        container: 'swal-z-top-force'
+      }
+    })
+
+    return
+  }
+
   Swal.fire({
     title: 'Yakin ingin menghapus?',
-    text: `Data barang "${name}" akan dihapus permanen!`,
+    text: `Data barang "${item.name}" akan dihapus permanen!`,
     icon: 'warning',
     showCancelButton: true,
     confirmButtonColor: '#dc2626',
     cancelButtonColor: '#6b7280',
     confirmButtonText: 'Ya, Hapus!',
     cancelButtonText: 'Batal',
+    target: getSwalTarget(),
+    customClass: {
+      container: 'swal-z-top-force'
+    }
   }).then((result) => {
     if (result.isConfirmed) {
-      router.delete(route('admin.items.destroy', id))
+      router.delete(route('admin.items.destroy', item.id))
     }
   })
 }
@@ -310,7 +337,7 @@ const canGoToNextPage = computed(() => currentPage.value < pages.value.length &&
                   <button
                     type="button"
                     class="rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700"
-                    @click="confirmDelete(item.id, item.name)"
+                    @click="confirmDelete(item)"
                   >
                     Hapus
                   </button>

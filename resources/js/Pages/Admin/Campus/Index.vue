@@ -46,6 +46,10 @@ const editForm = useForm({
   phone: ''
 })
 
+const getSwalTarget = () => document.querySelector('dialog[open]') || document.body
+
+const getCampusDependencyCount = (campus) => Number(campus?.buildings_count) || 0
+
 // ==========================================
 // LOGIKA MODAL CREATE
 // ==========================================
@@ -144,21 +148,41 @@ const submitEdit = () => {
 // ==========================================
 // LOGIKA DELETE
 // ==========================================
-const confirmDelete = (id, name) => {
+const confirmDelete = (campus) => {
+  const dependencyCount = getCampusDependencyCount(campus)
+
+  if (dependencyCount > 0) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Data masih digunakan',
+      text: `Campus "${campus.name}" masih memiliki ${dependencyCount} gedung. Hapus gedung terkait terlebih dahulu sebelum menghapus campus ini.`,
+      confirmButtonText: 'Mengerti',
+      target: getSwalTarget(),
+      customClass: {
+        container: 'swal-z-top-force'
+      }
+    })
+
+    return
+  }
+
   Swal.fire({
     title: 'Yakin ingin menghapus?',
-    text: `Data campus "${name}" akan dihapus permanen dan tidak dapat dikembalikan!`,
+    text: `Data campus "${campus.name}" akan dihapus permanen dan tidak dapat dikembalikan!`,
     icon: 'warning',
     showCancelButton: true,
     confirmButtonColor: '#dc2626', // Warna merah untuk tombol hapus
     cancelButtonColor: '#6b7280',
     confirmButtonText: 'Ya, Hapus!',
     cancelButtonText: 'Batal',
-    // Tidak butuh target khusus karena pop up ini dipanggil saat tidak ada modal yang terbuka
+    target: getSwalTarget(),
+    customClass: {
+      container: 'swal-z-top-force'
+    }
   }).then((result) => {
     if (result.isConfirmed) {
       // Mengirim request DELETE menggunakan router Inertia
-      router.delete(route('admin.campus.destroy', id))
+      router.delete(route('admin.campus.destroy', campus.id))
     }
   })
 }
@@ -283,7 +307,7 @@ const canGoToNextPage = computed(() => currentPage.value < pages.value.length &&
                   <button
                     type="button"
                     class="rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700"
-                    @click="confirmDelete(campus.id, campus.name)"
+                    @click="confirmDelete(campus)"
                   >
                     Hapus
                   </button>
