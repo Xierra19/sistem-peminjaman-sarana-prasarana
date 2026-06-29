@@ -103,7 +103,7 @@ class DependencyDeletionTest extends TestCase
         $this->actingAs($admin)
             ->delete(route('admin.rooms.destroy', $room))
             ->assertRedirect(route('admin.rooms.index'))
-            ->assertSessionHas('error', 'Ruangan tidak dapat dihapus karena masih memiliki booking terkait. Selesaikan atau pindahkan booking terlebih dahulu.');
+            ->assertSessionHas('error', 'Ruangan ini tidak bisa dihapus karena masih memiliki data peminjaman.');
 
         $this->assertDatabaseHas('rooms', ['id' => $room->id]);
     }

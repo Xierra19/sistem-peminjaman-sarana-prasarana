@@ -172,8 +172,8 @@ const confirmDelete = (room) => {
   if (dependencyCount > 0) {
     Swal.fire({
       icon: 'warning',
-      title: 'Data masih digunakan',
-      text: `Ruangan "${room.name}" masih memiliki ${dependencyCount} booking. Selesaikan, batalkan, atau pindahkan booking terlebih dahulu sebelum menghapus ruangan ini.`,
+      title: 'Ruangan masih digunakan',
+      text: `Ruangan "${room.name}" masih memiliki data peminjaman, jadi tidak bisa dihapus.`,
       confirmButtonText: 'Mengerti',
       target: getSwalTarget(),
       customClass: {

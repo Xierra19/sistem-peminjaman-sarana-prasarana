@@ -127,7 +127,7 @@ class RoomController extends Controller
         if ($room->bookings()->exists()) {
             return redirect()
                 ->route('admin.rooms.index')
-                ->with('error', 'Ruangan tidak dapat dihapus karena masih memiliki booking terkait. Selesaikan atau pindahkan booking terlebih dahulu.');
+                ->with('error', 'Ruangan ini tidak bisa dihapus karena masih memiliki data peminjaman.');
         }
 
         $room->delete();
