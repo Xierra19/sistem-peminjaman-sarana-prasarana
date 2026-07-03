@@ -517,7 +517,7 @@ const filterHistoryFromStatistic = async (stat) => {
                 <div>
                   <h3 class="text-xl font-semibold text-slate-900 dark:text-white">Peminjaman Barang</h3>
                   <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                    Ajukan proyektor, sound system, kabel, atau perlengkapan lain sesuai stok dan jadwal.
+                    Ajukan mic, sound system, tv, atau perlengkapan lain sesuai stok dan jadwal.
                   </p>
                 </div>
               </div>
