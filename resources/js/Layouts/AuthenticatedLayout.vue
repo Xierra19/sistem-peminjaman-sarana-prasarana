@@ -5,6 +5,21 @@ import DarkModeSwitch from '@/Components/DarkModeSwitch.vue'
 import Dropdown from '@/Components/Dropdown.vue'
 import DropdownLink from '@/Components/DropdownLink.vue'
 import { Link, usePage } from '@inertiajs/vue3'
+import {
+  Building2,
+  ChevronDown,
+  ClipboardCheck,
+  ClipboardList,
+  DoorOpen,
+  FolderKanban,
+  House,
+  LayoutDashboard,
+  Package,
+  ShieldCheck,
+  UsersRound,
+  FileBarChart2,
+  History,
+} from 'lucide-vue-next'
 import Swal from 'sweetalert2'
 
 const page = usePage()
@@ -119,16 +134,28 @@ onUnmounted(() => {
 
 const navLinkClasses = (isActive) =>
   [
-    'flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition-colors duration-150',
+    'group flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition-colors duration-150',
     isActive
-      ? 'border border-blue-100 bg-blue-50 text-blue-700 shadow-sm'
-      : 'text-slate-600 hover:bg-slate-50',
+      ? 'border border-blue-100 bg-blue-50 text-blue-700 shadow-sm dark:border-blue-900/70 dark:bg-blue-950/45 dark:text-blue-200'
+      : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700/60',
   ].join(' ')
 
 const subLinkClasses = (isActive) =>
   [
     'flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors duration-150',
-    isActive ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-slate-600 hover:bg-slate-50',
+    isActive
+      ? 'bg-blue-50 text-blue-700 font-semibold dark:bg-blue-950/45 dark:text-blue-200'
+      : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-700/50 dark:hover:text-slate-200',
+  ].join(' ')
+
+const navIconClass = 'size-4 shrink-0'
+
+const navBadgeClass = (isActive = false) =>
+  [
+    'inline-flex size-7 shrink-0 items-center justify-center rounded-lg transition-colors',
+    isActive
+      ? 'border border-blue-200 bg-blue-100 text-blue-700 dark:border-blue-900/70 dark:bg-blue-950/60 dark:text-blue-200'
+      : 'text-slate-400 group-hover:text-slate-700 dark:text-slate-500 dark:group-hover:text-slate-300',
   ].join(' ')
 
 // selalu render di lapisan teratas menggunakan customClass
@@ -246,7 +273,9 @@ watch(
         <nav class="mt-3 space-y-2">
           <div>
             <Link :href="route('dashboard')" :class="navLinkClasses(isRouteActive('dashboard'))">
-              <span class="text-lg">📊</span>
+              <span :class="navBadgeClass(isRouteActive('dashboard'))">
+                <LayoutDashboard :class="navIconClass" />
+              </span>
               <span>Dashboard</span>
             </Link>
           </div>
@@ -258,19 +287,16 @@ watch(
               :class="[navLinkClasses(masterDataActive), 'justify-between']"
             >
               <span class="flex items-center gap-2">
-                <span class="text-lg">📂</span>
+                <span :class="navBadgeClass(masterDataActive)">
+                  <FolderKanban :class="navIconClass" />
+                </span>
                 <span>Master Data</span>
               </span>
-              <svg
-                class="h-4 w-4 transform transition-transform"
+              <ChevronDown
+                class="size-4 transition-transform"
                 :class="{ 'rotate-180': showMasterData }"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                viewBox="0 0 24 24"
               >
-                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
+              </ChevronDown>
             </button>
 
             <div v-if="showMasterData" class="ml-6 mt-2 space-y-1 border-l border-dashed border-slate-100 pl-4">
@@ -279,28 +305,32 @@ watch(
                 :href="route('admin.campus.index')"
                 :class="subLinkClasses(isRouteActive('admin.campus.*'))"
               >
-                🏫 Master Campus
+                <House :class="navIconClass" />
+                <span>Master Campus</span>
               </Link>
               <Link
                 v-if="canManageRoomModule"
                 :href="route('admin.buildings.index')"
                 :class="subLinkClasses(isRouteActive('admin.buildings.*'))"
               >
-                🏢 Master Building
+                <Building2 :class="navIconClass" />
+                <span>Master Building</span>
               </Link>
               <Link
                 v-if="canManageRoomModule"
                 :href="route('admin.rooms.index')"
                 :class="subLinkClasses(isRouteActive('admin.rooms.*'))"
               >
-                🚪 Master Rooms
+                <DoorOpen :class="navIconClass" />
+                <span>Master Rooms</span>
               </Link>
               <Link
                 v-if="canManageItemModule"
                 :href="route('admin.items.index')"
                 :class="subLinkClasses(isRouteActive('admin.items.*'))"
               >
-                📦 Master Barang
+                <Package :class="navIconClass" />
+                <span>Master Barang</span>
               </Link>
             </div>
           </div>
@@ -312,19 +342,16 @@ watch(
               :class="[navLinkClasses(borrowingActive), 'justify-between']"
             >
               <span class="flex items-center gap-2">
-                <span class="text-lg">📝</span>
+                <span :class="navBadgeClass(borrowingActive)">
+                  <ClipboardList :class="navIconClass" />
+                </span>
                 <span>Peminjaman</span>
               </span>
-              <svg
-                class="h-4 w-4 transform transition-transform"
+              <ChevronDown
+                class="size-4 transition-transform"
                 :class="{ 'rotate-180': showBorrowingMenu }"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                viewBox="0 0 24 24"
               >
-                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
+              </ChevronDown>
             </button>
 
             <div v-if="showBorrowingMenu" class="ml-6 mt-2 space-y-1 border-l border-dashed border-slate-100 pl-4">
@@ -332,13 +359,15 @@ watch(
                 :href="route('bookings.index')"
                 :class="subLinkClasses(isRouteActive('bookings.index', 'bookings.create', 'bookings.show'))"
               >
-                🏫 Peminjaman Ruangan
+                <House :class="navIconClass" />
+                <span>Peminjaman Ruangan</span>
               </Link>
               <Link
                 :href="route('item-borrowings.index')"
                 :class="subLinkClasses(isRouteActive('item-borrowings.index', 'item-borrowings.create', 'item-borrowings.show'))"
               >
-                📦 Peminjaman Barang
+                <Package :class="navIconClass" />
+                <span>Peminjaman Barang</span>
               </Link>
             </div>
           </div>
@@ -350,19 +379,16 @@ watch(
               :class="[navLinkClasses(approvalActive), 'justify-between']"
             >
               <span class="flex items-center gap-2">
-                <span class="text-lg">🛡️</span>
+                <span :class="navBadgeClass(approvalActive)">
+                  <ShieldCheck :class="navIconClass" />
+                </span>
                 <span>Persetujuan</span>
               </span>
-              <svg
-                class="h-4 w-4 transform transition-transform"
+              <ChevronDown
+                class="size-4 transition-transform"
                 :class="{ 'rotate-180': showApprovalMenu }"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                viewBox="0 0 24 24"
               >
-                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
+              </ChevronDown>
             </button>
 
             <div v-if="showApprovalMenu" class="ml-6 mt-2 space-y-1 border-l border-dashed border-slate-100 pl-4">
@@ -371,35 +397,43 @@ watch(
                 :href="route('admin.bookings.index')"
                 :class="subLinkClasses(isRouteActive('admin.bookings.*'))"
               >
-                🏫 Persetujuan Ruangan
+                <ClipboardCheck :class="navIconClass" />
+                <span>Persetujuan Ruangan</span>
               </Link>
               <Link
                 v-if="canManageItemModule"
                 :href="route('admin.item-borrowings.index')"
                 :class="subLinkClasses(isRouteActive('admin.item-borrowings.*'))"
               >
-                📦 Persetujuan Barang
+                <Package :class="navIconClass" />
+                <span>Persetujuan Barang</span>
               </Link>
             </div>
           </div>
 
           <div v-if="canManageHistory">
             <Link :href="route('history.index')" :class="navLinkClasses(isRouteActive('history.*'))">
-              <span class="text-lg">🕑</span>
+              <span :class="navBadgeClass(isRouteActive('history.*'))">
+                <History :class="navIconClass" />
+              </span>
               <span>History</span>
             </Link>
           </div>
 
           <div v-if="canManageRoomModule">
             <Link :href="route('admin.reports.index')" :class="navLinkClasses(isRouteActive('admin.reports.*'))">
-              <span class="text-lg">📑</span>
+              <span :class="navBadgeClass(isRouteActive('admin.reports.*'))">
+                <FileBarChart2 :class="navIconClass" />
+              </span>
               <span>Report Ruangan</span>
             </Link>
           </div>
 
           <div v-if="canManageItemModule">
             <Link :href="route('admin.item-borrowing-reports.index')" :class="navLinkClasses(isRouteActive('admin.item-borrowing-reports.*'))">
-              <span class="text-lg">🧾</span>
+              <span :class="navBadgeClass(isRouteActive('admin.item-borrowing-reports.*'))">
+                <FileBarChart2 :class="navIconClass" />
+              </span>
               <span>Report Barang</span>
             </Link>
           </div>
@@ -409,7 +443,9 @@ watch(
               :href="route('admin.users.index')"
               :class="navLinkClasses(isRouteActive('admin.users.index', 'admin.users.edit'))"
             >
-              <span class="text-lg">👥</span>
+              <span :class="navBadgeClass(isRouteActive('admin.users.index', 'admin.users.edit'))">
+                <UsersRound :class="navIconClass" />
+              </span>
               <span>Kelola User</span>
             </Link>
           </div>
