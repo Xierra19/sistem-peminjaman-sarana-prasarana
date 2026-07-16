@@ -63,9 +63,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware('role:super_admin')->group(function () {
         Route::get('/history', [HistoryController::class, 'index'])->name('history.index');
         Route::get('/history/export/excel', [HistoryController::class, 'exportExcel'])->name('history.export.excel');
+        Route::get('/export-users', [ExportController::class, 'exportUsers']);
     });
 
-    Route::get('/export-users', [ExportController::class, 'exportUsers']);
 });
 
 Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
@@ -74,7 +74,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     });
 
     Route::middleware('role:super_admin')->group(function () {
-        Route::resource('users', AdminUserController::class)->only(['index', 'create', 'store', 'edit', 'update']);
+        Route::resource('users', AdminUserController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
         Route::patch('users/{user}/deactivate', [AdminUserController::class, 'deactivate'])->name('users.deactivate');
         Route::patch('users/{user}/activate', [AdminUserController::class, 'activate'])->name('users.activate');
     });

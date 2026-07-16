@@ -35,7 +35,7 @@ class PasswordResetController extends Controller
         $user = User::query()->where('email', $email)->first();
 
         if (!$user) {
-            return $this->genericResponse();
+            return $this->emailNotFoundResponse();
         }
 
         $meta = [
@@ -125,6 +125,13 @@ class PasswordResetController extends Controller
         return response()->json([
             'message' => __('Jika data valid, kami telah mengirim instruksi verifikasi.'),
         ]);
+    }
+
+    private function emailNotFoundResponse(): JsonResponse
+    {
+        return response()->json([
+            'message' => __('Email tidak terdaftar di sistem.'),
+        ], 422);
     }
 
     private function invalidResponse(int $status = 400): JsonResponse

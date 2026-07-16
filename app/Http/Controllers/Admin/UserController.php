@@ -209,6 +209,23 @@ class UserController extends Controller
         return back()->with('success', 'Akun mahasiswa berhasil diaktifkan kembali.');
     }
 
+    public function destroy(Request $request, User $user): RedirectResponse
+    {
+        if ($user->role !== User::ROLE_USER) {
+            return back()->with('error', 'Hanya akun mahasiswa yang dapat dihapus.');
+        }
+
+        if ((int) $request->user()?->id === $user->id) {
+            return back()->with('error', 'Tidak dapat menghapus akun yang sedang digunakan.');
+        }
+
+        $user->delete();
+
+        return redirect()
+            ->route('admin.users.index')
+            ->with('success', 'User berhasil dihapus.');
+    }
+
     /**
      * Determine whether the given user is the last super admin.
      */
