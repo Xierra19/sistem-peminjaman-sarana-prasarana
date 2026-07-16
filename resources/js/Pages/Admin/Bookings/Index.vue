@@ -109,6 +109,7 @@ const {
 } = useTableSort(bookingsList, {
   accessors: {
     title: (booking) => booking.title ?? '',
+    created_at: (booking) => (booking.created_at ? new Date(booking.created_at) : null),
     applicant: (booking) => booking.user?.name ?? '',
     room: (booking) => booking.room_summary ?? '',
     schedule: (booking) => (booking.start_time ? new Date(booking.start_time) : null),
@@ -354,6 +355,14 @@ onMounted(() => {
               />
               <SortableTh
                 class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300"
+                column="created_at"
+                label="Tanggal Pengajuan"
+                :direction="adminBookingSortDirection('created_at')"
+                :aria-sort="adminBookingAriaSortValue('created_at')"
+                @toggle="toggleAdminBookingSort"
+              />
+              <SortableTh
+                class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300"
                 column="applicant"
                 label="Pemohon"
                 :direction="adminBookingSortDirection('applicant')"
@@ -395,6 +404,9 @@ onMounted(() => {
                 <div class="mobile-primary-title">{{ booking.title }}</div>
                 <div class="text-xs text-slate-500 dark:text-slate-400">{{ booking.description || 'Tidak ada deskripsi.' }}</div>
               </td>
+              <td class="px-5 py-4 text-sm mobile-compact-meta" data-title="Tanggal Pengajuan">
+                <div class="font-medium text-slate-800 dark:text-slate-200">{{ formatDateTime(booking.created_at) }}</div>
+              </td>
               <td class="px-5 py-4 text-sm" data-title="Pemohon">
                 <div class="font-medium text-slate-800 dark:text-slate-200">{{ booking.user?.name ?? '-' }}</div>
                 <div class="text-xs text-slate-500 dark:text-slate-400">{{ booking.user?.email ?? '-' }}</div>
@@ -427,7 +439,7 @@ onMounted(() => {
               </td>
             </tr>
             <tr v-if="!bookingsList.length">
-              <td colspan="6" class="px-5 py-10 text-center text-sm text-slate-400 dark:text-slate-500">
+              <td colspan="7" class="px-5 py-10 text-center text-sm text-slate-400 dark:text-slate-500">
                 Belum ada data booking.
               </td>
             </tr>

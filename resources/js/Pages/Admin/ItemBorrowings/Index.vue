@@ -409,6 +409,14 @@ const formatTimeHHMM = (value) => {
               />
               <SortableTh
                 class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300"
+                column="created_at"
+                label="Tanggal Pengajuan"
+                :direction="sortDirection('created_at')"
+                :aria-sort="ariaSortValue('created_at')"
+                @toggle="toggleSort"
+              />
+              <SortableTh
+                class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300"
                 column="applicant"
                 label="Pemohon"
                 :direction="sortDirection('applicant')"
@@ -439,14 +447,6 @@ const formatTimeHHMM = (value) => {
                 :aria-sort="ariaSortValue('borrow_date')"
                 @toggle="toggleSort"
               />
-              <SortableTh
-                class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300"
-                column="created_at"
-                label="Dibuat"
-                :direction="sortDirection('created_at')"
-                :aria-sort="ariaSortValue('created_at')"
-                @toggle="toggleSort"
-              />
               <th class="px-5 py-3 text-center text-slate-500 dark:text-slate-300">Status</th>
               <th class="px-5 py-3"></th>
             </tr>
@@ -457,6 +457,20 @@ const formatTimeHHMM = (value) => {
                 <div class="mobile-primary-label">Keperluan</div>
                 <div class="mobile-primary-title">{{ borrowing.title }}</div>
                 <div class="text-xs text-slate-500 dark:text-slate-400">{{ borrowing.description || 'Tidak ada deskripsi.' }}</div>
+              </td>
+              <td class="px-5 py-4 text-sm mobile-compact-meta" data-title="Tanggal Pengajuan">
+                <div>
+                  Tanggal:
+                  <span class="font-medium text-slate-800 dark:text-slate-200">
+                    {{ borrowing.created_at ? formatDate(new Date(borrowing.created_at)) : '-' }}
+                  </span>
+                </div>
+                <div class="text-xs text-slate-500 dark:text-slate-400">
+                  Jam:
+                  <span class="font-medium text-slate-800 dark:text-slate-200">
+                    {{ borrowing.created_at ? formatTimeHHMM(borrowing.created_at) : '-' }}
+                  </span>
+                </div>
               </td>
               <td class="px-5 py-4" data-title="Pemohon">
                 <div class="font-medium text-slate-800 dark:text-slate-200">{{ borrowing.user?.name ?? '-' }}</div>
@@ -472,20 +486,6 @@ const formatTimeHHMM = (value) => {
               <td class="mobile-span-2 px-5 py-4 text-sm" data-title="Periode">
                 <div>Pinjam: <span class="font-medium text-slate-800 dark:text-slate-200">{{ formatSchedule(getBorrowDates(borrowing)) }}</span></div>
                 <div>Kembali: <span class="font-medium text-slate-800 dark:text-slate-200">{{ formatSchedule(getReturnDates(borrowing)) }}</span></div>
-              </td>
-              <td class="px-5 py-4 text-sm mobile-compact-meta" data-title="Dibuat">
-                <div>
-                  Dibuat:
-                  <span class="font-medium text-slate-800 dark:text-slate-200">
-                    {{ borrowing.created_at ? formatDate(new Date(borrowing.created_at)) : '-' }}
-                  </span>
-                </div>
-                <div class="text-xs text-slate-500 dark:text-slate-400">
-                  Jam:
-                  <span class="font-medium text-slate-800 dark:text-slate-200">
-                    {{ borrowing.created_at ? formatTimeHHMM(borrowing.created_at) : '-' }}
-                  </span>
-                </div>
               </td>
               <td class="mobile-status-cell px-5 py-4 text-center" data-title="Status">
                 <span
